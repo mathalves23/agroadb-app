@@ -1,0 +1,542 @@
+ 
+ -------------- celery@BR000M6VGW6RQVD v5.3.6 (emerald-rush)
+--- ***** ----- 
+-- ******* ---- macOS-26.2-arm64-arm-64bit 2026-02-05 19:05:03
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         agroadb_workers:0x1072e5910
+- ** ---------- .> transport:   redis://localhost:6379/0
+- ** ---------- .> results:     redis://localhost:6379/0
+- *** --- * --- .> concurrency: 10 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+
+[tasks]
+  . start_investigation
+
+[2026-02-05 19:05:04,124: WARNING/MainProcess] /Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/celery/worker/consumer/consumer.py:507: CPendingDeprecationWarning: The broker_connection_retry configuration setting will no longer determine
+whether broker connection retries are made during startup in Celery 6.0 and above.
+If you wish to retain the existing behavior for retrying connections on startup,
+you should set broker_connection_retry_on_startup to True.
+  warnings.warn(
+
+[2026-02-05 19:05:04,132: INFO/MainProcess] Connected to redis://localhost:6379/0
+[2026-02-05 19:05:04,133: WARNING/MainProcess] /Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/celery/worker/consumer/consumer.py:507: CPendingDeprecationWarning: The broker_connection_retry configuration setting will no longer determine
+whether broker connection retries are made during startup in Celery 6.0 and above.
+If you wish to retain the existing behavior for retrying connections on startup,
+you should set broker_connection_retry_on_startup to True.
+  warnings.warn(
+
+[2026-02-05 19:05:04,135: INFO/MainProcess] mingle: searching for neighbors
+[2026-02-05 19:05:05,141: INFO/MainProcess] mingle: all alone
+[2026-02-05 19:05:05,149: INFO/MainProcess] celery@BR000M6VGW6RQVD ready.
+[2026-02-05 20:01:19,526: INFO/MainProcess] Task start_investigation[e256208e-b5a6-460b-a956-5f4e28c22240] received
+2026-02-05 20:01:19,551 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+[2026-02-05 20:01:19,551: INFO/ForkPoolWorker-8] BEGIN (implicit)
+2026-02-05 20:01:19,558 INFO sqlalchemy.engine.Engine ROLLBACK
+[2026-02-05 20:01:19,558: INFO/ForkPoolWorker-8] ROLLBACK
+[2026-02-05 20:01:19,575: ERROR/ForkPoolWorker-8] Task start_investigation[e256208e-b5a6-460b-a956-5f4e28c22240] raised unexpected: InvalidRequestError("When initializing mapper Mapper[Investigation(investigations)], expression 'InvestigationShare' failed to locate a name ('InvestigationShare'). If this is a class name, consider adding this relationship() to the <class 'app.domain.investigation.Investigation'> class after both dependent classes have been defined.")
+Traceback (most recent call last):
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/orm/clsregistry.py", line 515, in _resolve_name
+    rval = d[token]
+           ~^^^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/util/_collections.py", line 346, in __missing__
+    self[key] = val = self.creator(key)
+                      ^^^^^^^^^^^^^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/orm/clsregistry.py", line 483, in _access_cls
+    return self.fallback[key]
+           ~~~~~~~~~~~~~^^^^^
+KeyError: 'InvestigationShare'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/celery/app/trace.py", line 477, in trace_task
+    R = retval = fun(*args, **kwargs)
+                 ^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/celery/app/trace.py", line 760, in __protected_call__
+    return self.run(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/app/workers/tasks.py", line 19, in start_investigation_task
+    return asyncio.run(_start_investigation(investigation_id))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.11/3.11.13_1/Frameworks/Python.framework/Versions/3.11/lib/python3.11/asyncio/runners.py", line 190, in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.11/3.11.13_1/Frameworks/Python.framework/Versions/3.11/lib/python3.11/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.11/3.11.13_1/Frameworks/Python.framework/Versions/3.11/lib/python3.11/asyncio/base_events.py", line 654, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/app/workers/tasks.py", line 28, in _start_investigation
+    investigation = await investigation_repo.get(investigation_id)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/app/repositories/base.py", line 22, in get
+    result = await self.db.execute(select(self.model).where(self.model.id == id))
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/ext/asyncio/session.py", line 455, in execute
+    result = await greenlet_spawn(
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py", line 202, in greenlet_spawn
+    result = context.switch(value)
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 2308, in execute
+    return self._execute_internal(
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 2190, in _execute_internal
+    result: Result[Any] = compile_state_cls.orm_execute_statement(
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/orm/context.py", line 293, in orm_execute_statement
+    result = conn.execute(
+             ^^^^^^^^^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1416, in execute
+    return meth(
+           ^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/sql/elements.py", line 517, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1631, in _execute_clauseelement
+    compiled_sql, extracted_params, cache_hit = elem._compile_w_cache(
+                                                ^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/sql/elements.py", line 705, in _compile_w_cache
+    compiled_sql = self._compiler(
+                   ^^^^^^^^^^^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/sql/elements.py", line 317, in _compiler
+    return dialect.statement_compiler(dialect, self, **kw)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/sql/compiler.py", line 1427, in __init__
+    Compiled.__init__(self, dialect, statement, **kwargs)
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/sql/compiler.py", line 867, in __init__
+    self.string = self.process(self.statement, **compile_kwargs)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/sql/compiler.py", line 912, in process
+    return obj._compiler_dispatch(self, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/sql/visitors.py", line 143, in _compiler_dispatch
+    return meth(self, **kw)  # type: ignore  # noqa: E501
+           ^^^^^^^^^^^^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/sql/compiler.py", line 4609, in visit_select
+    compile_state = select_stmt._compile_state_factory(
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/sql/base.py", line 687, in create_for_statement
+    return klass.create_for_statement(statement, compiler, **kw)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/orm/context.py", line 1091, in create_for_statement
+    _QueryEntity.to_compile_state(
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/orm/context.py", line 2537, in to_compile_state
+    _MapperEntity(
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/orm/context.py", line 2617, in __init__
+    entity._post_inspect
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py", line 1260, in __get__
+    obj.__dict__[self.__name__] = result = self.fget(obj)
+                                           ^^^^^^^^^^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/orm/mapper.py", line 2707, in _post_inspect
+    self._check_configure()
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/orm/mapper.py", line 2386, in _check_configure
+    _configure_registries({self.registry}, cascade=True)
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/orm/mapper.py", line 4199, in _configure_registries
+    _do_configure_registries(registries, cascade)
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/orm/mapper.py", line 4240, in _do_configure_registries
+    mapper._post_configure_properties()
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/orm/mapper.py", line 2403, in _post_configure_properties
+    prop.init()
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/orm/interfaces.py", line 579, in init
+    self.do_init()
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/orm/relationships.py", line 1638, in do_init
+    self._setup_entity()
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/orm/relationships.py", line 1852, in _setup_entity
+    self._clsregistry_resolve_name(argument)(),
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/orm/clsregistry.py", line 519, in _resolve_name
+    self._raise_for_name(name, err)
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/orm/clsregistry.py", line 500, in _raise_for_name
+    raise exc.InvalidRequestError(
+sqlalchemy.exc.InvalidRequestError: When initializing mapper Mapper[Investigation(investigations)], expression 'InvestigationShare' failed to locate a name ('InvestigationShare'). If this is a class name, consider adding this relationship() to the <class 'app.domain.investigation.Investigation'> class after both dependent classes have been defined.
+[2026-02-05 20:39:29,855: INFO/MainProcess] Task start_investigation[876ffbe0-403f-4f06-a2ab-8b398965f18d] received
+2026-02-05 20:39:29,864 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+[2026-02-05 20:39:29,864: INFO/ForkPoolWorker-8] BEGIN (implicit)
+2026-02-05 20:39:29,868 INFO sqlalchemy.engine.Engine ROLLBACK
+[2026-02-05 20:39:29,868: INFO/ForkPoolWorker-8] ROLLBACK
+[2026-02-05 20:39:29,875: ERROR/ForkPoolWorker-8] Task start_investigation[876ffbe0-403f-4f06-a2ab-8b398965f18d] raised unexpected: InvalidRequestError("One or more mappers failed to initialize - can't proceed with initialization of other mappers. Triggering mapper: 'Mapper[Investigation(investigations)]'. Original exception was: When initializing mapper Mapper[Investigation(investigations)], expression 'InvestigationShare' failed to locate a name ('InvestigationShare'). If this is a class name, consider adding this relationship() to the <class 'app.domain.investigation.Investigation'> class after both dependent classes have been defined.")
+Traceback (most recent call last):
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/celery/app/trace.py", line 477, in trace_task
+    R = retval = fun(*args, **kwargs)
+                 ^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/celery/app/trace.py", line 760, in __protected_call__
+    return self.run(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/app/workers/tasks.py", line 19, in start_investigation_task
+    return asyncio.run(_start_investigation(investigation_id))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.11/3.11.13_1/Frameworks/Python.framework/Versions/3.11/lib/python3.11/asyncio/runners.py", line 190, in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.11/3.11.13_1/Frameworks/Python.framework/Versions/3.11/lib/python3.11/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.11/3.11.13_1/Frameworks/Python.framework/Versions/3.11/lib/python3.11/asyncio/base_events.py", line 654, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/app/workers/tasks.py", line 28, in _start_investigation
+    investigation = await investigation_repo.get(investigation_id)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/app/repositories/base.py", line 22, in get
+    result = await self.db.execute(select(self.model).where(self.model.id == id))
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/ext/asyncio/session.py", line 455, in execute
+    result = await greenlet_spawn(
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py", line 202, in greenlet_spawn
+    result = context.switch(value)
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 2308, in execute
+    return self._execute_internal(
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 2190, in _execute_internal
+    result: Result[Any] = compile_state_cls.orm_execute_statement(
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/orm/context.py", line 293, in orm_execute_statement
+    result = conn.execute(
+             ^^^^^^^^^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1416, in execute
+    return meth(
+           ^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/sql/elements.py", line 517, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1631, in _execute_clauseelement
+    compiled_sql, extracted_params, cache_hit = elem._compile_w_cache(
+                                                ^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/sql/elements.py", line 705, in _compile_w_cache
+    compiled_sql = self._compiler(
+                   ^^^^^^^^^^^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/sql/elements.py", line 317, in _compiler
+    return dialect.statement_compiler(dialect, self, **kw)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/sql/compiler.py", line 1427, in __init__
+    Compiled.__init__(self, dialect, statement, **kwargs)
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/sql/compiler.py", line 867, in __init__
+    self.string = self.process(self.statement, **compile_kwargs)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/sql/compiler.py", line 912, in process
+    return obj._compiler_dispatch(self, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/sql/visitors.py", line 143, in _compiler_dispatch
+    return meth(self, **kw)  # type: ignore  # noqa: E501
+           ^^^^^^^^^^^^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/sql/compiler.py", line 4609, in visit_select
+    compile_state = select_stmt._compile_state_factory(
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/sql/base.py", line 687, in create_for_statement
+    return klass.create_for_statement(statement, compiler, **kw)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/orm/context.py", line 1091, in create_for_statement
+    _QueryEntity.to_compile_state(
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/orm/context.py", line 2537, in to_compile_state
+    _MapperEntity(
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/orm/context.py", line 2617, in __init__
+    entity._post_inspect
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py", line 1260, in __get__
+    obj.__dict__[self.__name__] = result = self.fget(obj)
+                                           ^^^^^^^^^^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/orm/mapper.py", line 2707, in _post_inspect
+    self._check_configure()
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/orm/mapper.py", line 2386, in _check_configure
+    _configure_registries({self.registry}, cascade=True)
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/orm/mapper.py", line 4199, in _configure_registries
+    _do_configure_registries(registries, cascade)
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/orm/mapper.py", line 4236, in _do_configure_registries
+    raise e
+sqlalchemy.exc.InvalidRequestError: One or more mappers failed to initialize - can't proceed with initialization of other mappers. Triggering mapper: 'Mapper[Investigation(investigations)]'. Original exception was: When initializing mapper Mapper[Investigation(investigations)], expression 'InvestigationShare' failed to locate a name ('InvestigationShare'). If this is a class name, consider adding this relationship() to the <class 'app.domain.investigation.Investigation'> class after both dependent classes have been defined.
+[2026-02-05 20:51:45,743: INFO/MainProcess] Task start_investigation[8445c3cc-136a-442f-92d9-a66bff99ed98] received
+2026-02-05 20:51:45,760 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+[2026-02-05 20:51:45,760: INFO/ForkPoolWorker-8] BEGIN (implicit)
+2026-02-05 20:51:45,764 INFO sqlalchemy.engine.Engine ROLLBACK
+[2026-02-05 20:51:45,764: INFO/ForkPoolWorker-8] ROLLBACK
+[2026-02-05 20:51:45,771: ERROR/ForkPoolWorker-8] Task start_investigation[8445c3cc-136a-442f-92d9-a66bff99ed98] raised unexpected: InvalidRequestError("One or more mappers failed to initialize - can't proceed with initialization of other mappers. Triggering mapper: 'Mapper[Investigation(investigations)]'. Original exception was: When initializing mapper Mapper[Investigation(investigations)], expression 'InvestigationShare' failed to locate a name ('InvestigationShare'). If this is a class name, consider adding this relationship() to the <class 'app.domain.investigation.Investigation'> class after both dependent classes have been defined.")
+Traceback (most recent call last):
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/celery/app/trace.py", line 477, in trace_task
+    R = retval = fun(*args, **kwargs)
+                 ^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/celery/app/trace.py", line 760, in __protected_call__
+    return self.run(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/app/workers/tasks.py", line 19, in start_investigation_task
+    return asyncio.run(_start_investigation(investigation_id))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.11/3.11.13_1/Frameworks/Python.framework/Versions/3.11/lib/python3.11/asyncio/runners.py", line 190, in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.11/3.11.13_1/Frameworks/Python.framework/Versions/3.11/lib/python3.11/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.11/3.11.13_1/Frameworks/Python.framework/Versions/3.11/lib/python3.11/asyncio/base_events.py", line 654, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/app/workers/tasks.py", line 28, in _start_investigation
+    investigation = await investigation_repo.get(investigation_id)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/app/repositories/base.py", line 22, in get
+    result = await self.db.execute(select(self.model).where(self.model.id == id))
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/ext/asyncio/session.py", line 455, in execute
+    result = await greenlet_spawn(
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py", line 202, in greenlet_spawn
+    result = context.switch(value)
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 2308, in execute
+    return self._execute_internal(
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 2190, in _execute_internal
+    result: Result[Any] = compile_state_cls.orm_execute_statement(
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/orm/context.py", line 293, in orm_execute_statement
+    result = conn.execute(
+             ^^^^^^^^^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1416, in execute
+    return meth(
+           ^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/sql/elements.py", line 517, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1631, in _execute_clauseelement
+    compiled_sql, extracted_params, cache_hit = elem._compile_w_cache(
+                                                ^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/sql/elements.py", line 705, in _compile_w_cache
+    compiled_sql = self._compiler(
+                   ^^^^^^^^^^^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/sql/elements.py", line 317, in _compiler
+    return dialect.statement_compiler(dialect, self, **kw)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/sql/compiler.py", line 1427, in __init__
+    Compiled.__init__(self, dialect, statement, **kwargs)
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/sql/compiler.py", line 867, in __init__
+    self.string = self.process(self.statement, **compile_kwargs)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/sql/compiler.py", line 912, in process
+    return obj._compiler_dispatch(self, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/sql/visitors.py", line 143, in _compiler_dispatch
+    return meth(self, **kw)  # type: ignore  # noqa: E501
+           ^^^^^^^^^^^^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/sql/compiler.py", line 4609, in visit_select
+    compile_state = select_stmt._compile_state_factory(
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/sql/base.py", line 687, in create_for_statement
+    return klass.create_for_statement(statement, compiler, **kw)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/orm/context.py", line 1091, in create_for_statement
+    _QueryEntity.to_compile_state(
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/orm/context.py", line 2537, in to_compile_state
+    _MapperEntity(
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/orm/context.py", line 2617, in __init__
+    entity._post_inspect
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py", line 1260, in __get__
+    obj.__dict__[self.__name__] = result = self.fget(obj)
+                                           ^^^^^^^^^^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/orm/mapper.py", line 2707, in _post_inspect
+    self._check_configure()
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/orm/mapper.py", line 2386, in _check_configure
+    _configure_registries({self.registry}, cascade=True)
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/orm/mapper.py", line 4199, in _configure_registries
+    _do_configure_registries(registries, cascade)
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/orm/mapper.py", line 4236, in _do_configure_registries
+    raise e
+sqlalchemy.exc.InvalidRequestError: One or more mappers failed to initialize - can't proceed with initialization of other mappers. Triggering mapper: 'Mapper[Investigation(investigations)]'. Original exception was: When initializing mapper Mapper[Investigation(investigations)], expression 'InvestigationShare' failed to locate a name ('InvestigationShare'). If this is a class name, consider adding this relationship() to the <class 'app.domain.investigation.Investigation'> class after both dependent classes have been defined.
+[2026-02-05 21:11:23,818: INFO/MainProcess] Task start_investigation[1891d867-6176-4aae-8d96-0eb4e9b5ac24] received
+2026-02-05 21:11:23,834 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+[2026-02-05 21:11:23,834: INFO/ForkPoolWorker-8] BEGIN (implicit)
+2026-02-05 21:11:23,842 INFO sqlalchemy.engine.Engine ROLLBACK
+[2026-02-05 21:11:23,842: INFO/ForkPoolWorker-8] ROLLBACK
+[2026-02-05 21:11:23,853: ERROR/ForkPoolWorker-8] Task start_investigation[1891d867-6176-4aae-8d96-0eb4e9b5ac24] raised unexpected: InvalidRequestError("One or more mappers failed to initialize - can't proceed with initialization of other mappers. Triggering mapper: 'Mapper[Investigation(investigations)]'. Original exception was: When initializing mapper Mapper[Investigation(investigations)], expression 'InvestigationShare' failed to locate a name ('InvestigationShare'). If this is a class name, consider adding this relationship() to the <class 'app.domain.investigation.Investigation'> class after both dependent classes have been defined.")
+Traceback (most recent call last):
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/celery/app/trace.py", line 477, in trace_task
+    R = retval = fun(*args, **kwargs)
+                 ^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/celery/app/trace.py", line 760, in __protected_call__
+    return self.run(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/app/workers/tasks.py", line 19, in start_investigation_task
+    return asyncio.run(_start_investigation(investigation_id))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.11/3.11.13_1/Frameworks/Python.framework/Versions/3.11/lib/python3.11/asyncio/runners.py", line 190, in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.11/3.11.13_1/Frameworks/Python.framework/Versions/3.11/lib/python3.11/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.11/3.11.13_1/Frameworks/Python.framework/Versions/3.11/lib/python3.11/asyncio/base_events.py", line 654, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/app/workers/tasks.py", line 28, in _start_investigation
+    investigation = await investigation_repo.get(investigation_id)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/app/repositories/base.py", line 22, in get
+    result = await self.db.execute(select(self.model).where(self.model.id == id))
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/ext/asyncio/session.py", line 455, in execute
+    result = await greenlet_spawn(
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py", line 202, in greenlet_spawn
+    result = context.switch(value)
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 2308, in execute
+    return self._execute_internal(
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 2190, in _execute_internal
+    result: Result[Any] = compile_state_cls.orm_execute_statement(
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/orm/context.py", line 293, in orm_execute_statement
+    result = conn.execute(
+             ^^^^^^^^^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1416, in execute
+    return meth(
+           ^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/sql/elements.py", line 517, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1631, in _execute_clauseelement
+    compiled_sql, extracted_params, cache_hit = elem._compile_w_cache(
+                                                ^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/sql/elements.py", line 705, in _compile_w_cache
+    compiled_sql = self._compiler(
+                   ^^^^^^^^^^^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/sql/elements.py", line 317, in _compiler
+    return dialect.statement_compiler(dialect, self, **kw)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/sql/compiler.py", line 1427, in __init__
+    Compiled.__init__(self, dialect, statement, **kwargs)
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/sql/compiler.py", line 867, in __init__
+    self.string = self.process(self.statement, **compile_kwargs)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/sql/compiler.py", line 912, in process
+    return obj._compiler_dispatch(self, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/sql/visitors.py", line 143, in _compiler_dispatch
+    return meth(self, **kw)  # type: ignore  # noqa: E501
+           ^^^^^^^^^^^^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/sql/compiler.py", line 4609, in visit_select
+    compile_state = select_stmt._compile_state_factory(
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/sql/base.py", line 687, in create_for_statement
+    return klass.create_for_statement(statement, compiler, **kw)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/orm/context.py", line 1091, in create_for_statement
+    _QueryEntity.to_compile_state(
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/orm/context.py", line 2537, in to_compile_state
+    _MapperEntity(
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/orm/context.py", line 2617, in __init__
+    entity._post_inspect
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py", line 1260, in __get__
+    obj.__dict__[self.__name__] = result = self.fget(obj)
+                                           ^^^^^^^^^^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/orm/mapper.py", line 2707, in _post_inspect
+    self._check_configure()
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/orm/mapper.py", line 2386, in _check_configure
+    _configure_registries({self.registry}, cascade=True)
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/orm/mapper.py", line 4199, in _configure_registries
+    _do_configure_registries(registries, cascade)
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/orm/mapper.py", line 4236, in _do_configure_registries
+    raise e
+sqlalchemy.exc.InvalidRequestError: One or more mappers failed to initialize - can't proceed with initialization of other mappers. Triggering mapper: 'Mapper[Investigation(investigations)]'. Original exception was: When initializing mapper Mapper[Investigation(investigations)], expression 'InvestigationShare' failed to locate a name ('InvestigationShare'). If this is a class name, consider adding this relationship() to the <class 'app.domain.investigation.Investigation'> class after both dependent classes have been defined.
+[2026-02-05 23:23:51,053: INFO/MainProcess] Task start_investigation[cb615406-ffe1-4032-8238-5b16cb392b14] received
+2026-02-05 23:23:51,098 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+[2026-02-05 23:23:51,098: INFO/ForkPoolWorker-8] BEGIN (implicit)
+2026-02-05 23:23:51,103 INFO sqlalchemy.engine.Engine ROLLBACK
+[2026-02-05 23:23:51,103: INFO/ForkPoolWorker-8] ROLLBACK
+[2026-02-05 23:23:51,108: ERROR/ForkPoolWorker-8] Task start_investigation[cb615406-ffe1-4032-8238-5b16cb392b14] raised unexpected: InvalidRequestError("One or more mappers failed to initialize - can't proceed with initialization of other mappers. Triggering mapper: 'Mapper[Investigation(investigations)]'. Original exception was: When initializing mapper Mapper[Investigation(investigations)], expression 'InvestigationShare' failed to locate a name ('InvestigationShare'). If this is a class name, consider adding this relationship() to the <class 'app.domain.investigation.Investigation'> class after both dependent classes have been defined.")
+Traceback (most recent call last):
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/celery/app/trace.py", line 477, in trace_task
+    R = retval = fun(*args, **kwargs)
+                 ^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/celery/app/trace.py", line 760, in __protected_call__
+    return self.run(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/app/workers/tasks.py", line 19, in start_investigation_task
+    return asyncio.run(_start_investigation(investigation_id))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.11/3.11.13_1/Frameworks/Python.framework/Versions/3.11/lib/python3.11/asyncio/runners.py", line 190, in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.11/3.11.13_1/Frameworks/Python.framework/Versions/3.11/lib/python3.11/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.11/3.11.13_1/Frameworks/Python.framework/Versions/3.11/lib/python3.11/asyncio/base_events.py", line 654, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/app/workers/tasks.py", line 28, in _start_investigation
+    investigation = await investigation_repo.get(investigation_id)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/app/repositories/base.py", line 22, in get
+    result = await self.db.execute(select(self.model).where(self.model.id == id))
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/ext/asyncio/session.py", line 455, in execute
+    result = await greenlet_spawn(
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py", line 202, in greenlet_spawn
+    result = context.switch(value)
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 2308, in execute
+    return self._execute_internal(
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 2190, in _execute_internal
+    result: Result[Any] = compile_state_cls.orm_execute_statement(
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/orm/context.py", line 293, in orm_execute_statement
+    result = conn.execute(
+             ^^^^^^^^^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1416, in execute
+    return meth(
+           ^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/sql/elements.py", line 517, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1631, in _execute_clauseelement
+    compiled_sql, extracted_params, cache_hit = elem._compile_w_cache(
+                                                ^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/sql/elements.py", line 705, in _compile_w_cache
+    compiled_sql = self._compiler(
+                   ^^^^^^^^^^^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/sql/elements.py", line 317, in _compiler
+    return dialect.statement_compiler(dialect, self, **kw)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/sql/compiler.py", line 1427, in __init__
+    Compiled.__init__(self, dialect, statement, **kwargs)
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/sql/compiler.py", line 867, in __init__
+    self.string = self.process(self.statement, **compile_kwargs)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/sql/compiler.py", line 912, in process
+    return obj._compiler_dispatch(self, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/sql/visitors.py", line 143, in _compiler_dispatch
+    return meth(self, **kw)  # type: ignore  # noqa: E501
+           ^^^^^^^^^^^^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/sql/compiler.py", line 4609, in visit_select
+    compile_state = select_stmt._compile_state_factory(
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/sql/base.py", line 687, in create_for_statement
+    return klass.create_for_statement(statement, compiler, **kw)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/orm/context.py", line 1091, in create_for_statement
+    _QueryEntity.to_compile_state(
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/orm/context.py", line 2537, in to_compile_state
+    _MapperEntity(
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/orm/context.py", line 2617, in __init__
+    entity._post_inspect
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py", line 1260, in __get__
+    obj.__dict__[self.__name__] = result = self.fget(obj)
+                                           ^^^^^^^^^^^^^^
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/orm/mapper.py", line 2707, in _post_inspect
+    self._check_configure()
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/orm/mapper.py", line 2386, in _check_configure
+    _configure_registries({self.registry}, cascade=True)
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/orm/mapper.py", line 4199, in _configure_registries
+    _do_configure_registries(registries, cascade)
+  File "/Users/mdearaujo/Documents/Projetos/agroadb/backend/venv/lib/python3.11/site-packages/sqlalchemy/orm/mapper.py", line 4236, in _do_configure_registries
+    raise e
+sqlalchemy.exc.InvalidRequestError: One or more mappers failed to initialize - can't proceed with initialization of other mappers. Triggering mapper: 'Mapper[Investigation(investigations)]'. Original exception was: When initializing mapper Mapper[Investigation(investigations)], expression 'InvestigationShare' failed to locate a name ('InvestigationShare'). If this is a class name, consider adding this relationship() to the <class 'app.domain.investigation.Investigation'> class after both dependent classes have been defined.

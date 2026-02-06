@@ -1,0 +1,658 @@
+npm warn Unknown user config "always-auth". This will stop working in the next major version of npm.
+
+> agroadb-frontend@1.0.0 dev
+> vite
+
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+
+  VITE v5.4.21  ready in 176 ms
+
+  ➜  Local:   http://localhost:5173/
+  ➜  Network: http://192.168.0.143:5173/
+(node:45624) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mdearaujo/Documents/Projetos/agroadb/frontend/postcss.config.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/mdearaujo/Documents/Projetos/agroadb/frontend/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+7:06:20 PM [vite] hmr update /src/pages/DashboardPage.tsx, /src/index.css
+7:06:42 PM [vite] hmr update /src/pages/InvestigationsPage.tsx, /src/index.css
+7:06:56 PM [vite] hmr update /src/pages/InvestigationsPage.tsx, /src/index.css
+7:06:56 PM [vite] hmr update /src/pages/DashboardPage.tsx, /src/index.css
+7:34:37 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+7:34:50 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+7:35:02 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+7:35:27 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+7:35:33 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+7:35:55 PM [vite] hmr update /src/pages/DashboardPage.tsx, /src/index.css
+8:04:30 PM [vite] hmr update /src/index.css, /src/pages/InvestigationDetailPage.tsx, /src/pages/DashboardPage.tsx
+8:04:36 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+8:04:45 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+8:04:52 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+8:05:03 PM [vite] hmr update /src/App.tsx, /src/index.css
+8:06:16 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+8:09:48 PM [vite] hmr update /src/index.css, /src/pages/InvestigationDetailPage.tsx, /src/pages/DashboardPage.tsx
+8:10:11 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+8:10:46 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+8:11:20 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+8:13:21 PM [vite] hmr update /src/index.css, /src/pages/InvestigationDetailPage.tsx, /src/pages/DashboardPage.tsx
+8:13:37 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+8:13:58 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+8:15:45 PM [vite] hmr update /src/index.css, /src/pages/InvestigationDetailPage.tsx, /src/pages/DashboardPage.tsx
+8:15:56 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+8:16:13 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+8:17:37 PM [vite] hmr update /src/index.css, /src/pages/InvestigationDetailPage.tsx, /src/pages/DashboardPage.tsx
+8:17:46 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+8:17:56 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+8:19:28 PM [vite] hmr update /src/index.css, /src/pages/InvestigationDetailPage.tsx, /src/pages/DashboardPage.tsx
+8:19:40 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+8:19:58 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+8:21:27 PM [vite] hmr update /src/index.css, /src/pages/InvestigationDetailPage.tsx, /src/pages/DashboardPage.tsx
+8:21:36 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+8:21:53 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+8:24:14 PM [vite] hmr update /src/index.css, /src/pages/InvestigationDetailPage.tsx, /src/pages/DashboardPage.tsx
+8:24:25 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+8:24:44 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+8:26:21 PM [vite] hmr update /src/index.css, /src/pages/InvestigationDetailPage.tsx, /src/pages/DashboardPage.tsx
+8:26:35 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+8:26:56 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+8:28:24 PM [vite] hmr update /src/index.css, /src/pages/InvestigationDetailPage.tsx, /src/pages/DashboardPage.tsx
+8:28:39 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+8:28:49 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+8:29:27 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+8:31:05 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+8:31:38 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+8:31:45 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+8:31:58 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+8:32:12 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+8:32:16 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+8:32:25 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+8:39:32 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+8:39:50 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+8:39:54 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+8:40:07 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+8:42:44 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+8:43:53 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+8:44:19 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+8:45:14 PM [vite] hmr update /src/pages/NewInvestigationPage.tsx, /src/index.css
+8:45:58 PM [vite] hmr update /src/pages/DashboardPage.tsx, /src/index.css
+8:46:32 PM [vite] hmr update /src/pages/InvestigationsPage.tsx, /src/index.css
+8:46:42 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+8:46:49 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+8:47:11 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+8:47:19 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+8:47:41 PM [vite] hmr update /src/pages/NewInvestigationPage.tsx, /src/index.css
+8:47:54 PM [vite] hmr update /src/pages/DashboardPage.tsx, /src/index.css
+8:49:21 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+8:49:49 PM [vite] hmr update /src/pages/DashboardPage.tsx, /src/index.css
+8:49:49 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+8:49:50 PM [vite] ✨ new dependencies optimized: html2canvas, jspdf
+8:49:50 PM [vite] ✨ optimized dependencies changed. reloading
+8:50:11 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+8:50:33 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+8:50:34 PM [vite] ✨ new dependencies optimized: recharts
+8:50:34 PM [vite] ✨ optimized dependencies changed. reloading
+8:50:40 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+8:51:53 PM [vite] hmr update /src/components/Sidebar.tsx, /src/index.css
+8:52:02 PM [vite] hmr update /src/components/Navbar.tsx, /src/index.css
+8:52:04 PM [vite] hmr update /src/components/Layout.tsx, /src/index.css
+8:52:34 PM [vite] hmr update /src/pages/LoginPage.tsx, /src/index.css
+8:52:53 PM [vite] hmr update /src/pages/RegisterPage.tsx, /src/index.css
+8:53:49 PM [vite] hmr update /src/pages/DashboardPage.tsx, /src/index.css
+8:54:35 PM [vite] hmr update /src/pages/InvestigationsPage.tsx, /src/index.css
+8:55:05 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+8:55:06 PM [vite] Internal server error: /Users/mdearaujo/Documents/Projetos/agroadb/frontend/src/pages/InvestigationDetailPage.tsx: Adjacent JSX elements must be wrapped in an enclosing tag. Did you want a JSX fragment <>...</>? (1517:12)
+
+  1515 |           })()}
+  1516 |           {!servicosEstaduaisConfigured && (<span className="hidden">placeholder</span>
+> 1517 |             </div>
+       |             ^
+  1518 |           )}
+  1519 |           {errorMessage && (
+  1520 |             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+  Plugin: vite:react-babel
+  File: /Users/mdearaujo/Documents/Projetos/agroadb/frontend/src/pages/InvestigationDetailPage.tsx:1517:12
+  1515|            })()}
+  1516|            {!servicosEstaduaisConfigured && (<span className="hidden">placeholder</span>
+  1517|              </div>
+     |              ^
+  1518|            )}
+  1519|            {errorMessage && (
+      at constructor (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:365:19)
+      at TypeScriptParserMixin.raise (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:6599:19)
+      at TypeScriptParserMixin.jsxParseElementAt (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:4742:18)
+      at TypeScriptParserMixin.jsxParseElement (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:4749:17)
+      at TypeScriptParserMixin.parseExprAtom (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:4759:19)
+      at TypeScriptParserMixin.parseExprSubscripts (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:11081:23)
+      at TypeScriptParserMixin.parseUpdate (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:11066:21)
+      at TypeScriptParserMixin.parseMaybeUnary (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:11046:23)
+      at TypeScriptParserMixin.parseMaybeUnary (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:9837:18)
+      at TypeScriptParserMixin.parseMaybeUnaryOrPrivate (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:10899:61)
+      at TypeScriptParserMixin.parseExprOps (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:10904:23)
+      at TypeScriptParserMixin.parseMaybeConditional (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:10881:23)
+      at TypeScriptParserMixin.parseMaybeAssign (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:10831:21)
+      at /Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:9775:39
+      at TypeScriptParserMixin.tryParse (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:6907:20)
+      at TypeScriptParserMixin.parseMaybeAssign (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:9775:18)
+      at /Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:10800:39
+      at TypeScriptParserMixin.allowInAnd (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:12426:12)
+      at TypeScriptParserMixin.parseMaybeAssignAllowIn (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:10800:17)
+      at TypeScriptParserMixin.parseMaybeAssignAllowInOrVoidPattern (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:12493:17)
+      at TypeScriptParserMixin.parseParenAndDistinguishExpression (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:11675:28)
+      at TypeScriptParserMixin.parseExprAtom (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:11331:23)
+      at TypeScriptParserMixin.parseExprAtom (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:4764:20)
+      at TypeScriptParserMixin.parseExprSubscripts (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:11081:23)
+      at TypeScriptParserMixin.parseUpdate (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:11066:21)
+      at TypeScriptParserMixin.parseMaybeUnary (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:11046:23)
+      at TypeScriptParserMixin.parseMaybeUnary (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:9837:18)
+      at TypeScriptParserMixin.parseMaybeUnaryOrPrivate (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:10899:61)
+      at TypeScriptParserMixin.parseExprOpBaseRightExpr (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:10986:34)
+      at TypeScriptParserMixin.parseExprOpRightExpr (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:10981:21)
+      at TypeScriptParserMixin.parseExprOp (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:10947:27)
+      at TypeScriptParserMixin.parseExprOp (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:9306:18)
+      at TypeScriptParserMixin.parseExprOps (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:10908:17)
+      at TypeScriptParserMixin.parseMaybeConditional (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:10881:23)
+      at TypeScriptParserMixin.parseMaybeAssign (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:10831:21)
+      at TypeScriptParserMixin.parseMaybeAssign (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:9786:20)
+      at TypeScriptParserMixin.parseExpressionBase (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:10784:23)
+      at /Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:10780:39
+      at TypeScriptParserMixin.allowInAnd (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:12426:12)
+      at TypeScriptParserMixin.parseExpression (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:10780:17)
+      at TypeScriptParserMixin.jsxParseExpressionContainer (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:4632:31)
+      at TypeScriptParserMixin.jsxParseElementAt (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:4711:36)
+      at TypeScriptParserMixin.jsxParseElement (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:4749:17)
+      at TypeScriptParserMixin.parseExprAtom (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:4759:19)
+      at TypeScriptParserMixin.parseExprSubscripts (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:11081:23)
+      at TypeScriptParserMixin.parseUpdate (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:11066:21)
+      at TypeScriptParserMixin.parseMaybeUnary (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:11046:23)
+      at TypeScriptParserMixin.parseMaybeUnary (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:9837:18)
+      at TypeScriptParserMixin.parseMaybeUnaryOrPrivate (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:10899:61)
+      at TypeScriptParserMixin.parseExprOps (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:10904:23)
+8:55:23 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+8:59:52 PM [vite] hmr update /src/components/Sidebar.tsx, /src/index.css
+8:59:52 PM [vite] hmr update /src/pages/NewInvestigationPage.tsx, /src/index.css
+8:59:52 PM [vite] hmr update /src/components/Navbar.tsx, /src/index.css
+8:59:52 PM [vite] hmr update /src/components/Layout.tsx, /src/index.css
+8:59:52 PM [vite] hmr update /src/pages/RegisterPage.tsx, /src/index.css
+8:59:52 PM [vite] hmr update /src/pages/DashboardPage.tsx, /src/index.css
+8:59:52 PM [vite] hmr update /src/pages/InvestigationsPage.tsx, /src/index.css
+8:59:52 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+9:05:06 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+9:05:27 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+9:05:40 PM [vite] hmr update /src/components/legal/LegalQueriesTab.tsx, /src/index.css
+9:05:42 PM [vite] hmr update /src/components/legal/LegalQueriesTab.tsx, /src/index.css
+9:05:43 PM [vite] hmr update /src/components/legal/LegalQueriesTab.tsx, /src/index.css
+9:05:45 PM [vite] hmr update /src/components/legal/LegalQueriesTab.tsx, /src/index.css
+9:05:47 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+9:06:13 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+9:06:36 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+9:06:39 PM [vite] hmr update /src/index.css, /src/pages/InvestigationDetailPage.tsx, /src/pages/DashboardPage.tsx, /src/components/legal/LegalQueriesTab.tsx
+9:06:51 PM [vite] hmr update /src/pages/DashboardPage.tsx, /src/index.css
+9:06:55 PM [vite] hmr update /src/pages/DashboardPage.tsx, /src/index.css
+9:07:02 PM [vite] hmr update /src/pages/DashboardPage.tsx, /src/index.css
+9:07:05 PM [vite] hmr update /src/index.css, /src/pages/InvestigationDetailPage.tsx, /src/pages/DashboardPage.tsx, /src/components/legal/LegalQueriesTab.tsx
+9:07:10 PM [vite] hmr update /src/pages/DashboardPage.tsx, /src/index.css
+9:07:33 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+9:08:15 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+9:08:26 PM [vite] hmr update /src/components/Sidebar.tsx, /src/index.css
+9:08:46 PM [vite] hmr update /src/pages/DashboardPage.tsx, /src/index.css
+9:09:07 PM [vite] hmr update /src/pages/NewInvestigationPage.tsx, /src/index.css
+9:09:13 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+9:09:18 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+9:09:32 PM [vite] hmr update /src/pages/DashboardPage.tsx, /src/index.css
+9:12:11 PM [vite] hmr update /src/components/Layout.tsx, /src/index.css
+9:12:32 PM [vite] hmr update /src/components/Navbar.tsx, /src/index.css
+9:12:54 PM [vite] hmr update /src/components/Sidebar.tsx, /src/index.css
+9:13:12 PM [vite] hmr update /src/pages/DashboardPage.tsx, /src/index.css
+9:13:42 PM [vite] hmr update /src/pages/DashboardPage.tsx, /src/index.css
+9:13:57 PM [vite] hmr update /src/pages/DashboardPage.tsx, /src/index.css
+9:14:05 PM [vite] hmr update /src/pages/DashboardPage.tsx, /src/index.css
+9:14:11 PM [vite] hmr update /src/pages/DashboardPage.tsx, /src/index.css
+9:14:17 PM [vite] hmr update /src/pages/DashboardPage.tsx, /src/index.css
+9:14:23 PM [vite] hmr update /src/pages/DashboardPage.tsx, /src/index.css
+9:14:29 PM [vite] hmr update /src/pages/DashboardPage.tsx, /src/index.css
+9:14:39 PM [vite] hmr update /src/pages/InvestigationsPage.tsx, /src/index.css
+9:14:46 PM [vite] hmr update /src/pages/InvestigationsPage.tsx, /src/index.css
+9:14:52 PM [vite] hmr update /src/pages/InvestigationsPage.tsx, /src/index.css
+9:15:01 PM [vite] hmr update /src/pages/InvestigationsPage.tsx, /src/index.css
+9:15:21 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+9:15:32 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+9:15:54 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+9:16:02 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+9:16:18 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+9:16:36 PM [vite] hmr update /src/pages/NewInvestigationPage.tsx, /src/index.css
+9:16:49 PM [vite] hmr update /src/pages/NewInvestigationPage.tsx, /src/index.css
+9:17:00 PM [vite] hmr update /src/pages/LoginPage.tsx, /src/index.css
+9:17:06 PM [vite] hmr update /src/pages/LoginPage.tsx, /src/index.css
+9:17:11 PM [vite] hmr update /src/pages/LoginPage.tsx, /src/index.css
+9:17:40 PM [vite] hmr update /src/pages/RegisterPage.tsx, /src/index.css
+9:17:46 PM [vite] hmr update /src/pages/RegisterPage.tsx, /src/index.css
+9:17:51 PM [vite] hmr update /src/pages/RegisterPage.tsx, /src/index.css
+9:19:33 PM [vite] hmr update /src/pages/NewInvestigationPage.tsx, /src/index.css
+9:21:23 PM [vite] hmr update /src/index.css, /src/pages/InvestigationDetailPage.tsx, /src/pages/DashboardPage.tsx, /src/components/legal/LegalQueriesTab.tsx
+9:21:29 PM [vite] hmr update /src/index.css, /src/pages/InvestigationDetailPage.tsx, /src/pages/DashboardPage.tsx, /src/components/legal/LegalQueriesTab.tsx
+9:21:29 PM [vite] hmr update /src/index.css, /src/pages/InvestigationDetailPage.tsx, /src/pages/DashboardPage.tsx, /src/components/legal/LegalQueriesTab.tsx
+9:21:42 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+9:21:52 PM [vite] hmr update /src/components/Sidebar.tsx, /src/index.css
+9:21:58 PM [vite] hmr update /src/pages/DashboardPage.tsx, /src/index.css
+9:22:04 PM [vite] hmr update /src/pages/NewInvestigationPage.tsx, /src/index.css
+9:23:49 PM [vite] hmr update /src/index.css, /src/pages/InvestigationDetailPage.tsx, /src/pages/DashboardPage.tsx, /src/components/legal/LegalQueriesTab.tsx
+9:23:55 PM [vite] hmr update /src/index.css, /src/pages/InvestigationDetailPage.tsx, /src/pages/DashboardPage.tsx, /src/components/legal/LegalQueriesTab.tsx
+9:24:01 PM [vite] hmr update /src/pages/DashboardPage.tsx, /src/index.css
+9:24:07 PM [vite] hmr update /src/pages/NewInvestigationPage.tsx, /src/index.css
+9:24:12 PM [vite] hmr update /src/components/Sidebar.tsx, /src/index.css
+9:27:15 PM [vite] hmr update /src/index.css, /src/pages/InvestigationDetailPage.tsx, /src/pages/DashboardPage.tsx, /src/components/legal/LegalQueriesTab.tsx
+9:27:21 PM [vite] hmr update /src/index.css, /src/pages/InvestigationDetailPage.tsx, /src/pages/DashboardPage.tsx, /src/components/legal/LegalQueriesTab.tsx
+9:27:27 PM [vite] hmr update /src/pages/DashboardPage.tsx, /src/index.css
+9:27:33 PM [vite] hmr update /src/pages/NewInvestigationPage.tsx, /src/index.css
+9:27:38 PM [vite] hmr update /src/components/Sidebar.tsx, /src/index.css
+9:29:33 PM [vite] hmr update /src/index.css, /src/pages/InvestigationDetailPage.tsx, /src/pages/DashboardPage.tsx, /src/components/legal/LegalQueriesTab.tsx
+9:29:38 PM [vite] hmr update /src/index.css, /src/pages/InvestigationDetailPage.tsx, /src/pages/DashboardPage.tsx, /src/components/legal/LegalQueriesTab.tsx
+9:29:53 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+9:30:02 PM [vite] hmr update /src/components/Sidebar.tsx, /src/index.css
+9:30:16 PM [vite] hmr update /src/pages/DashboardPage.tsx, /src/index.css
+9:30:25 PM [vite] hmr update /src/pages/NewInvestigationPage.tsx, /src/index.css
+9:32:17 PM [vite] hmr update /src/index.css, /src/pages/InvestigationDetailPage.tsx, /src/pages/DashboardPage.tsx, /src/components/legal/LegalQueriesTab.tsx
+9:32:23 PM [vite] hmr update /src/index.css, /src/pages/InvestigationDetailPage.tsx, /src/pages/DashboardPage.tsx, /src/components/legal/LegalQueriesTab.tsx
+9:32:33 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+9:32:38 PM [vite] hmr update /src/pages/DashboardPage.tsx, /src/index.css
+9:32:43 PM [vite] hmr update /src/pages/NewInvestigationPage.tsx, /src/index.css
+9:32:49 PM [vite] hmr update /src/components/Sidebar.tsx, /src/index.css
+9:34:28 PM [vite] hmr update /src/index.css, /src/pages/InvestigationDetailPage.tsx, /src/pages/DashboardPage.tsx, /src/components/legal/LegalQueriesTab.tsx
+9:34:32 PM [vite] hmr update /src/index.css, /src/pages/InvestigationDetailPage.tsx, /src/pages/DashboardPage.tsx, /src/components/legal/LegalQueriesTab.tsx
+9:34:46 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+9:34:51 PM [vite] hmr update /src/pages/DashboardPage.tsx, /src/index.css
+9:34:57 PM [vite] hmr update /src/pages/NewInvestigationPage.tsx, /src/index.css
+9:35:03 PM [vite] hmr update /src/components/Sidebar.tsx, /src/index.css
+9:37:00 PM [vite] hmr update /src/index.css, /src/pages/InvestigationDetailPage.tsx, /src/pages/DashboardPage.tsx, /src/components/legal/LegalQueriesTab.tsx
+9:37:04 PM [vite] hmr update /src/index.css, /src/pages/InvestigationDetailPage.tsx, /src/pages/DashboardPage.tsx, /src/components/legal/LegalQueriesTab.tsx
+9:37:17 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+9:37:22 PM [vite] hmr update /src/pages/DashboardPage.tsx, /src/index.css
+9:37:27 PM [vite] hmr update /src/pages/NewInvestigationPage.tsx, /src/index.css
+9:37:34 PM [vite] hmr update /src/components/Sidebar.tsx, /src/index.css
+9:40:09 PM [vite] hmr update /src/components/Sidebar.tsx, /src/index.css
+9:40:09 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+9:40:09 PM [vite] hmr update /src/pages/DashboardPage.tsx, /src/index.css
+9:40:09 PM [vite] hmr update /src/pages/NewInvestigationPage.tsx, /src/index.css
+9:40:09 PM [vite] hmr update /src/index.css, /src/pages/InvestigationDetailPage.tsx, /src/pages/DashboardPage.tsx, /src/components/legal/LegalQueriesTab.tsx
+11:17:43 PM [vite] hmr update /src/index.css, /src/pages/InvestigationDetailPage.tsx, /src/pages/DashboardPage.tsx, /src/components/legal/LegalQueriesTab.tsx
+11:17:50 PM [vite] hmr update /src/index.css, /src/pages/InvestigationDetailPage.tsx, /src/pages/DashboardPage.tsx, /src/components/legal/LegalQueriesTab.tsx
+11:18:05 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+11:18:15 PM [vite] hmr update /src/pages/DashboardPage.tsx, /src/index.css
+11:18:32 PM [vite] hmr update /src/pages/NewInvestigationPage.tsx, /src/index.css
+11:18:41 PM [vite] hmr update /src/components/Sidebar.tsx, /src/index.css
+11:20:54 PM [vite] hmr update /src/index.css, /src/pages/InvestigationDetailPage.tsx, /src/pages/DashboardPage.tsx, /src/components/legal/LegalQueriesTab.tsx
+11:20:58 PM [vite] hmr update /src/index.css, /src/pages/InvestigationDetailPage.tsx, /src/pages/DashboardPage.tsx, /src/components/legal/LegalQueriesTab.tsx
+11:21:10 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+11:21:15 PM [vite] hmr update /src/pages/DashboardPage.tsx, /src/index.css
+11:21:21 PM [vite] hmr update /src/pages/NewInvestigationPage.tsx, /src/index.css
+11:21:28 PM [vite] hmr update /src/components/Sidebar.tsx, /src/index.css
+11:22:43 PM [vite] hmr update /src/pages/LoginPage.tsx, /src/index.css
+11:22:54 PM [vite] hmr update /src/pages/LoginPage.tsx, /src/index.css
+11:23:04 PM [vite] hmr update /src/pages/RegisterPage.tsx, /src/index.css
+11:23:09 PM [vite] hmr update /src/pages/RegisterPage.tsx, /src/index.css
+11:23:15 PM [vite] hmr update /src/pages/RegisterPage.tsx, /src/index.css
+11:23:20 PM [vite] hmr update /src/pages/RegisterPage.tsx, /src/index.css
+11:26:07 PM [vite] page reload src/components/ErrorBoundary.tsx
+11:26:14 PM [vite] page reload src/main.tsx
+11:26:28 PM [vite] hmr update /src/index.css
+11:26:39 PM [vite] hmr update /src/index.css
+11:26:55 PM [vite] hmr update /src/index.css, /src/pages/LoginPage.tsx, /src/pages/NewInvestigationPage.tsx, /src/pages/InvestigationDetailPage.tsx, /src/pages/DashboardPage.tsx, /src/pages/InvestigationsPage.tsx, /src/pages/RegisterPage.tsx, /src/components/legal/LegalQueriesTab.tsx
+11:27:09 PM [vite] page reload src/pages/Dashboard.tsx
+11:27:09 PM [vite] page reload src/pages/Investigations.tsx
+11:27:10 PM [vite] page reload src/pages/InvestigationDetails.tsx
+11:27:27 PM [vite] page reload tailwind.config.js
+11:29:02 PM [vite] hmr update /src/App.tsx, /src/index.css
+11:29:05 PM [vite] hmr update /src/App.tsx, /src/index.css
+11:29:14 PM [vite] hmr update /src/pages/DashboardPage.tsx, /src/index.css
+11:30:39 PM [vite] hmr update /src/components/Navbar.tsx, /src/index.css
+11:30:42 PM [vite] hmr update /src/components/Navbar.tsx, /src/index.css
+11:30:57 PM [vite] hmr update /src/index.css, /src/pages/NewInvestigationPage.tsx, /src/pages/InvestigationDetailPage.tsx, /src/pages/DashboardPage.tsx, /src/pages/InvestigationsPage.tsx
+11:31:15 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+11:31:26 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+11:31:44 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+11:32:07 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+11:33:24 PM [vite] hmr update /src/components/Navbar.tsx, /src/index.css
+11:33:26 PM [vite] hmr update /src/components/Navbar.tsx, /src/index.css
+11:33:37 PM [vite] hmr update /src/components/Navbar.tsx, /src/index.css
+11:33:40 PM [vite] hmr update /src/components/Navbar.tsx, /src/index.css
+11:33:51 PM [vite] hmr update /src/App.tsx, /src/index.css
+11:33:53 PM [vite] hmr update /src/App.tsx, /src/index.css
+11:34:37 PM [vite] hmr update /src/pages/SettingsPage.tsx, /src/index.css
+11:34:52 PM [vite] hmr update /src/components/Sidebar.tsx, /src/index.css
+11:39:14 PM [vite] hmr update /src/components/Navbar.tsx, /src/index.css
+11:39:16 PM [vite] hmr update /src/components/Navbar.tsx, /src/index.css
+11:39:17 PM [vite] ✨ new dependencies optimized: date-fns, date-fns/locale
+11:39:17 PM [vite] ✨ optimized dependencies changed. reloading
+11:43:43 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+11:43:59 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+11:44:14 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+11:44:28 PM [vite] hmr update /src/App.tsx, /src/index.css
+11:44:28 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+11:44:30 PM [vite] hmr update /src/App.tsx, /src/index.css
+11:44:38 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+11:45:02 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+11:45:17 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+11:45:34 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+11:45:47 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+11:46:17 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+11:47:24 PM [vite] hmr update /src/components/investigation/InvestigationHeader.tsx, /src/index.css
+11:47:30 PM [vite] hmr update /src/components/investigation/DossierSummary.tsx, /src/index.css
+11:47:41 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+11:49:01 PM [vite] hmr update /src/pages/ProfilePage.tsx, /src/index.css
+11:49:03 PM [vite] hmr update /src/pages/ProfilePage.tsx, /src/index.css
+11:49:04 PM [vite] page reload src/components/ui/DataTable.tsx
+11:49:07 PM [vite] page reload src/components/ui/DataTable.tsx
+11:49:09 PM [vite] page reload src/components/ui/DataTable.tsx
+11:49:10 PM [vite] page reload src/components/ui/DataTable.tsx
+11:49:10 PM [vite] page reload src/components/ui/Navigation.tsx
+11:49:11 PM [vite] page reload src/components/ui/DataTable.tsx
+11:49:12 PM [vite] page reload src/components/ui/Navigation.tsx
+11:49:12 PM [vite] page reload src/components/ui/DataTable.tsx
+11:49:13 PM [vite] page reload src/components/ui/Navigation.tsx
+11:49:15 PM [vite] page reload src/components/Timeline.tsx
+11:49:15 PM [vite] page reload src/components/ui/Navigation.tsx
+11:49:16 PM [vite] page reload src/components/InteractiveMap.tsx
+11:49:18 PM [vite] page reload src/hooks/useInvestigationWebSocket.tsx
+11:49:20 PM [vite] page reload src/hooks/useInvestigationWebSocket.tsx
+11:49:22 PM [vite] page reload src/hooks/useInvestigationWebSocket.tsx
+11:49:23 PM [vite] page reload src/hooks/useInvestigationWebSocket.tsx
+11:49:25 PM [vite] page reload src/hooks/useInvestigationWebSocket.tsx
+11:49:27 PM [vite] page reload src/hooks/useInvestigationWebSocket.tsx
+11:49:28 PM [vite] page reload src/types/api.ts
+11:49:29 PM [vite] page reload src/hooks/useInvestigationWebSocket.tsx
+11:49:30 PM [vite] page reload src/types/api.ts
+11:49:33 PM [vite] hmr update /src/pages/RegisterPage.tsx, /src/index.css
+11:49:33 PM [vite] hmr update /src/pages/LoginPage.tsx, /src/index.css
+11:49:35 PM [vite] hmr update /src/pages/NewInvestigationPage.tsx, /src/index.css
+11:49:37 PM [vite] page reload src/components/ui/DataTable.tsx
+11:49:39 PM [vite] page reload src/components/ui/DataTable.tsx
+11:49:40 PM [vite] page reload src/components/ui/DataTable.tsx
+11:49:43 PM [vite] page reload src/components/AdvancedFilters.tsx
+11:49:44 PM [vite] page reload src/components/AdvancedFilters.tsx
+11:49:45 PM [vite] page reload src/components/InvestigationComparison.tsx
+11:49:46 PM [vite] page reload src/components/InteractiveMap.tsx
+11:49:48 PM [vite] page reload src/hooks/useInvestigationWebSocket.tsx
+11:50:05 PM [vite] page reload src/components/InteractiveMap.tsx
+11:50:07 PM [vite] page reload src/components/InteractiveMap.tsx
+11:50:15 PM [vite] page reload src/components/DashboardCharts.tsx
+11:50:17 PM [vite] page reload src/components/DashboardCharts.tsx
+11:50:18 PM [vite] page reload src/components/DashboardCharts.tsx
+11:50:27 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+11:50:34 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+11:50:36 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+11:50:37 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+11:50:39 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+11:50:41 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+11:50:41 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+11:50:42 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+11:50:44 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+11:50:46 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+11:50:48 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+11:50:49 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+11:50:51 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+11:50:52 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+11:50:54 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+11:50:54 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+11:50:56 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+11:50:57 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+11:50:59 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+11:51:00 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+11:51:02 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+11:51:04 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+11:51:06 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+11:51:07 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+11:51:09 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+11:51:10 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+11:51:12 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+11:51:16 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+11:51:18 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+11:51:21 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+11:51:33 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+11:51:34 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+11:51:36 PM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+11:52:08 PM [vite] page reload src/components/InvestigationComparison.tsx
+11:52:10 PM [vite] page reload src/components/InvestigationComparison.tsx
+11:52:11 PM [vite] page reload src/components/InvestigationComparison.tsx
+11:52:18 PM [vite] page reload src/components/InvestigationComparison.tsx
+11:53:30 PM [vite] page reload src/components/InvestigationComparison.tsx
+11:54:08 PM [vite] hmr update /src/pages/NotificationsPage.tsx, /src/index.css
+11:54:09 PM [vite] page reload src/components/ChangeLog.tsx
+11:54:10 PM [vite] page reload src/components/CommentThread.tsx
+11:54:11 PM [vite] hmr update /src/pages/NotificationsPage.tsx, /src/index.css
+11:54:11 PM [vite] hmr update /src/components/NotificationDropdown.tsx, /src/index.css
+11:54:11 PM [vite] page reload src/components/ShareModal.tsx
+11:54:11 PM [vite] page reload src/components/ShareModal.tsx
+11:54:13 PM [vite] hmr update /src/pages/NotificationsPage.tsx, /src/index.css
+11:54:16 PM [vite] hmr update /src/pages/NotificationsPage.tsx, /src/index.css
+11:54:16 PM [vite] page reload src/components/CommentThread.tsx
+11:54:18 PM [vite] page reload src/components/CommentThread.tsx
+11:54:21 PM [vite] page reload src/components/ShareModal.tsx
+11:54:21 PM [vite] page reload src/components/CommentThread.tsx
+11:54:21 PM [vite] hmr update /src/components/NotificationDropdown.tsx, /src/index.css
+11:54:23 PM [vite] hmr update /src/components/NotificationDropdown.tsx, /src/index.css
+11:54:25 PM [vite] hmr update /src/components/NotificationDropdown.tsx, /src/index.css
+11:54:28 PM [vite] hmr update /src/components/NotificationDropdown.tsx, /src/index.css
+11:54:41 PM [vite] page reload src/components/ChangeLog.tsx
+11:56:06 PM [vite] hmr update /src/pages/SettingsPage.tsx, /src/index.css
+11:56:22 PM [vite] hmr update /src/pages/SettingsPage.tsx, /src/index.css
+11:58:45 PM [vite] hmr update /src/App.tsx, /src/index.css
+11:58:47 PM [vite] hmr update /src/components/Layout.tsx, /src/index.css
+11:58:48 PM [vite] hmr update /src/components/Sidebar.tsx, /src/index.css
+11:58:52 PM [vite] hmr update /src/components/Sidebar.tsx, /src/index.css
+11:58:52 PM [vite] hmr update /src/components/Sidebar.tsx, /src/index.css
+11:58:57 PM [vite] hmr update /src/components/Sidebar.tsx, /src/index.css
+11:59:09 PM [vite] hmr update /src/components/Sidebar.tsx, /src/index.css
+11:59:15 PM [vite] hmr update /src/components/Navbar.tsx, /src/index.css
+11:59:18 PM [vite] hmr update /src/components/Navbar.tsx, /src/index.css
+11:59:20 PM [vite] hmr update /src/components/Navbar.tsx, /src/index.css
+11:59:46 PM [vite] hmr update /src/pages/LoginPage.tsx, /src/index.css
+12:00:08 AM [vite] hmr update /src/pages/RegisterPage.tsx, /src/index.css
+12:00:10 AM [vite] hmr update /src/components/investigation/InvestigationHeader.tsx, /src/index.css
+12:00:15 AM [vite] hmr update /src/components/investigation/InvestigationHeader.tsx, /src/index.css
+12:00:17 AM [vite] hmr update /src/components/investigation/KpiCards.tsx, /src/index.css
+12:00:19 AM [vite] hmr update /src/components/investigation/QuickScanPanel.tsx, /src/index.css
+12:00:22 AM [vite] hmr update /src/components/investigation/QuickScanPanel.tsx, /src/index.css
+12:00:22 AM [vite] hmr update /src/components/investigation/QuickScanPanel.tsx, /src/index.css
+12:13:38 AM [vite] hmr update /src/index.css, /src/pages/NewInvestigationPage.tsx, /src/pages/InvestigationDetailPage.tsx, /src/pages/DashboardPage.tsx, /src/pages/InvestigationsPage.tsx
+12:13:49 AM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
+12:14:08 AM [vite] hmr update /src/components/investigation/QueryCharts.tsx, /src/index.css
+12:14:08 AM [vite] Internal server error: /Users/mdearaujo/Documents/Projetos/agroadb/frontend/src/components/investigation/QueryCharts.tsx: Unexpected token, expected "," (114:0)
+
+  112 |   )
+  113 | }
+> 114 |
+      | ^
+  Plugin: vite:react-babel
+  File: /Users/mdearaujo/Documents/Projetos/agroadb/frontend/src/components/investigation/QueryCharts.tsx:114:0
+  112|    )
+  113|  }
+  114|  
+     |  ^
+      at constructor (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:365:19)
+      at TypeScriptParserMixin.raise (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:6599:19)
+      at TypeScriptParserMixin.unexpected (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:6619:16)
+      at TypeScriptParserMixin.expect (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:6899:12)
+      at TypeScriptParserMixin.parseCallExpressionArguments (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:11243:14)
+      at TypeScriptParserMixin.parseCoverCallAndAsyncArrowHead (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:11186:29)
+      at TypeScriptParserMixin.parseSubscript (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:11120:19)
+      at TypeScriptParserMixin.parseSubscript (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:9272:18)
+      at TypeScriptParserMixin.parseSubscripts (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:11094:19)
+      at TypeScriptParserMixin.parseExprSubscripts (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:11085:17)
+      at TypeScriptParserMixin.parseUpdate (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:11066:21)
+      at TypeScriptParserMixin.parseMaybeUnary (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:11046:23)
+      at TypeScriptParserMixin.parseMaybeUnary (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:9837:18)
+      at TypeScriptParserMixin.parseMaybeUnaryOrPrivate (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:10899:61)
+      at TypeScriptParserMixin.parseExprOps (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:10904:23)
+      at TypeScriptParserMixin.parseMaybeConditional (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:10881:23)
+      at TypeScriptParserMixin.parseMaybeAssign (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:10831:21)
+      at TypeScriptParserMixin.parseMaybeAssign (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:9786:20)
+      at /Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:10800:39
+      at TypeScriptParserMixin.allowInAnd (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:12421:16)
+      at TypeScriptParserMixin.parseMaybeAssignAllowIn (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:10800:17)
+      at TypeScriptParserMixin.parseVar (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:13384:91)
+      at TypeScriptParserMixin.parseVarStatement (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:13230:10)
+      at TypeScriptParserMixin.parseVarStatement (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:9408:31)
+      at TypeScriptParserMixin.parseStatementContent (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:12851:23)
+      at TypeScriptParserMixin.parseStatementContent (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:9508:18)
+      at TypeScriptParserMixin.parseStatementLike (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:12767:17)
+      at TypeScriptParserMixin.parseStatementListItem (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:12747:17)
+      at TypeScriptParserMixin.parseExportDeclaration (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:13934:17)
+      at TypeScriptParserMixin.parseExportDeclaration (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:9629:85)
+      at TypeScriptParserMixin.maybeParseExportDeclaration (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:13893:31)
+      at TypeScriptParserMixin.parseExport (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:13812:29)
+      at TypeScriptParserMixin.parseExport (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:9385:20)
+      at TypeScriptParserMixin.parseStatementContent (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:12878:27)
+      at TypeScriptParserMixin.parseStatementContent (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:9508:18)
+      at TypeScriptParserMixin.parseStatementLike (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:12767:17)
+      at TypeScriptParserMixin.parseModuleItem (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:12744:17)
+      at TypeScriptParserMixin.parseBlockOrModuleBlockBody (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:13316:36)
+      at TypeScriptParserMixin.parseBlockBody (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:13309:10)
+      at TypeScriptParserMixin.parseProgram (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:12622:10)
+      at TypeScriptParserMixin.parseTopLevel (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:12612:25)
+      at TypeScriptParserMixin.parse (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:14488:25)
+      at TypeScriptParserMixin.parse (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:10126:18)
+      at parse (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:14522:38)
+      at parser (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/core/lib/parser/index.js:41:34)
+      at parser.next (<anonymous>)
+      at normalizeFile (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/core/lib/transformation/normalize-file.js:64:37)
+      at normalizeFile.next (<anonymous>)
+      at run (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/core/lib/transformation/index.js:22:50)
+      at run.next (<anonymous>)
+12:14:12 AM [vite] hmr update /src/components/investigation/QueryCharts.tsx, /src/index.css
+12:14:17 AM [vite] hmr update /src/components/investigation/PropertiesList.tsx, /src/index.css
+12:14:21 AM [vite] hmr update /src/components/investigation/PropertiesList.tsx, /src/index.css
+12:14:21 AM [vite] Internal server error: /Users/mdearaujo/Documents/Projetos/agroadb/frontend/src/components/investigation/PropertiesList.tsx: Unexpected token, expected "," (107:0)
+
+  105 |   )
+  106 | }
+> 107 |
+      | ^
+  Plugin: vite:react-babel
+  File: /Users/mdearaujo/Documents/Projetos/agroadb/frontend/src/components/investigation/PropertiesList.tsx:107:0
+  105|    )
+  106|  }
+  107|  
+     |  ^
+      at constructor (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:365:19)
+      at TypeScriptParserMixin.raise (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:6599:19)
+      at TypeScriptParserMixin.unexpected (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:6619:16)
+      at TypeScriptParserMixin.expect (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:6899:12)
+      at TypeScriptParserMixin.parseCallExpressionArguments (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:11243:14)
+      at TypeScriptParserMixin.parseCoverCallAndAsyncArrowHead (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:11186:29)
+      at TypeScriptParserMixin.parseSubscript (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:11120:19)
+      at TypeScriptParserMixin.parseSubscript (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:9272:18)
+      at TypeScriptParserMixin.parseSubscripts (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:11094:19)
+      at TypeScriptParserMixin.parseExprSubscripts (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:11085:17)
+      at TypeScriptParserMixin.parseUpdate (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:11066:21)
+      at TypeScriptParserMixin.parseMaybeUnary (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:11046:23)
+      at TypeScriptParserMixin.parseMaybeUnary (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:9837:18)
+      at TypeScriptParserMixin.parseMaybeUnaryOrPrivate (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:10899:61)
+      at TypeScriptParserMixin.parseExprOps (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:10904:23)
+      at TypeScriptParserMixin.parseMaybeConditional (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:10881:23)
+      at TypeScriptParserMixin.parseMaybeAssign (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:10831:21)
+      at TypeScriptParserMixin.parseMaybeAssign (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:9786:20)
+      at /Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:10800:39
+      at TypeScriptParserMixin.allowInAnd (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:12421:16)
+      at TypeScriptParserMixin.parseMaybeAssignAllowIn (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:10800:17)
+      at TypeScriptParserMixin.parseVar (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:13384:91)
+      at TypeScriptParserMixin.parseVarStatement (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:13230:10)
+      at TypeScriptParserMixin.parseVarStatement (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:9408:31)
+      at TypeScriptParserMixin.parseStatementContent (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:12851:23)
+      at TypeScriptParserMixin.parseStatementContent (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:9508:18)
+      at TypeScriptParserMixin.parseStatementLike (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:12767:17)
+      at TypeScriptParserMixin.parseStatementListItem (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:12747:17)
+      at TypeScriptParserMixin.parseExportDeclaration (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:13934:17)
+      at TypeScriptParserMixin.parseExportDeclaration (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:9629:85)
+      at TypeScriptParserMixin.maybeParseExportDeclaration (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:13893:31)
+      at TypeScriptParserMixin.parseExport (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:13812:29)
+      at TypeScriptParserMixin.parseExport (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:9385:20)
+      at TypeScriptParserMixin.parseStatementContent (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:12878:27)
+      at TypeScriptParserMixin.parseStatementContent (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:9508:18)
+      at TypeScriptParserMixin.parseStatementLike (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:12767:17)
+      at TypeScriptParserMixin.parseModuleItem (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:12744:17)
+      at TypeScriptParserMixin.parseBlockOrModuleBlockBody (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:13316:36)
+      at TypeScriptParserMixin.parseBlockBody (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:13309:10)
+      at TypeScriptParserMixin.parseProgram (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:12622:10)
+      at TypeScriptParserMixin.parseTopLevel (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:12612:25)
+      at TypeScriptParserMixin.parse (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:14488:25)
+      at TypeScriptParserMixin.parse (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:10126:18)
+      at parse (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:14522:38)
+      at parser (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/core/lib/parser/index.js:41:34)
+      at parser.next (<anonymous>)
+      at normalizeFile (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/core/lib/transformation/normalize-file.js:64:37)
+      at normalizeFile.next (<anonymous>)
+      at run (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/core/lib/transformation/index.js:22:50)
+      at run.next (<anonymous>)
+12:14:25 AM [vite] hmr update /src/components/investigation/PropertiesList.tsx, /src/index.css
+12:14:29 AM [vite] hmr update /src/components/investigation/CompaniesList.tsx, /src/index.css
+12:14:33 AM [vite] hmr update /src/components/investigation/CompaniesList.tsx, /src/index.css
+12:14:33 AM [vite] Internal server error: /Users/mdearaujo/Documents/Projetos/agroadb/frontend/src/components/investigation/CompaniesList.tsx: Unexpected token, expected "," (89:0)
+
+  87 |   )
+  88 | }
+> 89 |
+     | ^
+  Plugin: vite:react-babel
+  File: /Users/mdearaujo/Documents/Projetos/agroadb/frontend/src/components/investigation/CompaniesList.tsx:89:0
+  87 |    )
+  88 |  }
+  89 |  
+     |  ^
+      at constructor (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:365:19)
+      at TypeScriptParserMixin.raise (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:6599:19)
+      at TypeScriptParserMixin.unexpected (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:6619:16)
+      at TypeScriptParserMixin.expect (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:6899:12)
+      at TypeScriptParserMixin.parseCallExpressionArguments (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:11243:14)
+      at TypeScriptParserMixin.parseCoverCallAndAsyncArrowHead (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:11186:29)
+      at TypeScriptParserMixin.parseSubscript (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:11120:19)
+      at TypeScriptParserMixin.parseSubscript (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:9272:18)
+      at TypeScriptParserMixin.parseSubscripts (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:11094:19)
+      at TypeScriptParserMixin.parseExprSubscripts (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:11085:17)
+      at TypeScriptParserMixin.parseUpdate (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:11066:21)
+      at TypeScriptParserMixin.parseMaybeUnary (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:11046:23)
+      at TypeScriptParserMixin.parseMaybeUnary (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:9837:18)
+      at TypeScriptParserMixin.parseMaybeUnaryOrPrivate (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:10899:61)
+      at TypeScriptParserMixin.parseExprOps (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:10904:23)
+      at TypeScriptParserMixin.parseMaybeConditional (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:10881:23)
+      at TypeScriptParserMixin.parseMaybeAssign (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:10831:21)
+      at TypeScriptParserMixin.parseMaybeAssign (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:9786:20)
+      at /Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:10800:39
+      at TypeScriptParserMixin.allowInAnd (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:12421:16)
+      at TypeScriptParserMixin.parseMaybeAssignAllowIn (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:10800:17)
+      at TypeScriptParserMixin.parseVar (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:13384:91)
+      at TypeScriptParserMixin.parseVarStatement (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:13230:10)
+      at TypeScriptParserMixin.parseVarStatement (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:9408:31)
+      at TypeScriptParserMixin.parseStatementContent (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:12851:23)
+      at TypeScriptParserMixin.parseStatementContent (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:9508:18)
+      at TypeScriptParserMixin.parseStatementLike (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:12767:17)
+      at TypeScriptParserMixin.parseStatementListItem (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:12747:17)
+      at TypeScriptParserMixin.parseExportDeclaration (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:13934:17)
+      at TypeScriptParserMixin.parseExportDeclaration (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:9629:85)
+      at TypeScriptParserMixin.maybeParseExportDeclaration (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:13893:31)
+      at TypeScriptParserMixin.parseExport (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:13812:29)
+      at TypeScriptParserMixin.parseExport (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:9385:20)
+      at TypeScriptParserMixin.parseStatementContent (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:12878:27)
+      at TypeScriptParserMixin.parseStatementContent (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:9508:18)
+      at TypeScriptParserMixin.parseStatementLike (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:12767:17)
+      at TypeScriptParserMixin.parseModuleItem (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:12744:17)
+      at TypeScriptParserMixin.parseBlockOrModuleBlockBody (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:13316:36)
+      at TypeScriptParserMixin.parseBlockBody (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:13309:10)
+      at TypeScriptParserMixin.parseProgram (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:12622:10)
+      at TypeScriptParserMixin.parseTopLevel (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:12612:25)
+      at TypeScriptParserMixin.parse (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:14488:25)
+      at TypeScriptParserMixin.parse (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:10126:18)
+      at parse (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/parser/lib/index.js:14522:38)
+      at parser (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/core/lib/parser/index.js:41:34)
+      at parser.next (<anonymous>)
+      at normalizeFile (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/core/lib/transformation/normalize-file.js:64:37)
+      at normalizeFile.next (<anonymous>)
+      at run (/Users/mdearaujo/Documents/Projetos/agroadb/frontend/node_modules/@babel/core/lib/transformation/index.js:22:50)
+      at run.next (<anonymous>)
+12:14:37 AM [vite] hmr update /src/components/investigation/CompaniesList.tsx, /src/index.css
+12:14:50 AM [vite] hmr update /src/pages/InvestigationsPage.tsx, /src/index.css
+12:15:01 AM [vite] hmr update /src/pages/InvestigationsPage.tsx, /src/index.css
+12:15:06 AM [vite] hmr update /src/pages/InvestigationsPage.tsx, /src/index.css
+12:15:10 AM [vite] hmr update /src/pages/InvestigationsPage.tsx, /src/index.css
+12:15:19 AM [vite] hmr update /src/pages/InvestigationsPage.tsx, /src/index.css
+12:15:26 AM [vite] hmr update /src/pages/InvestigationsPage.tsx, /src/index.css
+12:15:42 AM [vite] hmr update /src/pages/InvestigationsPage.tsx, /src/index.css
+12:19:17 AM [vite] hmr update /src/pages/InvestigationDetailPage.tsx, /src/index.css
