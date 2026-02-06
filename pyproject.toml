@@ -1,0 +1,53 @@
+# Backend Testing Configuration
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+testpaths = ["tests"]
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "-v",
+    "--strict-markers",
+    "--cov=app",
+    "--cov-report=html",
+    "--cov-report=term-missing",
+    "--cov-report=xml",
+    "--cov-fail-under=60",
+    "--tb=short",
+]
+markers = [
+    "unit: Unit tests",
+    "integration: Integration tests",
+    "integrations: Integration tests with external services",
+    "slow: Slow running tests",
+    "asyncio: Async tests",
+    "performance: Performance tests",
+    "ml: Machine Learning tests",
+]
+
+[tool.coverage.run]
+source = ["app"]
+omit = [
+    "*/tests/*",
+    "*/test_*.py",
+    "*/__init__.py",
+    "*/migrations/*",
+]
+
+[tool.coverage.report]
+precision = 2
+show_missing = true
+skip_covered = false
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "@abstractmethod",
+]
+
+[tool.coverage.html]
+directory = "htmlcov"
