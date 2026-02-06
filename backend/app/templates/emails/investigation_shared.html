@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Investigação Compartilhada - AgroADB</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f3f4f6;">
+    <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #f3f4f6;">
+        <tr>
+            <td style="padding: 40px 20px;">
+                <!-- Main Container -->
+                <table role="presentation" style="max-width: 600px; margin: 0 auto; background-color: white; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); overflow: hidden;">
+                    
+                    <!-- Header -->
+                    <tr>
+                        <td style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); padding: 40px 32px; text-align: center;">
+                            <h1 style="margin: 0; font-size: 32px; font-weight: 700; color: white; text-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                                🤝 Investigação Compartilhada
+                            </h1>
+                            <p style="margin: 12px 0 0; font-size: 16px; color: rgba(255,255,255,0.9);">
+                                AgroADB Intelligence Platform
+                            </p>
+                        </td>
+                    </tr>
+                    
+                    <!-- Content -->
+                    <tr>
+                        <td style="padding: 40px 32px;">
+                            
+                            <!-- Greeting -->
+                            <p style="margin: 0 0 24px; font-size: 18px; color: #374151;">
+                                Olá, <strong style="color: #111827;">{{ user_name }}</strong>!
+                            </p>
+                            
+                            <!-- Share Message -->
+                            <div style="background-color: #f3e8ff; border-left: 4px solid #8b5cf6; padding: 20px; border-radius: 6px; margin: 0 0 32px;">
+                                <p style="margin: 0 0 8px; font-size: 16px; font-weight: 600; color: #6b21a8;">
+                                    Nova investigação compartilhada com você!
+                                </p>
+                                <p style="margin: 0; font-size: 14px; color: #7c3aed; line-height: 1.6;">
+                                    <strong>{{ shared_by_name }}</strong> compartilhou uma investigação e você agora tem acesso aos dados.
+                                </p>
+                            </div>
+                            
+                            <!-- Investigation Details -->
+                            <h2 style="margin: 0 0 20px; font-size: 20px; font-weight: 600; color: #111827;">
+                                📋 Detalhes da Investigação
+                            </h2>
+                            
+                            <table role="presentation" style="width: 100%; border-collapse: collapse; margin-bottom: 32px;">
+                                <tr>
+                                    <td style="padding: 20px; background-color: #f9fafb; border-radius: 8px;">
+                                        <table role="presentation" style="width: 100%;">
+                                            <tr>
+                                                <td style="padding: 12px 0; border-bottom: 1px solid #e5e7eb;">
+                                                    <div style="font-size: 13px; color: #6b7280; margin-bottom: 4px;">Alvo da Investigação</div>
+                                                    <div style="font-size: 18px; font-weight: 600; color: #111827;">{{ target_name }}</div>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td style="padding: 12px 0; border-bottom: 1px solid #e5e7eb;">
+                                                    <div style="font-size: 13px; color: #6b7280; margin-bottom: 4px;">Compartilhado por</div>
+                                                    <div style="font-size: 16px; font-weight: 500; color: #374151;">{{ shared_by_name }}</div>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td style="padding: 12px 0;">
+                                                    <div style="font-size: 13px; color: #6b7280; margin-bottom: 8px;">Seu nível de acesso</div>
+                                                    <div style="display: inline-block; padding: 8px 16px; background-color: #8b5cf6; color: white; border-radius: 20px; font-size: 14px; font-weight: 600;">
+                                                        {{ permission_label }}
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+                            
+                            <!-- Permissions Info -->
+                            {% if permission_level == 'view' %}
+                            <div style="background-color: #eff6ff; border: 1px solid #bfdbfe; padding: 16px; border-radius: 6px; margin: 0 0 32px;">
+                                <p style="margin: 0; font-size: 13px; color: #1e40af; line-height: 1.6;">
+                                    ℹ️ <strong>Permissões:</strong> Você pode visualizar todos os dados desta investigação, 
+                                    mas não pode fazer alterações ou adicionar comentários.
+                                </p>
+                            </div>
+                            {% elif permission_level == 'comment' %}
+                            <div style="background-color: #eff6ff; border: 1px solid #bfdbfe; padding: 16px; border-radius: 6px; margin: 0 0 32px;">
+                                <p style="margin: 0; font-size: 13px; color: #1e40af; line-height: 1.6;">
+                                    ℹ️ <strong>Permissões:</strong> Você pode visualizar os dados e adicionar comentários, 
+                                    mas não pode fazer edições na investigação.
+                                </p>
+                            </div>
+                            {% elif permission_level == 'edit' %}
+                            <div style="background-color: #eff6ff; border: 1px solid #bfdbfe; padding: 16px; border-radius: 6px; margin: 0 0 32px;">
+                                <p style="margin: 0; font-size: 13px; color: #1e40af; line-height: 1.6;">
+                                    ℹ️ <strong>Permissões:</strong> Você pode visualizar, comentar e editar esta investigação. 
+                                    Suas alterações serão registradas no histórico.
+                                </p>
+                            </div>
+                            {% elif permission_level == 'admin' %}
+                            <div style="background-color: #fef3c7; border: 1px solid #fcd34d; padding: 16px; border-radius: 6px; margin: 0 0 32px;">
+                                <p style="margin: 0; font-size: 13px; color: #92400e; line-height: 1.6;">
+                                    ⚠️ <strong>Permissões de Administrador:</strong> Você tem controle total sobre esta investigação, 
+                                    incluindo compartilhamento com outros usuários e exclusão de dados.
+                                </p>
+                            </div>
+                            {% endif %}
+                            
+                            <!-- CTA Button -->
+                            <table role="presentation" style="width: 100%; margin: 0 0 32px;">
+                                <tr>
+                                    <td style="text-align: center;">
+                                        <a href="{{ frontend_url }}/investigations/{{ investigation_id }}" 
+                                           style="display: inline-block; 
+                                                  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); 
+                                                  color: white; 
+                                                  padding: 16px 40px; 
+                                                  text-decoration: none; 
+                                                  border-radius: 8px; 
+                                                  font-weight: 600;
+                                                  font-size: 16px;
+                                                  box-shadow: 0 4px 6px rgba(139, 92, 246, 0.3);
+                                                  transition: all 0.3s;">
+                                            Acessar Investigação →
+                                        </a>
+                                    </td>
+                                </tr>
+                            </table>
+                            
+                            <!-- Collaboration Tips -->
+                            <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; padding: 16px; border-radius: 6px; margin: 0 0 24px;">
+                                <p style="margin: 0 0 12px; font-size: 14px; font-weight: 600; color: #166534;">
+                                    💡 Dicas de Colaboração:
+                                </p>
+                                <ul style="margin: 0; padding-left: 20px; font-size: 13px; color: #15803d; line-height: 1.8;">
+                                    <li>Use comentários para discutir descobertas com a equipe</li>
+                                    <li>Adicione anotações privadas para referência pessoal</li>
+                                    <li>Exporte relatórios em PDF para apresentações</li>
+                                    <li>Confira o histórico de alterações para acompanhar o progresso</li>
+                                </ul>
+                            </div>
+                            
+                            <!-- Footer Message -->
+                            <p style="margin: 0; font-size: 14px; color: #6b7280; line-height: 1.6;">
+                                Esta é uma notificação automática do sistema AgroADB. 
+                                Para gerenciar suas preferências de notificação, acesse as 
+                                <a href="{{ frontend_url }}/settings/notifications" 
+                                   style="color: #8b5cf6; text-decoration: none; font-weight: 500;">
+                                    configurações
+                                </a>.
+                            </p>
+                        </td>
+                    </tr>
+                    
+                    <!-- Footer -->
+                    <tr>
+                        <td style="padding: 24px 32px; border-top: 1px solid #e5e7eb; background-color: #f9fafb;">
+                            <table role="presentation" style="width: 100%;">
+                                <tr>
+                                    <td style="text-align: center;">
+                                        <p style="margin: 0 0 8px; font-size: 14px; font-weight: 600; color: #111827;">
+                                            AgroADB
+                                        </p>
+                                        <p style="margin: 0 0 16px; font-size: 12px; color: #6b7280;">
+                                            Sistema de Inteligência para Due Diligence Rural
+                                        </p>
+                                        <p style="margin: 0; font-size: 11px; color: #9ca3af;">
+                                            © {{ year }} AgroADB. Todos os direitos reservados.
+                                        </p>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                    
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
