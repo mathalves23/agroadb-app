@@ -3,7 +3,7 @@
  * 
  * Visualização de dados com Recharts
  */
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   AreaChart,
   Area,
@@ -22,6 +22,7 @@ import {
 import { StaggerChildren } from '../components/Animations';
 import { Loading } from '../components/Loading';
 import { useTheme } from '../contexts/ThemeContext';
+import { investigationService } from '@/services/investigationService';
 
 export function DashboardCharts() {
   const { actualMode } = useTheme();
@@ -39,50 +40,34 @@ export function DashboardCharts() {
     fetchStats();
   }, []);
 
+  const statusPieData = useMemo(
+    () => (stats?.status_distribution ?? []).filter((s) => s.value > 0),
+    [stats],
+  );
+
+  const hasSeries = useMemo(() => {
+    if (!stats) return false;
+    return (
+      stats.investigations_by_month.some((x) => x.count > 0) ||
+      stats.properties_by_state.length > 0 ||
+      statusPieData.length > 0 ||
+      stats.scrapers_performance.length > 0
+    );
+  }, [stats, statusPieData]);
+
   const fetchStats = async () => {
     try {
       setLoading(true);
-      // TODO: Implementar chamada à API
-      // const response = await api.get('/statistics/dashboard');
-      // setStats(response.data);
-      
-      // Mock data
-      setTimeout(() => {
-        setStats({
-          investigations_by_month: [
-            { month: 'Jan', count: 12, completed: 10, failed: 2 },
-            { month: 'Fev', count: 18, completed: 15, failed: 3 },
-            { month: 'Mar', count: 25, completed: 22, failed: 3 },
-            { month: 'Abr', count: 30, completed: 28, failed: 2 },
-            { month: 'Mai', count: 28, completed: 25, failed: 3 },
-            { month: 'Jun', count: 35, completed: 32, failed: 3 }
-          ],
-          scrapers_performance: [
-            { name: 'CAR', success: 95, failed: 5 },
-            { name: 'INCRA', success: 92, failed: 8 },
-            { name: 'Receita', success: 88, failed: 12 },
-            { name: 'Diários', success: 85, failed: 15 },
-            { name: 'Cartórios', success: 90, failed: 10 },
-            { name: 'SIGEF', success: 87, failed: 13 }
-          ],
-          properties_by_state: [
-            { state: 'MT', count: 450 },
-            { state: 'MS', count: 380 },
-            { state: 'GO', count: 320 },
-            { state: 'SP', count: 290 },
-            { state: 'PR', count: 250 },
-            { state: 'MG', count: 220 }
-          ],
-          status_distribution: [
-            { name: 'Concluídas', value: 145, color: '#16a34a' },
-            { name: 'Em Progresso', value: 32, color: '#0ea5e9' },
-            { name: 'Pendentes', value: 18, color: '#f59e0b' },
-            { name: 'Falhas', value: 12, color: '#dc2626' }
-          ]
-        });
-        setLoading(false);
-      }, 1000);
-    } catch (error) {
+      const data = await investigationService.getDashboardStatistics();
+      setStats(data);
+    } catch {
+      setStats({
+        investigations_by_month: [],
+        scrapers_performance: [],
+        properties_by_state: [],
+        status_distribution: [],
+      });
+    } finally {
       setLoading(false);
     }
   };
@@ -94,6 +79,15 @@ export function DashboardCharts() {
   const isDark = actualMode === 'dark';
   const textColor = isDark ? '#e5e7eb' : '#374151';
   const gridColor = isDark ? '#374151' : '#e5e7eb';
+
+  if (!hasSeries) {
+    return (
+      <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50/50 p-8 text-center text-sm text-gray-500 dark:border-gray-700 dark:bg-gray-900/30 dark:text-gray-400">
+        Ainda não há dados suficientes para gráficos agregados. Crie investigações e associe imóveis ou consultas
+        legais para ver tendências aqui.
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -199,7 +193,7 @@ export function DashboardCharts() {
           <ResponsiveContainer width="100%" height={300}>
             <PieChart>
               <Pie
-                data={stats.status_distribution}
+                data={statusPieData.length ? statusPieData : [{ name: 'Sem dados', value: 1, color: '#e5e7eb' }]}
                 cx="50%"
                 cy="50%"
                 labelLine={false}
@@ -208,7 +202,8 @@ export function DashboardCharts() {
                 fill="#8884d8"
                 dataKey="value"
               >
-                {stats.status_distribution.map((entry, index: number) => (
+                {(statusPieData.length ? statusPieData : [{ name: 'Sem dados', value: 1, color: '#e5e7eb' }]).map(
+                  (entry, index: number) => (
                   <Cell key={`cell-${index}`} fill={entry.color} />
                 ))}
               </Pie>

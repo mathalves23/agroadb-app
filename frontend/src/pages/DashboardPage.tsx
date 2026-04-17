@@ -33,6 +33,7 @@ import { useMemo } from 'react'
 import { investigationService } from '@/services/investigationService'
 import { legalService } from '@/services/legalService'
 import { formatDate, formatCPFCNPJ } from '@/lib/utils'
+import { DashboardCharts } from '@/components/DashboardCharts'
 
 const PIE_COLORS = ['#059669', '#2563eb', '#7c3aed', '#d97706', '#0d9488', '#dc2626']
 
@@ -205,6 +206,11 @@ export default function DashboardPage() {
           </div>
         )}
       </div>
+
+      <section className="space-y-2" aria-label="Gráficos agregados">
+        <h2 className="text-sm font-semibold text-gray-700">Tendências e integrações</h2>
+        <DashboardCharts />
+      </section>
 
       {/* Alertas */}
       {failedCount > 0 && (

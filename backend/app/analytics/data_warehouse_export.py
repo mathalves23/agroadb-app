@@ -16,7 +16,7 @@ Versão: 1.0.0
 from typing import Dict, List, Optional, Any
 from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
-from sqlalchemy import text
+from sqlalchemy import text, func, and_
 import logging
 import json
 

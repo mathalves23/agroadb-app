@@ -8,6 +8,9 @@ Continuação do módulo de analytics de usuário.
 from typing import Dict, List, Optional, Any
 from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
+from sqlalchemy import func
+
+from app.domain.user import User
 from collections import defaultdict, Counter
 import statistics
 import random

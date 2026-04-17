@@ -3,6 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react'
 import { BrowserRouter } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import DashboardPage from '@/pages/DashboardPage'
+import { ThemeProvider } from '@/contexts/ThemeContext'
 import { useAuthStore } from '@/stores/authStore'
 import * as investigationService from '@/services/investigationService'
 
@@ -14,6 +15,12 @@ jest.mock('@/stores/authStore', () => ({
 jest.mock('@/services/investigationService', () => ({
   investigationService: {
     list: jest.fn(),
+    getDashboardStatistics: jest.fn().mockResolvedValue({
+      investigations_by_month: [{ month: 'Jan/2026', count: 1, completed: 0, failed: 0 }],
+      scrapers_performance: [{ name: 'datajud', success: 80, failed: 20 }],
+      properties_by_state: [{ state: 'SP', count: 2 }],
+      status_distribution: [{ name: 'Pendentes', value: 1, color: '#f59e0b' }],
+    }),
   },
 }))
 
@@ -37,7 +44,9 @@ const createWrapper = () => {
 
   return ({ children }: { children: React.ReactNode }) => (
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>{children}</BrowserRouter>
+      <ThemeProvider>
+        <BrowserRouter>{children}</BrowserRouter>
+      </ThemeProvider>
     </QueryClientProvider>
   )
 }
@@ -133,7 +142,7 @@ describe('DashboardPage Component', () => {
 
     render(<DashboardPage />, { wrapper: createWrapper() })
 
-    expect(screen.getByText(/carregando/i)).toBeInTheDocument()
+    expect(screen.getByText('Carregando...')).toBeInTheDocument()
   })
 
   it('should show empty state when no investigations', async () => {

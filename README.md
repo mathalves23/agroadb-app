@@ -23,7 +23,7 @@ Este repositório é **público**. Não inclua nele chaves API, passwords, URLs 
 ## Requisitos
 
 - **Docker** e **Docker Compose** (caminho recomendado para alinhar com CI e produção), ou
-- **Python 3.11+**, **Node.js 18+** e PostgreSQL (ou SQLite conforme configuração) para desenvolvimento manual.
+- **Python 3.11+**, **Node.js 20+** (alinhado ao CI) e PostgreSQL (ou SQLite conforme configuração) para desenvolvimento manual.
 
 ---
 
@@ -92,17 +92,26 @@ Sem Docker, execute o mesmo `python scripts/create_superuser.py` a partir de `ba
 
 ## Testes e qualidade
 
-```bash
-# Frontend (na pasta frontend/)
-npm run lint
-npm run build
-npm run test:ci
+### O que o CI valida (GitHub Actions)
 
-# Backend (na pasta backend/, com dependências de teste instaladas)
-pytest
+No ficheiro `.github/workflows/ci.yml`:
+
+- **Backend:** `flake8` (erros críticos E9/F63/F7/F82) e `pytest` em `tests/test_ci_smoke.py` + `tests/test_security.py`, com cobertura sobre `app`, contra PostgreSQL e Redis de serviço.
+- **Frontend:** `npm run lint`, `type-check`, `build` e `test:ci`.
+
+### Localmente
+
+```bash
+make lint
+make test                    # backend: smoke + segurança (alinhado ao CI)
+
+cd frontend && npm run lint && npm run build && npm run test:ci
+
+# Suíte completa de backend (muitos testes legacy ainda precisam de revisão de fixtures)
+cd backend && pytest tests/
 ```
 
-Os números exatos de testes mudam com o tempo; o objetivo é manter a suíte verde em pull requests.
+Não commite `.env` nem segredos. Use `.env.example` como referência. Para reporte de vulnerabilidades, veja [SECURITY.md](SECURITY.md).
 
 ---
 

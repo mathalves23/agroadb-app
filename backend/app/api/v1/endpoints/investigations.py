@@ -21,6 +21,8 @@ from app.repositories.investigation import InvestigationRepository
 from app.repositories.legal_query import LegalQueryRepository
 from app.core.config import settings
 from app.core.audit import audit_logger, AuditAction
+from app.schemas.dashboard_statistics import DashboardStatisticsResponse
+from app.services.dashboard_statistics import get_dashboard_statistics
 
 router = APIRouter()
 
@@ -95,7 +97,7 @@ async def list_investigations_cursor(
     db: DatabaseSession,
     cursor: str = Query(None, description="Cursor para paginação"),
     limit: int = Query(20, ge=1, le=100, description="Itens por página"),
-    order: str = Query("desc", regex="^(asc|desc)$"),
+    order: str = Query("desc", pattern="^(asc|desc)$"),
     status_filter: str = Query(None, alias="status"),
 ):
     """List investigations with cursor-based pagination (more efficient for large datasets)"""
@@ -127,6 +129,24 @@ async def list_investigations_cursor(
     ]
 
     return result.model_dump()
+
+
+@router.get(
+    "/dashboard-statistics",
+    response_model=DashboardStatisticsResponse,
+    summary="Estatísticas agregadas para dashboards",
+)
+async def dashboard_statistics(
+    current_user: CurrentUser,
+    db: DatabaseSession,
+) -> DashboardStatisticsResponse:
+    """Dados reais da base (investigações, imóveis por UF, consultas legais por provider)."""
+    data = await get_dashboard_statistics(
+        db,
+        current_user.id,
+        is_superuser=current_user.is_superuser,
+    )
+    return DashboardStatisticsResponse.model_validate(data)
 
 
 @router.get("/{investigation_id}", response_model=InvestigationResponse)
@@ -363,7 +383,8 @@ async def enrich_investigation(
     from app.domain.company import Company
     from sqlalchemy import select
     import random
-    
+    from datetime import datetime, timedelta
+
     # Verificar se já tem propriedades
     result = await db.execute(
         select(Property).where(Property.investigation_id == investigation_id)

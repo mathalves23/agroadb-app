@@ -4,14 +4,19 @@ Tests for Legal Integration Service
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+from unittest.mock import AsyncMock
 
 from app.services.legal_integration import (
     PJeService,
     DueDiligenceService,
     LegalIntegrationService,
-    PJeCase
+    PJeCase,
 )
 from app.domain.user import User
+from app.domain.investigation import InvestigationStatus
+from app.repositories.investigation import InvestigationRepository
+from app.repositories.legal_query import LegalQueryRepository
 
 
 class TestPJeService:
@@ -153,33 +158,66 @@ class TestDueDiligenceService:
     @pytest.mark.asyncio
     async def test_gerar_relatorio_completo(
         self,
-        db: Session,
-        dd_service: DueDiligenceService
+        dd_service: DueDiligenceService,
     ):
-        """Test generating complete report"""
-        report = await dd_service.gerar_relatorio_completo(db, 1)
-        
+        """Test generating complete report from investigation data (mocked DB)."""
+        inv = MagicMock()
+        inv.id = 1
+        inv.target_name = "Alvo Teste"
+        inv.target_cpf_cnpj = "12345678901"
+        inv.status = InvestigationStatus.COMPLETED
+        inv.completed_at = None
+        inv.properties = []
+        inv.companies = []
+
+        mock_db = AsyncMock(spec=AsyncSession)
+        with patch.object(
+            InvestigationRepository, "get_with_relations", new_callable=AsyncMock
+        ) as m_inv:
+            m_inv.return_value = inv
+            with patch.object(
+                LegalQueryRepository, "list_by_investigation", new_callable=AsyncMock
+            ) as m_lq:
+                m_lq.return_value = []
+                report = await dd_service.gerar_relatorio_completo(mock_db, 1)
+
         assert report is not None
         assert report.investigation_id == 1
-        assert "executive_summary" in report.dict()
-        assert "risk_analysis" in report.dict()
-        assert "financial_data" in report.dict()
-        assert "legal_data" in report.dict()
+        assert "executive_summary" in report.model_dump()
+        assert "risk_analysis" in report.model_dump()
+        assert "financial_data" in report.model_dump()
+        assert "legal_data" in report.model_dump()
     
     @pytest.mark.asyncio
     @patch('httpx.AsyncClient.post')
     async def test_exportar_para_sistema(
         self,
         mock_post,
-        db: Session,
-        dd_service: DueDiligenceService
+        dd_service: DueDiligenceService,
     ):
         """Test exporting to external system"""
         mock_response = MagicMock()
         mock_response.status_code = 200
         mock_post.return_value = mock_response
-        
-        report = await dd_service.gerar_relatorio_completo(db, 1)
+
+        inv = MagicMock()
+        inv.id = 1
+        inv.target_name = "Alvo"
+        inv.target_cpf_cnpj = None
+        inv.status = InvestigationStatus.PENDING
+        inv.completed_at = None
+        inv.properties = []
+        inv.companies = []
+        mock_db = AsyncMock(spec=AsyncSession)
+        with patch.object(
+            InvestigationRepository, "get_with_relations", new_callable=AsyncMock
+        ) as m_inv:
+            m_inv.return_value = inv
+            with patch.object(
+                LegalQueryRepository, "list_by_investigation", new_callable=AsyncMock
+            ) as m_lq:
+                m_lq.return_value = []
+                report = await dd_service.gerar_relatorio_completo(mock_db, 1)
         
         from app.services.legal_integration import LegalSystemIntegration
         integration = LegalSystemIntegration(
@@ -207,8 +245,7 @@ class TestLegalIntegrationService:
     async def test_sincronizar_processos(
         self,
         mock_consultar,
-        db: Session,
-        legal_service: LegalIntegrationService
+        legal_service: LegalIntegrationService,
     ):
         """Test synchronizing processes"""
         mock_consultar.return_value = [
@@ -219,27 +256,26 @@ class TestLegalIntegrationService:
                 movimentacoes=[]
             )
         ]
-        
+
         result = await legal_service.sincronizar_processos(
-            db=db,
+            db=AsyncMock(spec=AsyncSession),
             cpf_cnpj="12.345.678/0001-90",
-            investigation_id=1
+            investigation_id=1,
         )
         
         assert result["success"] is True
         assert result["total_processos"] == 1
     
     @pytest.mark.asyncio
-    @patch.object(DueDiligenceService, 'gerar_relatorio_completo')
+    @patch.object(DueDiligenceService, "gerar_relatorio_completo", new_callable=AsyncMock)
     async def test_gerar_e_exportar_due_diligence(
         self,
         mock_gerar,
-        db: Session,
-        legal_service: LegalIntegrationService
+        legal_service: LegalIntegrationService,
     ):
         """Test generating and exporting due diligence"""
         from app.services.legal_integration import DueDiligenceExport
-        
+
         mock_report = DueDiligenceExport(
             investigation_id=1,
             target_name="Test Company",
@@ -250,12 +286,12 @@ class TestLegalIntegrationService:
             legal_data={},
             properties=[],
             companies=[],
-            red_flags=[]
+            red_flags=[],
         )
         mock_gerar.return_value = mock_report
-        
+
         result = await legal_service.gerar_e_exportar_due_diligence(
-            db=db,
+            db=AsyncMock(spec=AsyncSession),
             investigation_id=1,
             target_system=None
         )

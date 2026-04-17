@@ -18,6 +18,7 @@ from app.services.legal_integration import (
 )
 from app.services.datajud import DataJudService
 from app.repositories.legal_query import LegalQueryRepository
+from app.repositories.investigation import InvestigationRepository
 from app.core.audit import AuditLogger
 
 # Inicializar o audit logger
@@ -157,7 +158,7 @@ async def consultar_processos_parte(
         return {
             "success": True,
             "total": len(processos),
-            "processos": [p.dict() for p in processos]
+            "processos": [p.model_dump() for p in processos]
         }
     
     except Exception as e:
@@ -304,11 +305,15 @@ async def gerar_due_diligence(
     Cria um relatório completo de due diligence para a investigação
     """
     try:
-        # Gerar relatório
+        inv_repo = InvestigationRepository(db)
+        inv = await inv_repo.get(investigation_id)
+        if not inv or (inv.user_id != current_user.id and not current_user.is_superuser):
+            raise HTTPException(status_code=404, detail="Investigação não encontrada")
+
         report = await legal_integration_service.due_diligence_service.gerar_relatorio_completo(
             db, investigation_id
         )
-        
+
         # Log de auditoria
         await audit_logger.log_action(
             db=db,
@@ -326,9 +331,13 @@ async def gerar_due_diligence(
         
         return {
             "success": True,
-            "report": report.dict()
+            "report": report.model_dump()
         }
     
+    except HTTPException:
+        raise
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao gerar due diligence: {str(e)}")
 
@@ -345,7 +354,11 @@ async def exportar_due_diligence(
     Envia relatório de due diligence para ferramenta jurídica integrada
     """
     try:
-        # Gerar e exportar
+        inv_repo = InvestigationRepository(db)
+        inv = await inv_repo.get(data.investigation_id)
+        if not inv or (inv.user_id != current_user.id and not current_user.is_superuser):
+            raise HTTPException(status_code=404, detail="Investigação não encontrada")
+
         result = await legal_integration_service.gerar_e_exportar_due_diligence(
             db,
             data.investigation_id,
@@ -368,7 +381,9 @@ async def exportar_due_diligence(
         )
         
         return result
-    
+
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao exportar: {str(e)}")
 
@@ -452,7 +467,7 @@ async def configurar_integracao(
     return {
         "success": True,
         "message": "Integração configurada com sucesso",
-        "integration": data.dict()
+        "integration": data.model_dump()
     }
 
 @router.get("/integrations/list")

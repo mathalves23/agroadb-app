@@ -210,7 +210,7 @@ agroadb/
 │
 ├── .github/                  # GitHub Actions
 │   └── workflows/
-│       └── ci-cd.yml        # Pipeline CI/CD
+│       └── ci.yml           # Pipeline CI (lint + testes + build)
 │
 ├── docker-compose.production.yml  # Stack de produção
 ├── .env.example              # Exemplo de variáveis

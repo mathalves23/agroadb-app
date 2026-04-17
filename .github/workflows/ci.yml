@@ -1,0 +1,108 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+permissions:
+  contents: read
+
+env:
+  PYTHON_VERSION: "3.11"
+  NODE_VERSION: "20"
+
+jobs:
+  backend:
+    name: Backend (lint + smoke)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: agroadb
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: agroadb_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Instalar dependências
+        env:
+          PIP_INDEX_URL: https://pypi.org/simple
+        run: pip install -r backend/requirements.txt
+
+      - name: Flake8 (erros sintáticos e nomes indefinidos)
+        run: |
+          cd backend
+          flake8 app --count --select=E9,F63,F7,F82 --show-source --statistics
+
+      - name: Pytest (smoke + segurança + cobertura)
+        env:
+          DATABASE_URL: postgresql+asyncpg://agroadb:test_password@localhost:5432/agroadb_test
+          REDIS_URL: redis://localhost:6379/0
+          SECRET_KEY: ci-test-secret-key-at-least-32-chars-long
+          ENCRYPTION_KEY: dGVzdC1lbmNyeXB0aW9uLWtleS0zMi1ieXRlcw==
+        run: |
+          cd backend
+          pytest tests/test_ci_smoke.py tests/test_security.py -v \
+            --cov=app --cov-report=xml --cov-report=term-missing
+
+      - name: Upload cobertura (opcional)
+        uses: codecov/codecov-action@v4
+        continue-on-error: true
+        with:
+          files: backend/coverage.xml
+          flags: backend
+          fail_ci_if_error: false
+
+  frontend:
+    name: Frontend (lint + types + build + testes)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: npm ci
+        run: npm ci
+        working-directory: frontend
+
+      - run: npm run lint
+        working-directory: frontend
+
+      - run: npm run type-check
+        working-directory: frontend
+
+      - run: npm run build
+        working-directory: frontend
+
+      - run: npm run test:ci
+        working-directory: frontend

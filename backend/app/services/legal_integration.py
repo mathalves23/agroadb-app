@@ -5,9 +5,12 @@ Sistema de integração com APIs e sistemas jurídicos
 from typing import Dict, Any, List, Optional
 from datetime import datetime
 from pydantic import BaseModel, Field
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 import httpx
 from app.core.config import settings
+from app.domain.investigation import Investigation, InvestigationStatus
+from app.repositories.investigation import InvestigationRepository
+from app.repositories.legal_query import LegalQueryRepository
 
 # ==================== Models ====================
 
@@ -157,88 +160,138 @@ class PJeService:
 
 # ==================== Serviço de Due Diligence ====================
 
+
+def _due_diligence_from_investigation(
+    investigation: Investigation,
+    legal_queries: List[Any],
+) -> DueDiligenceExport:
+    props = investigation.properties or []
+    comps = investigation.companies or []
+    target_doc = investigation.target_cpf_cnpj or ""
+
+    total_results = sum(getattr(q, "result_count", 0) or 0 for q in legal_queries)
+    providers = {getattr(q, "provider", "") for q in legal_queries}
+
+    red_flags: List[str] = []
+    if investigation.status == InvestigationStatus.FAILED:
+        red_flags.append("Investigação concluída com falha — rever fontes e parâmetros")
+    if total_results > 80:
+        red_flags.append("Volume muito elevado de resultados em consultas legais — priorizar revisão humana")
+    for p in props:
+        raw = getattr(p, "raw_data", None) or {}
+        blob = str(raw).lower()
+        if "embargo" in blob or "embarg" in blob:
+            red_flags.append(f"Possível menção a embargo em imóvel (id {p.id})")
+    for c in comps:
+        cap = c.capital or 0
+        if cap and cap < 1000:
+            red_flags.append(f"Capital social muito baixo em {c.cnpj}")
+
+    if investigation.status == InvestigationStatus.COMPLETED and not red_flags:
+        red_flags.append("Nenhum alerta heurístico automático — validar manualmente")
+
+    overall = "low"
+    if investigation.status == InvestigationStatus.FAILED or len(red_flags) >= 3:
+        overall = "high"
+    elif total_results > 25 or len(props) > 5:
+        overall = "medium"
+
+    executive_summary = {
+        "status": investigation.status.value if hasattr(investigation.status, "value") else str(investigation.status),
+        "risk_level": {"low": "Baixo", "medium": "Médio", "high": "Alto"}.get(overall, overall),
+        "total_properties": len(props),
+        "total_companies": len(comps),
+        "red_flags_count": len(red_flags),
+        "legal_queries": len(legal_queries),
+        "legal_providers": sorted(providers),
+        "completion_date": investigation.completed_at.isoformat()
+        if investigation.completed_at
+        else None,
+    }
+
+    risk_analysis = {
+        "overall_risk": overall,
+        "financial_risk": "unknown",
+        "legal_risk": "high" if total_results > 30 else "medium" if total_results > 5 else "low",
+        "operational_risk": "medium" if len(legal_queries) > 15 else "low",
+        "factors": [
+            f"{len(props)} imóveis indexados",
+            f"{len(comps)} empresas indexadas",
+            f"{len(legal_queries)} consultas legais registadas",
+        ],
+    }
+
+    estimated_land_value = sum(
+        (p.area_hectares or 0) * 45000.0 for p in props
+    )  # ordem de grandeza genérica (R$), não substitui avaliação
+
+    financial_data = {
+        "total_assets": round(estimated_land_value, 2),
+        "total_liabilities": None,
+        "net_worth": None,
+        "revenue_last_year": None,
+        "note": "Valores patrimoniais são heurísticos (área × constante); não são laudos oficiais",
+    }
+
+    legal_data = {
+        "legal_query_count": len(legal_queries),
+        "total_result_rows": total_results,
+        "providers": sorted(providers),
+    }
+
+    properties_out = [
+        {
+            "matricula": p.matricula,
+            "car": p.car_number,
+            "area_ha": p.area_hectares,
+            "estado": p.state,
+            "municipio": p.city,
+            "fonte": p.data_source,
+        }
+        for p in props
+    ]
+    companies_out = [
+        {
+            "cnpj": c.cnpj,
+            "razao_social": c.corporate_name,
+            "nome_fantasia": c.trade_name,
+            "capital_social": c.capital,
+            "fonte": c.data_source,
+        }
+        for c in comps
+    ]
+
+    return DueDiligenceExport(
+        investigation_id=investigation.id,
+        target_name=investigation.target_name,
+        target_document=target_doc,
+        executive_summary=executive_summary,
+        risk_analysis=risk_analysis,
+        financial_data=financial_data,
+        legal_data=legal_data,
+        properties=properties_out,
+        companies=companies_out,
+        red_flags=red_flags[:20],
+    )
+
+
 class DueDiligenceService:
     """Serviço para exportação de relatórios de due diligence"""
-    
+
     @staticmethod
     async def gerar_relatorio_completo(
-        db: Session, 
-        investigation_id: int
+        db: AsyncSession,
+        investigation_id: int,
     ) -> DueDiligenceExport:
-        """
-        Gera relatório completo de due diligence
-        
-        Args:
-            db: Sessão do banco de dados
-            investigation_id: ID da investigação
-        
-        Returns:
-            Relatório de due diligence estruturado
-        """
-        # TODO: Buscar dados reais da investigação
-        # investigation = db.query(Investigation).filter_by(id=investigation_id).first()
-        
-        # Simulação para exemplo
-        report = DueDiligenceExport(
-            investigation_id=investigation_id,
-            target_name="Fazenda São João Ltda",
-            target_document="12.345.678/0001-90",
-            executive_summary={
-                "status": "Concluída",
-                "risk_level": "Médio",
-                "total_properties": 15,
-                "total_companies": 3,
-                "red_flags_count": 4,
-                "completion_date": datetime.now().isoformat()
-            },
-            risk_analysis={
-                "overall_risk": "medium",
-                "financial_risk": "low",
-                "legal_risk": "high",
-                "operational_risk": "medium",
-                "factors": [
-                    "Processos trabalhistas ativos",
-                    "Propriedades com pendências ambientais",
-                    "Boa saúde financeira"
-                ]
-            },
-            financial_data={
-                "total_assets": 25000000.00,
-                "total_liabilities": 8500000.00,
-                "net_worth": 16500000.00,
-                "revenue_last_year": 12000000.00
-            },
-            legal_data={
-                "active_lawsuits": 12,
-                "environmental_issues": 3,
-                "labor_lawsuits": 5,
-                "tax_issues": 2
-            },
-            properties=[
-                {
-                    "matricula": "12345",
-                    "area": 500.0,
-                    "estado": "SP",
-                    "municipio": "Ribeirão Preto",
-                    "valor_estimado": 5000000.00
-                }
-            ],
-            companies=[
-                {
-                    "cnpj": "12.345.678/0001-90",
-                    "razao_social": "Fazenda São João Ltda",
-                    "capital_social": 1000000.00
-                }
-            ],
-            red_flags=[
-                "⚠️ Processos trabalhistas com alto valor de causa",
-                "⚠️ Embargo ambiental em propriedade",
-                "⚠️ Certidão negativa de débitos vencida",
-                "⚠️ Sócio com restrições no CPF"
-            ]
-        )
-        
-        return report
+        inv_repo = InvestigationRepository(db)
+        investigation = await inv_repo.get_with_relations(investigation_id)
+        if not investigation:
+            raise ValueError(f"Investigação {investigation_id} não encontrada")
+
+        lq_repo = LegalQueryRepository(db)
+        legal_queries = await lq_repo.list_by_investigation(investigation_id)
+
+        return _due_diligence_from_investigation(investigation, legal_queries)
     
     @staticmethod
     async def exportar_para_sistema(
@@ -287,10 +340,10 @@ class LegalIntegrationService:
         self.due_diligence_service = DueDiligenceService()
     
     async def sincronizar_processos(
-        self, 
-        db: Session, 
+        self,
+        db: AsyncSession,
         cpf_cnpj: str,
-        investigation_id: Optional[int] = None
+        investigation_id: Optional[int] = None,
     ) -> Dict[str, Any]:
         """
         Sincroniza processos judiciais de uma parte
@@ -329,9 +382,9 @@ class LegalIntegrationService:
     
     async def gerar_e_exportar_due_diligence(
         self,
-        db: Session,
+        db: AsyncSession,
         investigation_id: int,
-        target_system: Optional[LegalSystemIntegration] = None
+        target_system: Optional[LegalSystemIntegration] = None,
     ) -> Dict[str, Any]:
         """
         Gera relatório de due diligence e exporta para sistema externo

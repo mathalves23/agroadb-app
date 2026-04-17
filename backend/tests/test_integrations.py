@@ -10,6 +10,7 @@ from app.integrations.orgaos_federais import OrgaoFederalIntegration
 from app.integrations.bureaus import BureauIntegration
 from app.integrations.comunicacao import SlackIntegration, TeamsIntegration
 
+pytestmark = pytest.mark.integrations
 
 # CAR Tests
 
@@ -274,6 +275,3 @@ async def test_full_integration_workflow():
     
     # Workflow completo executado com sucesso
     assert True
-
-
-pytest.mark = pytest.mark.integrations

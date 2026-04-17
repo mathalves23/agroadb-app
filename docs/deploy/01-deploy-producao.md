@@ -132,14 +132,11 @@ aws cloudfront create-distribution \
   --default-root-object index.html
 ```
 
-#### Passo 6: Deploy via CI/CD
+#### Passo 6: CI e deploy
 
-O arquivo `.github/workflows/ci-cd.yml` já está configurado!
+O ficheiro `.github/workflows/ci.yml` executa **lint, testes mínimos e build** em cada push/PR (backend: smoke + segurança; frontend: ESLint, TypeScript, Jest, Vite).
 
-Adicione os secrets no GitHub:
-- `AWS_ACCESS_KEY_ID`
-- `AWS_SECRET_ACCESS_KEY`
-- `CLOUDFRONT_DISTRIBUTION_ID`
+O **deploy** para AWS/GCP/etc. depende da sua conta e não deve ser hardcoded no repositório público: use `docker-compose.prod.yml`, imagens no seu registo e secrets apenas no ambiente de CI/CD que **você** configurar (por exemplo `workflow_dispatch` com credenciais armazenadas como GitHub Secrets).
 
 ### GCP (Google Cloud Platform)
 

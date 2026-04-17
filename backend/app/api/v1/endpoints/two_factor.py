@@ -2,7 +2,7 @@
 Two-Factor Authentication Endpoints
 """
 from fastapi import APIRouter, HTTPException, status, Depends
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from sqlalchemy import select
 
 from app.api.v1.deps import DatabaseSession, CurrentUser
@@ -14,8 +14,9 @@ two_factor_service = TwoFactorService()
 
 
 class Enable2FARequest(BaseModel):
-    """Request to enable 2FA — returns QR code and backup codes"""
-    pass
+    """Request to enable 2FA — corpo vazio; fluxo real em /enable."""
+
+    model_config = ConfigDict(extra="forbid")
 
 
 class Verify2FARequest(BaseModel):

@@ -65,6 +65,19 @@ export interface InvestigationListResponse {
   total_pages: number
 }
 
+/** Estatísticas agregadas (GET /investigations/dashboard-statistics) */
+export interface DashboardStatistics {
+  investigations_by_month: Array<{
+    month: string
+    count: number
+    completed: number
+    failed: number
+  }>
+  scrapers_performance: Array<{ name: string; success: number; failed: number }>
+  properties_by_state: Array<{ state: string; count: number }>
+  status_distribution: Array<{ name: string; value: number; color: string }>
+}
+
 export interface Property {
   id: number
   investigation_id: number

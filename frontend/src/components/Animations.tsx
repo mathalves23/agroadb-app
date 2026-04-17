@@ -3,7 +3,7 @@
  * 
  * Wrapper components para adicionar animações consistentes
  */
-import React, { ReactNode } from 'react';
+import { Children, useState, useEffect, type ReactNode } from 'react';
 import { motion, AnimatePresence, Variants } from 'framer-motion';
 
 // Fade In
@@ -120,8 +120,8 @@ export function StaggerChildren({
       animate="show"
       className={className}
     >
-      {React.Children.map(children, (child) => (
-        <motion.div variants={item}>
+      {Children.map(children, (child, index) => (
+        <motion.div key={index} variants={item}>
           {child}
         </motion.div>
       ))}
@@ -207,9 +207,9 @@ interface ShakeProps {
 }
 
 export function Shake({ children, trigger, className = '' }: ShakeProps) {
-  const [key, setKey] = React.useState(0);
+  const [key, setKey] = useState(0);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (trigger) {
       setKey((prev) => prev + 1);
     }

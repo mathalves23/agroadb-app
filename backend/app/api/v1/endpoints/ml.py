@@ -6,7 +6,8 @@ from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from typing import Optional
 from pydantic import BaseModel
 
-from app.api.v1.deps import get_current_user, get_db
+from app.api.v1.deps import get_current_user
+from app.core.database import get_db
 from app.domain.user import User
 from app.services.ml.risk_scoring import RiskScoringEngine
 from app.services.ml.pattern_detection import PatternDetectionEngine
@@ -338,7 +339,7 @@ async def comprehensive_analysis(
                 "clusters": network.clusters,
                 "key_players_count": len(network.key_players)
             },
-            "overall_assessment": cls._generate_overall_assessment(
+            "overall_assessment": _generate_overall_assessment(
                 risk_score,
                 patterns,
                 network

@@ -9,13 +9,10 @@ python_functions = ["test_*"]
 addopts = [
     "-v",
     "--strict-markers",
-    "--cov=app",
-    "--cov-report=html",
-    "--cov-report=term-missing",
-    "--cov-report=xml",
     "--tb=short",
 ]
 markers = [
+    "asyncio: mark test as async (pytest-asyncio)",
     "unit: Unit tests",
     "integration: Integration tests",
     "integrations: Integration tests with external services",

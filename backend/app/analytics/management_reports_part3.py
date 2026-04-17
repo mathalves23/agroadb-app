@@ -8,6 +8,7 @@ Relatório de erros e integração de todos os relatórios gerenciais.
 from typing import Dict, List, Optional, Any
 from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
+from sqlalchemy import and_
 from collections import defaultdict, Counter
 
 from app.analytics.management_reports import ErrorMetrics

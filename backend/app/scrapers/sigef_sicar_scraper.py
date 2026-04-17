@@ -9,7 +9,12 @@ Integração com sistemas de georreferenciamento:
 from typing import List, Dict, Any, Optional, Tuple
 from datetime import datetime, timedelta
 import logging
+import math
 import re
+
+from shapely.geometry import shape
+from shapely.validation import explain_validity
+from pyproj import Transformer
 
 from app.scrapers.base import BaseScraper
 
@@ -336,24 +341,44 @@ class SIGEFSICARScraper(BaseScraper):
             Área calculada e métricas
         """
         try:
-            coords = geometry.get("coordinates", [[]])
-            
-            if not coords or len(coords) == 0:
+            raw = shape(geometry)
+            was_valid = raw.is_valid
+            geom = raw if was_valid else raw.buffer(0)
+            if geom.is_empty:
                 return {"area_ha": 0, "perimetro_m": 0}
-            
-            # TODO: Implementar cálculo real usando biblioteca geoespacial
-            # Por enquanto, retornar valores aproximados
-            
+
+            centroid = geom.centroid
+            lat_rad = math.radians(centroid.y)
+            m_per_deg_lat = 111_320.0
+            m_per_deg_lon = 111_320.0 * max(0.2, math.cos(lat_rad))
+            scale = m_per_deg_lat * m_per_deg_lon
+            area_m2 = max(0.0, geom.area * scale)
+            perim_m = max(0.0, geom.length * (m_per_deg_lat + m_per_deg_lon) / 2)
+
+            area_ha = area_m2 / 10_000.0
+            alq_paulista_m2 = 24_200.0
+
+            if geom.geom_type == "Polygon" and geom.exterior:
+                coord_count = len(geom.exterior.coords)
+            elif geom.geom_type == "MultiPolygon":
+                coord_count = sum(len(p.exterior.coords) for p in geom.geoms if not p.is_empty)
+            elif geom.geom_type == "Point":
+                coord_count = 1
+            else:
+                coord_count = 0
+
             return {
-                "area_ha": 250.5,
-                "area_m2": 2505000.0,
-                "area_alqueire": 102.0,  # 1 alqueire paulista = 24200 m²
-                "perimetro_m": 6500.0,
-                "perimetro_km": 6.5,
-                "coordinate_count": len(coords[0]) if coords else 0,
+                "area_ha": round(area_ha, 4),
+                "area_m2": round(area_m2, 2),
+                "area_alqueire": round(area_m2 / alq_paulista_m2, 4),
+                "perimetro_m": round(perim_m, 2),
+                "perimetro_km": round(perim_m / 1000.0, 4),
+                "coordinate_count": coord_count,
                 "geometry_type": geometry.get("type"),
+                "validity_note": None if was_valid else explain_validity(raw),
+                "approximation": "WGS84 graus → metros via latitude do centróide (ordem de grandeza)",
             }
-        
+
         except Exception as e:
             logger.error(f"Error calculating area: {str(e)}")
             return {"error": str(e)}
@@ -374,16 +399,41 @@ class SIGEFSICARScraper(BaseScraper):
             Análise de sobreposição
         """
         try:
-            # TODO: Implementar verificação real com biblioteca geoespacial
-            
+            g1 = shape(geometry1)
+            g2 = shape(geometry2)
+            if not g1.is_valid:
+                g1 = g1.buffer(0)
+            if not g2.is_valid:
+                g2 = g2.buffer(0)
+            if g1.is_empty or g2.is_empty:
+                return {
+                    "has_overlap": False,
+                    "overlap_area_ha": 0.0,
+                    "overlap_percentage": 0.0,
+                    "distance_m": None,
+                    "analysis_method": "Shapely intersection",
+                }
+
+            inter = g1.intersection(g2)
+            has_overlap = not inter.is_empty and inter.area > 0
+            c1, c2 = g1.centroid, g2.centroid
+            lat_rad = math.radians((c1.y + c2.y) / 2)
+            scale = 111_320.0 * max(0.2, math.cos(lat_rad)) * 111_320.0
+            overlap_m2 = max(0.0, inter.area * scale) if has_overlap else 0.0
+            overlap_ha = overlap_m2 / 10_000.0
+            a1 = max(g1.area * scale, 1e-9)
+            pct = min(100.0, 100.0 * overlap_m2 / a1) if has_overlap else 0.0
+            dist_deg = g1.distance(g2)
+            dist_m = dist_deg * math.sqrt(scale)
+
             return {
-                "has_overlap": False,
-                "overlap_area_ha": 0.0,
-                "overlap_percentage": 0.0,
-                "distance_m": 150.0,  # Distância mínima entre geometrias
-                "analysis_method": "Shapely intersection",
+                "has_overlap": has_overlap,
+                "overlap_area_ha": round(overlap_ha, 6),
+                "overlap_percentage": round(pct, 4),
+                "distance_m": round(dist_m, 3),
+                "analysis_method": "Shapely intersection + escala aproximada WGS84",
             }
-        
+
         except Exception as e:
             logger.error(f"Error verifying overlap: {str(e)}")
             return {"error": str(e)}
@@ -406,12 +456,21 @@ class SIGEFSICARScraper(BaseScraper):
             Coordenadas convertidas
         """
         try:
-            # TODO: Implementar conversão real usando pyproj
-            
-            # Por enquanto, retornar as mesmas coordenadas
-            # (SIRGAS2000 e WGS84 são praticamente idênticos no Brasil)
+            f = (from_datum or "").upper()
+            t = (to_datum or "").upper()
+            if f == t or not coordinates:
+                return coordinates
+
+            if "SIRGAS" in f and ("WGS84" in t or "EPSG:4326" in t):
+                transformer = Transformer.from_crs("EPSG:4674", "EPSG:4326", always_xy=True)
+                return [transformer.transform(lon, lat) for lon, lat in coordinates]
+
+            if "WGS84" in f and "SIRGAS" in t:
+                transformer = Transformer.from_crs("EPSG:4326", "EPSG:4674", always_xy=True)
+                return [transformer.transform(lon, lat) for lon, lat in coordinates]
+
             return coordinates
-        
+
         except Exception as e:
             logger.error(f"Error converting datum: {str(e)}")
             return coordinates

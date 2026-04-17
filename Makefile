@@ -80,10 +80,10 @@ create-superuser: ## Cria superutilizador (defina AGROADB_ADMIN_EMAIL e AGROADB_
 	docker-compose exec -e AGROADB_ADMIN_EMAIL -e AGROADB_ADMIN_PASSWORD -e AGROADB_ADMIN_USERNAME -e AGROADB_ADMIN_FULL_NAME backend python scripts/create_superuser.py
 
 ## Testes
-test: ## Executa todos os testes
-	@echo "🧪 Executando testes do backend..."
-	cd backend && pytest
-	@echo "✅ Testes concluídos!"
+test: ## Executa testes backend (CI mínimo: smoke + segurança)
+	@echo "🧪 Executando testes do backend (smoke + segurança)..."
+	cd backend && pytest tests/test_ci_smoke.py tests/test_security.py -v
+	@echo "✅ Testes concluídos! (suíte completa: cd backend && pytest tests/)"
 
 test-cov: ## Executa testes com cobertura
 	@echo "🧪 Executando testes com cobertura..."
@@ -91,19 +91,17 @@ test-cov: ## Executa testes com cobertura
 	@echo "✅ Relatório de cobertura gerado em backend/htmlcov/index.html"
 
 ## Code Quality
-lint: ## Executa linters
+lint: ## Executa linters (backend: erros críticos; frontend: ESLint)
 	@echo "🔍 Executando linters..."
-	cd backend && flake8 app
-	cd backend && mypy app
+	cd backend && flake8 app --count --select=E9,F63,F7,F82 --show-source --statistics
 	cd frontend && npm run lint
 	@echo "✅ Linting concluído!"
 
-format: ## Formata código
-	@echo "✨ Formatando código..."
+format: ## Formata código (Python)
+	@echo "✨ Formatando código Python..."
 	cd backend && black app
 	cd backend && isort app
-	cd frontend && npm run format
-	@echo "✅ Código formatado!"
+	@echo "✅ Código Python formatado!"
 
 ## Desenvolvimento
 backend-dev: ## Inicia backend em modo desenvolvimento

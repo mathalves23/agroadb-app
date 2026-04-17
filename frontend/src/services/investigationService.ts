@@ -6,6 +6,7 @@ import type {
   Property,
   LeaseContract,
   Company,
+  DashboardStatistics,
 } from '@/types/api'
 
 export const investigationService = {
@@ -18,6 +19,11 @@ export const investigationService = {
     const response = await api.get<InvestigationListResponse>('/investigations', {
       params: { page, page_size: pageSize },
     })
+    return response.data
+  },
+
+  async getDashboardStatistics(): Promise<DashboardStatistics> {
+    const response = await api.get<DashboardStatistics>('/investigations/dashboard-statistics')
     return response.data
   },
 
