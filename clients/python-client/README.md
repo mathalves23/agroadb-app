@@ -1,15 +1,14 @@
 # AgroADB Python Client
 
-[![PyPI version](https://badge.fury.io/py/agroadb.svg)](https://badge.fury.io/py/agroadb)
-[![Python Support](https://img.shields.io/pypi/pyversions/agroadb.svg)](https://pypi.org/project/agroadb/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Cliente Python oficial para a API do **AgroADB** - Sistema de Análise de Dados Agrários.
+Cliente Python de referência para consumir a **API AgroADB** na URL base que **você** configurar (instância própria ou ambiente de desenvolvimento).
 
-## 🚀 Instalação
+## Instalação a partir deste repositório
 
 ```bash
-pip install agroadb
+cd clients/python-client
+pip install -e .
 ```
 
 ## 📋 Requisitos
@@ -25,7 +24,7 @@ pip install agroadb
 from agroadb import AgroADBClient
 
 # Criar cliente
-client = AgroADBClient(base_url="https://api.agroadb.com")
+client = AgroADBClient(base_url="http://localhost:8000")
 
 # Login
 client.login("usuario@email.com", "senha")
@@ -37,7 +36,7 @@ client.login("usuario@email.com", "senha")
 from agroadb import create_client
 import os
 
-os.environ["AGROADB_BASE_URL"] = "https://api.agroadb.com"
+os.environ["AGROADB_BASE_URL"] = "http://localhost:8000"
 os.environ["AGROADB_API_KEY"] = "sua_api_key"
 
 client = create_client()
@@ -203,7 +202,7 @@ rs_result = client.export.export_to_redshift(
 ### Login com usuário e senha
 
 ```python
-client = AgroADBClient(base_url="https://api.agroadb.com")
+client = AgroADBClient(base_url="http://localhost:8000")
 response = client.login("usuario@email.com", "senha")
 
 # Tokens são armazenados automaticamente
@@ -214,7 +213,7 @@ print(client.access_token)
 
 ```python
 client = AgroADBClient(
-    base_url="https://api.agroadb.com",
+    base_url="http://localhost:8000",
     api_key="sua_api_key_aqui"
 )
 ```
@@ -239,7 +238,7 @@ client.logout()  # Limpa tokens armazenados
 
 ```python
 client = AgroADBClient(
-    base_url="https://api.agroadb.com",
+    base_url="http://localhost:8000",
     timeout=60,  # 60 segundos
     max_retries=5  # Máximo de tentativas
 )
@@ -249,7 +248,7 @@ client = AgroADBClient(
 
 ```python
 client = AgroADBClient(
-    base_url="https://api.agroadb.com",
+    base_url="http://localhost:8000",
     verify_ssl=False
 )
 ```
@@ -306,7 +305,7 @@ O cliente inclui type hints completos para melhor experiência de desenvolviment
 from agroadb import AgroADBClient
 from typing import List, Dict, Any
 
-client: AgroADBClient = AgroADBClient(base_url="https://api.agroadb.com")
+client: AgroADBClient = AgroADBClient(base_url="http://localhost:8000")
 
 investigations: List[Dict[str, Any]] = client.investigations.list()
 investigation: Dict[str, Any] = client.investigations.get(123)
@@ -344,13 +343,12 @@ Contribuições são bem-vindas! Por favor:
 
 ## 📞 Suporte
 
-- **Documentação**: https://docs.agroadb.com
+- **Documentação**: ficheiros `docs/` na raiz do monorepo
 - **Issues**: https://github.com/agroadb/python-client/issues
-- **Email**: dev@agroadb.com
 
 ## 🔗 Links Úteis
 
-- [Documentação da API](https://docs.agroadb.com/api)
+- Documentação da API: endpoint `/docs` ou `/redoc` na sua instância FastAPI
 - [Exemplos](https://github.com/agroadb/python-client/tree/main/examples)
 - [Changelog](https://github.com/agroadb/python-client/blob/main/CHANGELOG.md)
 

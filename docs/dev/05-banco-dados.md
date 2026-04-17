@@ -149,7 +149,7 @@ results = db.query(Investigation).filter(
 
 ## 💾 Backup
 
-Backups automáticos diários via `scripts/backup.sh`:
+Use ferramentas padrão do PostgreSQL (exemplo genérico; ajuste host, utilizador e base):
 
 ```bash
 pg_dump -h localhost -U agroadb agroadb | gzip > backup.sql.gz

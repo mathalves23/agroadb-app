@@ -1,21 +1,17 @@
 # @agroadb/client
 
-[![npm version](https://badge.fury.io/js/%40agroadb%2Fclient.svg)](https://badge.fury.io/js/%40agroadb%2Fclient)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.2-blue.svg)](https://www.typescriptlang.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Cliente JavaScript/TypeScript oficial para a API do **AgroADB** - Sistema de Análise de Dados Agrários.
+Cliente JavaScript/TypeScript de referência para a API **AgroADB** na instância que configurar.
 
-## 🚀 Instalação
-
-```bash
-npm install @agroadb/client
-```
-
-Ou com yarn:
+## Instalação a partir deste monorepo
 
 ```bash
-yarn add @agroadb/client
+cd clients/js-client
+npm install
+npm run build
+npm link   # opcional: consumir noutro projeto com npm link @agroadb/client
 ```
 
 ## 📋 Requisitos
@@ -32,7 +28,7 @@ import { AgroADBClient } from '@agroadb/client';
 
 // Criar cliente
 const client = new AgroADBClient({
-  baseUrl: 'https://api.agroadb.com'
+  baseUrl: 'http://localhost:8000'
 });
 
 // Login
@@ -48,7 +44,7 @@ const investigations = await client.investigations.list({ limit: 10 });
 const { AgroADBClient } = require('@agroadb/client');
 
 const client = new AgroADBClient({
-  baseUrl: 'https://api.agroadb.com'
+  baseUrl: 'http://localhost:8000'
 });
 
 // Usar com async/await
@@ -225,7 +221,7 @@ console.log(response.access_token);
 
 ```typescript
 const client = new AgroADBClient({
-  baseUrl: 'https://api.agroadb.com',
+  baseUrl: 'http://localhost:8000',
   apiKey: 'sua_api_key'
 });
 ```
@@ -248,7 +244,7 @@ client.logout(); // Limpa tokens
 
 ```typescript
 const client = new AgroADBClient({
-  baseUrl: 'https://api.agroadb.com',
+  baseUrl: 'http://localhost:8000',
   timeout: 60000, // 60 segundos
   maxRetries: 5 // Máximo de tentativas
 });
@@ -334,13 +330,12 @@ Contribuições são bem-vindas! Por favor:
 
 ## 📞 Suporte
 
-- **Documentação**: https://docs.agroadb.com
+- **Documentação**: pasta `docs/` no monorepo
 - **Issues**: https://github.com/agroadb/js-client/issues
-- **Email**: dev@agroadb.com
 
 ## 🔗 Links Úteis
 
-- [Documentação da API](https://docs.agroadb.com/api)
+- Documentação da API na instância (OpenAPI)
 - [Exemplos](https://github.com/agroadb/js-client/tree/main/examples)
 - [Changelog](https://github.com/agroadb/js-client/blob/main/CHANGELOG.md)
 

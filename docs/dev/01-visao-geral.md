@@ -202,12 +202,7 @@ agroadb/
 │   ├── api/                  # API reference
 │   └── deploy/               # Guias de deploy
 │
-├── scripts/                   # Scripts de automação
-│   ├── backup.sh             # Backup DB
-│   ├── restore.sh            # Restore DB
-│   ├── deploy.sh             # Deploy completo
-│   ├── setup-ssl.sh          # Configurar SSL
-│   └── verify-all.sh         # Verificação completa
+├── scripts/                   # (opcional) automação da sua infra — não versionar segredos
 │
 ├── monitoring/               # Configuração de monitoramento
 │   ├── prometheus.yml        # Config Prometheus

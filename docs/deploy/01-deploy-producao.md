@@ -19,7 +19,7 @@ Este documento descreve como fazer deploy do AgroADB em ambiente de produção.
 
 ### Domínio e DNS
 
-- Domínio registrado (ex: `agroadb.com`)
+- Domínio registado (ex.: `app.example.com`)
 - Acesso ao DNS para configurar registros A/CNAME
 
 ### Contas Necessárias
@@ -66,24 +66,18 @@ cp .env.example .env
 nano .env
 ```
 
-### 3. Configurar SSL
+### 3. TLS (HTTPS)
+
+Use o mecanismo da sua infraestrutura (por exemplo **Caddy**, **Traefik** na frente do Compose, **certbot** no anfitrião, ou balanceador gerido na cloud). Não versione chaves privadas nem `fullchain.pem` no Git.
+
+### 4. Subir a stack
 
 ```bash
-chmod +x scripts/setup-ssl.sh
-./scripts/setup-ssl.sh agroadb.com admin@agroadb.com
+docker compose -f docker-compose.prod.yml up -d
+# ou o ficheiro de compose que utilizar em produção
 ```
 
-### 4. Deploy
-
-```bash
-chmod +x scripts/deploy.sh
-./scripts/deploy.sh production agroadb.com
-```
-
-Pronto! Seu AgroADB está rodando em:
-- **Frontend**: https://agroadb.com
-- **API**: https://api.agroadb.com
-- **Docs**: https://api.agroadb.com/docs
+Aponte o DNS e o proxy reverso para os serviços expostos (frontend, API, documentação OpenAPI conforme a sua configuração).
 
 ---
 
@@ -217,7 +211,7 @@ ENVIRONMENT=production
 DEBUG=False
 FORCE_HTTPS=True
 
-CORS_ORIGINS=["https://agroadb.com"]
+CORS_ORIGINS=["https://app.example.com"]
 
 # Email
 SMTP_HOST=smtp.sendgrid.net
@@ -269,25 +263,19 @@ Dashboards incluídos:
 
 ## 💾 Backup e Recovery
 
-### Backup Automático
+### Backup
 
-Já configurado em produção! Backups diários às 2 AM:
+Agende `pg_dump` (ou snapshots de volume) com **cron**, systemd timer ou serviço gerido. Guarde artefactos fora do servidor de aplicação (ex.: bucket com política de retenção e encriptação).
 
 ```bash
-# Forçar backup manual
-./scripts/backup.sh
-
-# Listar backups
-ls -lh backups/
-
-# Upload para S3
-aws s3 cp backup.sql.gz s3://agroadb-backups/
+# Exemplo manual (ajuste utilizador/host/base)
+pg_dump -h localhost -U agroadb agroadb | gzip > "backup_$(date +%Y%m%d_%H%M).sql.gz"
 ```
 
 ### Restore
 
 ```bash
-./scripts/restore.sh backups/agroadb_backup_20260205_020000.sql.gz
+gunzip -c backup_YYYYMMDD_HHMM.sql.gz | psql -h localhost -U agroadb agroadb
 ```
 
 ---
@@ -296,8 +284,8 @@ aws s3 cp backup.sql.gz s3://agroadb-backups/
 
 ### Endpoints
 
-- Backend: `https://api.agroadb.com/health`
-- Frontend: `https://agroadb.com/health`
+- Backend: `https://api.example.com/health` (ajuste ao seu domínio)
+- Frontend: `https://app.example.com/health`
 
 ### Monitoramento Externo
 
@@ -393,9 +381,9 @@ certbot renew
 
 Problemas durante o deploy?
 
-- 📧 Email: devops@agroadb.com
+- 📧 Contacto de operações: configure o canal da sua equipa (não publique e-mails pessoais no Git)
 - 💬 Slack: #deploy-support
-- 📚 Docs: https://docs.agroadb.com
+- 📚 Docs: OpenAPI na sua API (`/docs` ou equivalente)
 
 ---
 

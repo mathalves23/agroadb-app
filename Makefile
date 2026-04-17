@@ -75,9 +75,9 @@ migrate-rollback: ## Desfaz última migração
 	cd backend && alembic downgrade -1
 	@echo "✅ Migração desfeita!"
 
-create-superuser: ## Cria superusuário
-	@echo "👤 Criando superusuário..."
-	docker-compose exec backend python scripts/create_superuser.sh
+create-superuser: ## Cria superutilizador (defina AGROADB_ADMIN_EMAIL e AGROADB_ADMIN_PASSWORD no host)
+	@echo "👤 Criando superutilizador (variáveis obrigatórias no ambiente)..."
+	docker-compose exec -e AGROADB_ADMIN_EMAIL -e AGROADB_ADMIN_PASSWORD -e AGROADB_ADMIN_USERNAME -e AGROADB_ADMIN_FULL_NAME backend python scripts/create_superuser.py
 
 ## Testes
 test: ## Executa todos os testes

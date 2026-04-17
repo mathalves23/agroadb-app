@@ -66,7 +66,7 @@ class AgroADBClient:
         # Inicializar cliente
         client = AgroADBClient(
             api_key="sua_api_key",
-            base_url="https://api.agroadb.com"
+            base_url="http://localhost:8000"
         )
         
         # Fazer login

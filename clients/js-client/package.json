@@ -26,16 +26,17 @@
     "analytics",
     "investigations"
   ],
-  "author": "AgroADB Team <dev@agroadb.com>",
+  "author": "AgroADB contributors",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/agroadb/js-client.git"
+    "url": "https://github.com/example/agroadb.git",
+    "directory": "clients/js-client"
   },
   "bugs": {
-    "url": "https://github.com/agroadb/js-client/issues"
+    "url": "https://github.com/example/agroadb/issues"
   },
-  "homepage": "https://github.com/agroadb/js-client#readme",
+  "homepage": "https://github.com/example/agroadb/tree/main/clients/js-client",
   "devDependencies": {
     "@types/jest": "^29.5.0",
     "@types/node": "^20.0.0",

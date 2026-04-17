@@ -327,30 +327,9 @@ npm run test:watch
 npm test -- Controls.test.tsx
 ```
 
-### Todos os Testes
+### Todos os testes (raiz)
 
-```bash
-# Da raiz do projeto
-./scripts/run-all-tests.sh
-```
-
----
-
-## 🔍 Verificando a Instalação
-
-Execute o script de verificação:
-
-```bash
-./scripts/verify-all.sh
-```
-
-Este script verifica:
-- ✅ Backend builds corretamente
-- ✅ Frontend builds corretamente
-- ✅ Linters passam (flake8 + ESLint)
-- ✅ Type checks passam (TypeScript)
-- ✅ Todos os testes passam
-- ✅ Cobertura >= 60%
+Execute os alvos do `Makefile` e os comandos de `pytest` / `npm run test:ci` descritos no [README](../../README.md) em cada pasta (`backend/`, `frontend/`).
 
 ---
 

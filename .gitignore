@@ -113,4 +113,4 @@ validar_*.py
 *_test.sh
 install_ml.sh
 
-# Documentação na raiz: README.md, DEPLOY.md; referência de APIs em docs/MAPEAMENTO_APIS_GOV.md
+# Documentação: README na raiz; referência de APIs em docs/MAPEAMENTO_APIS_GOV.md

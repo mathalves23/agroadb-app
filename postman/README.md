@@ -18,11 +18,9 @@ Collection completa da API AgroADB com testes automatizados e suporte a múltipl
 3. Arraste os arquivos JSON ou selecione-os
 4. Collection e environments serão importados automaticamente
 
-### Via URL (quando publicado)
+### Via URL
 
-```
-https://www.postman.com/agroadb/workspace/agroadb-api
-```
+Se publicar uma workspace no Postman, coloque aqui o URL público da **sua** organização (não versionar tokens).
 
 ## 📋 Collection Completa
 

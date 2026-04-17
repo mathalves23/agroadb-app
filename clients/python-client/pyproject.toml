@@ -5,12 +5,12 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "agroadb"
 version = "1.0.0"
-description = "Cliente Python oficial para API AgroADB"
+description = "Cliente Python de referência para a API AgroADB"
 readme = "README.md"
 requires-python = ">=3.8"
 license = {text = "MIT"}
 authors = [
-    {name = "AgroADB Team", email = "dev@agroadb.com"}
+    {name = "AgroADB contributors"}
 ]
 keywords = ["agroadb", "api", "client", "analytics", "investigations"]
 classifiers = [
@@ -42,10 +42,7 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/agroadb/python-client"
-Documentation = "https://docs.agroadb.com"
-Repository = "https://github.com/agroadb/python-client"
-"Bug Tracker" = "https://github.com/agroadb/python-client/issues"
+Repository = "https://github.com/example/agroadb"
 
 [tool.setuptools]
 packages = ["agroadb"]
