@@ -1,0 +1,116 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+# Apenas artefactos na raiz do repo (evita ignorar frontend/src/lib)
+/lib/
+/lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+*.pyc
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+dist/
+dist-ssr/
+*.local
+
+# Backups locais
+*.bak
+
+# Environment
+.env
+.env.local
+.env.*.local
+.env.development
+.env.production
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Docker
+*.log
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs
+logs/
+*.log
+
+# Certificates
+*.pem
+*.key
+*.crt
+
+# Temporary files
+temp/
+tmp/
+*.tmp
+
+# Testing
+coverage/
+.nyc_output/
+coverage.xml
+
+# Build
+build/
+out/
+
+# Documentação temporária (manter apenas essenciais)
+ARQUITETURA_*.md
+CHECKLIST_*.md
+GUIA_*.md
+INDICE_*.md
+RESUMO_*.md
+SUMARIO_*.md
+CHANGELOG_*.md
+IMPLEMENTACAO_*.md
+INTEGRACAO_*.md
+ML_*.md
+*_COMPLETA.md
+*_IMPLEMENTADAS.md
+*_FINAL.md
+*_FINAL.txt
+
+# Scripts temporários / utilitários locais (não versionar rascunhos na raiz)
+demo_*.py
+validar_*.py
+*_test.sh
+install_ml.sh
+
+# Documentação na raiz: README.md, DEPLOY.md; referência de APIs em docs/MAPEAMENTO_APIS_GOV.md

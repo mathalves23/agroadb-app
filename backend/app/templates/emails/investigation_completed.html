@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Investigação Concluída - AgroADB</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f3f4f6;">
+    <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #f3f4f6;">
+        <tr>
+            <td style="padding: 40px 20px;">
+                <!-- Main Container -->
+                <table role="presentation" style="max-width: 600px; margin: 0 auto; background-color: white; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); overflow: hidden;">
+                    
+                    <!-- Header -->
+                    <tr>
+                        <td style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 40px 32px; text-align: center;">
+                            <h1 style="margin: 0; font-size: 32px; font-weight: 700; color: white; text-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                                ✓ Investigação Concluída
+                            </h1>
+                            <p style="margin: 12px 0 0; font-size: 16px; color: rgba(255,255,255,0.9);">
+                                AgroADB Intelligence Platform
+                            </p>
+                        </td>
+                    </tr>
+                    
+                    <!-- Content -->
+                    <tr>
+                        <td style="padding: 40px 32px;">
+                            
+                            <!-- Greeting -->
+                            <p style="margin: 0 0 24px; font-size: 18px; color: #374151;">
+                                Olá, <strong style="color: #111827;">{{ user_name }}</strong>!
+                            </p>
+                            
+                            <!-- Success Message -->
+                            <div style="background-color: #d1fae5; border-left: 4px solid #10b981; padding: 20px; border-radius: 6px; margin: 0 0 32px;">
+                                <p style="margin: 0 0 8px; font-size: 16px; font-weight: 600; color: #065f46;">
+                                    Sua investigação foi concluída com sucesso!
+                                </p>
+                                <p style="margin: 0; font-size: 14px; color: #047857; line-height: 1.6;">
+                                    Os dados sobre <strong>{{ target_name }}</strong> foram processados e estão disponíveis para análise.
+                                </p>
+                            </div>
+                            
+                            <!-- Results Summary -->
+                            <h2 style="margin: 0 0 20px; font-size: 20px; font-weight: 600; color: #111827;">
+                                📊 Resumo dos Resultados
+                            </h2>
+                            
+                            <table role="presentation" style="width: 100%; border-collapse: collapse; margin-bottom: 32px;">
+                                <tr>
+                                    <td style="padding: 16px; background-color: #f9fafb; border-radius: 8px 8px 0 0; border-bottom: 1px solid #e5e7eb;">
+                                        <table role="presentation" style="width: 100%;">
+                                            <tr>
+                                                <td style="padding: 8px 0;">
+                                                    <span style="font-size: 32px;">🏡</span>
+                                                </td>
+                                                <td style="padding: 8px 0; text-align: left;">
+                                                    <div style="font-size: 14px; color: #6b7280; margin-bottom: 4px;">Propriedades Rurais</div>
+                                                    <div style="font-size: 28px; font-weight: 700; color: #10b981;">{{ properties_found }}</div>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 16px; background-color: #f9fafb; border-bottom: 1px solid #e5e7eb;">
+                                        <table role="presentation" style="width: 100%;">
+                                            <tr>
+                                                <td style="padding: 8px 0;">
+                                                    <span style="font-size: 32px;">🏢</span>
+                                                </td>
+                                                <td style="padding: 8px 0; text-align: left;">
+                                                    <div style="font-size: 14px; color: #6b7280; margin-bottom: 4px;">Empresas Vinculadas</div>
+                                                    <div style="font-size: 28px; font-weight: 700; color: #3b82f6;">{{ companies_found }}</div>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 16px; background-color: #f9fafb; border-radius: 0 0 8px 8px;">
+                                        <table role="presentation" style="width: 100%;">
+                                            <tr>
+                                                <td style="padding: 8px 0;">
+                                                    <span style="font-size: 32px;">📄</span>
+                                                </td>
+                                                <td style="padding: 8px 0; text-align: left;">
+                                                    <div style="font-size: 14px; color: #6b7280; margin-bottom: 4px;">Contratos de Arrendamento</div>
+                                                    <div style="font-size: 28px; font-weight: 700; color: #8b5cf6;">{{ lease_contracts_found }}</div>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+                            
+                            <!-- CTA Button -->
+                            <table role="presentation" style="width: 100%; margin: 0 0 32px;">
+                                <tr>
+                                    <td style="text-align: center;">
+                                        <a href="{{ frontend_url }}/investigations/{{ investigation_id }}" 
+                                           style="display: inline-block; 
+                                                  background: linear-gradient(135deg, #10b981 0%, #059669 100%); 
+                                                  color: white; 
+                                                  padding: 16px 40px; 
+                                                  text-decoration: none; 
+                                                  border-radius: 8px; 
+                                                  font-weight: 600;
+                                                  font-size: 16px;
+                                                  box-shadow: 0 4px 6px rgba(16, 185, 129, 0.3);
+                                                  transition: all 0.3s;">
+                                            Ver Resultados Completos →
+                                        </a>
+                                    </td>
+                                </tr>
+                            </table>
+                            
+                            <!-- Info Box -->
+                            <div style="background-color: #eff6ff; border: 1px solid #bfdbfe; padding: 16px; border-radius: 6px; margin: 0 0 24px;">
+                                <p style="margin: 0; font-size: 13px; color: #1e40af; line-height: 1.6;">
+                                    💡 <strong>Dica:</strong> Você pode exportar os resultados em PDF ou Excel, 
+                                    compartilhar a investigação com sua equipe e adicionar anotações personalizadas.
+                                </p>
+                            </div>
+                            
+                            <!-- Footer Message -->
+                            <p style="margin: 0; font-size: 14px; color: #6b7280; line-height: 1.6;">
+                                Esta é uma notificação automática do sistema AgroADB. 
+                                Para gerenciar suas preferências de notificação, acesse as 
+                                <a href="{{ frontend_url }}/settings/notifications" 
+                                   style="color: #10b981; text-decoration: none; font-weight: 500;">
+                                    configurações
+                                </a>.
+                            </p>
+                        </td>
+                    </tr>
+                    
+                    <!-- Footer -->
+                    <tr>
+                        <td style="padding: 24px 32px; border-top: 1px solid #e5e7eb; background-color: #f9fafb;">
+                            <table role="presentation" style="width: 100%;">
+                                <tr>
+                                    <td style="text-align: center;">
+                                        <p style="margin: 0 0 8px; font-size: 14px; font-weight: 600; color: #111827;">
+                                            AgroADB
+                                        </p>
+                                        <p style="margin: 0 0 16px; font-size: 12px; color: #6b7280;">
+                                            Sistema de Inteligência para Due Diligence Rural
+                                        </p>
+                                        <p style="margin: 0; font-size: 11px; color: #9ca3af;">
+                                            © {{ year }} AgroADB. Todos os direitos reservados.
+                                        </p>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                    
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

@@ -1,0 +1,756 @@
+{
+  "info": {
+    "name": "AgroADB API",
+    "_postman_id": "agroadb-api-collection",
+    "description": "Collection completa da API AgroADB - Sistema de Análise de Dados Agrários\n\n## Autenticação\n\nA API utiliza JWT (JSON Web Tokens) para autenticação. Após o login, o token é automaticamente armazenado e usado nas requisições subsequentes.\n\n## Ambientes\n\n- **Development**: http://localhost:8000\n- **Staging**: https://staging.agroadb.com\n- **Production**: https://api.agroadb.com\n\n## Rate Limiting\n\n- 1000 requisições por hora por usuário\n- 100 requisições por minuto por IP\n\n## Versão\n\nAPI Version: 1.0.0\nCollection Version: 1.0.0",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{access_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "🔐 Authentication",
+      "description": "Endpoints de autenticação e gerenciamento de usuário",
+      "item": [
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has access_token\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('access_token');",
+                  "    pm.environment.set(\"access_token\", jsonData.access_token);",
+                  "    pm.environment.set(\"refresh_token\", jsonData.refresh_token);",
+                  "});",
+                  "",
+                  "pm.test(\"Response time < 2000ms\", function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{user_email}}\",\n  \"password\": \"{{user_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "auth", "login"]
+            },
+            "description": "Autentica usuário e retorna JWT tokens"
+          },
+          "response": []
+        },
+        {
+          "name": "Register",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status 201\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test(\"User created\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('id');",
+                  "    pm.expect(jsonData).to.have.property('email');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"New User\",\n  \"email\": \"newuser@example.com\",\n  \"password\": \"password123\",\n  \"role\": \"analyst\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/register",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "auth", "register"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Me",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Has user data\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('email');",
+                  "    pm.expect(jsonData).to.have.property('role');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/me",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "auth", "me"]
+            },
+            "description": "Retorna dados do usuário autenticado"
+          },
+          "response": []
+        },
+        {
+          "name": "Refresh Token",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refresh_token\": \"{{refresh_token}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/refresh",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "auth", "refresh"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "📁 Investigations",
+      "description": "CRUD de investigações",
+      "item": [
+        {
+          "name": "List Investigations",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Has items array\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('items');",
+                  "    pm.expect(jsonData.items).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/investigations?limit=50&offset=0",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "investigations"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "50"
+                },
+                {
+                  "key": "offset",
+                  "value": "0"
+                },
+                {
+                  "key": "status",
+                  "value": "active",
+                  "disabled": true
+                },
+                {
+                  "key": "priority",
+                  "value": "high",
+                  "disabled": true
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Investigation",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/investigations/{{investigation_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "investigations", "{{investigation_id}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Investigation",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status 201\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "var jsonData = pm.response.json();",
+                  "pm.environment.set(\"investigation_id\", jsonData.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Nova Investigação\",\n  \"description\": \"Descrição detalhada da investigação\",\n  \"priority\": \"high\",\n  \"status\": \"active\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/investigations",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "investigations"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Investigation",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"completed\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/investigations/{{investigation_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "investigations", "{{investigation_id}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Investigation",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/investigations/{{investigation_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "investigations", "{{investigation_id}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Search Investigations",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/investigations/search?q=fraude",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "investigations", "search"],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "fraude"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "📄 Documents",
+      "item": [
+        {
+          "name": "List Documents",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/investigations/{{investigation_id}}/documents",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "investigations", "{{investigation_id}}", "documents"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Upload Document",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/investigations/{{investigation_id}}/documents",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "investigations", "{{investigation_id}}", "documents"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Document",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/documents/{{document_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "documents", "{{document_id}}"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "👥 Users",
+      "item": [
+        {
+          "name": "List Users",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/users?limit=50",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "users"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "50"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get User",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/users/{{user_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "users", "{{user_id}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create User",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"João Silva\",\n  \"email\": \"joao@example.com\",\n  \"password\": \"password123\",\n  \"role\": \"analyst\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/users",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "users"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update User",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"role\": \"admin\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/users/{{user_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "users", "{{user_id}}"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "📊 Analytics",
+      "item": [
+        {
+          "name": "Dashboard",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/analytics/dashboard?start_date=2024-01-01&end_date=2024-12-31",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "analytics", "dashboard"],
+              "query": [
+                {
+                  "key": "start_date",
+                  "value": "2024-01-01"
+                },
+                {
+                  "key": "end_date",
+                  "value": "2024-12-31"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Performance Report",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/analytics/reports/performance",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "analytics", "reports", "performance"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "User Analytics Dashboard",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/analytics/user/dashboard",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "analytics", "user", "dashboard"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Funnel Analysis",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/analytics/user/funnel/investigation_creation",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "analytics", "user", "funnel", "investigation_creation"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "🔌 Integrations",
+      "item": [
+        {
+          "name": "List Integrations",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/integrations",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "integrations"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TJSP Search",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cpf\": \"12345678900\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/integrations/tjsp/search",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "integrations", "tjsp", "search"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Serasa Query",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cpf\": \"12345678900\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/integrations/serasa/query",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "integrations", "serasa", "query"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "📤 Export",
+      "item": [
+        {
+          "name": "Create Export Job",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "pm.environment.set(\"export_job_id\", jsonData.job_id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/analytics/export/file/create?data_source=investigations&export_format=csv",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "analytics", "export", "file", "create"],
+              "query": [
+                {
+                  "key": "data_source",
+                  "value": "investigations"
+                },
+                {
+                  "key": "export_format",
+                  "value": "csv"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Export Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/analytics/export/file/status/{{export_job_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "analytics", "export", "file", "status", "{{export_job_id}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List Export Jobs",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/analytics/export/file/list?limit=20",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "analytics", "export", "file", "list"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Export to BigQuery",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/analytics/export/warehouse/bigquery?project_id=meu-projeto&dataset=agroadb&table_name=investigations&data_source=investigations",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "analytics", "export", "warehouse", "bigquery"],
+              "query": [
+                {
+                  "key": "project_id",
+                  "value": "meu-projeto"
+                },
+                {
+                  "key": "dataset",
+                  "value": "agroadb"
+                },
+                {
+                  "key": "table_name",
+                  "value": "investigations"
+                },
+                {
+                  "key": "data_source",
+                  "value": "investigations"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "🏥 Health Check",
+      "item": [
+        {
+          "name": "API Health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/health",
+              "host": ["{{base_url}}"],
+              "path": ["api", "health"]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Log da requisição",
+          "console.log('Request:', {",
+          "    method: pm.request.method,",
+          "    url: pm.request.url.toString()",
+          "});"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Testes globais",
+          "pm.test(\"Response time reasonable\", function () {",
+          "    pm.expect(pm.response.responseTime).to.be.below(5000);",
+          "});",
+          "",
+          "// Log da resposta",
+          "console.log('Response:', {",
+          "    status: pm.response.code,",
+          "    time: pm.response.responseTime + 'ms'",
+          "});"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8000"
+    }
+  ]
+}
