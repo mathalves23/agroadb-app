@@ -5,9 +5,9 @@ import pytest
 from httpx import AsyncClient
 
 
-async def get_auth_headers(client: AsyncClient) -> dict:
+async def get_auth_headers(async_client: AsyncClient) -> dict:
     """Helper to get auth headers"""
-    await client.post(
+    await async_client.post(
         "/api/v1/auth/register",
         json={
             "email": "test@example.com",
@@ -17,7 +17,7 @@ async def get_auth_headers(client: AsyncClient) -> dict:
         },
     )
     
-    response = await client.post(
+    response = await async_client.post(
         "/api/v1/auth/login",
         data={"username": "testuser", "password": "password123"},
     )
@@ -27,9 +27,9 @@ async def get_auth_headers(client: AsyncClient) -> dict:
 
 
 @pytest.mark.asyncio
-async def test_create_investigation_unauthorized(client: AsyncClient):
+async def test_create_investigation_unauthorized(async_client: AsyncClient):
     """Test creating investigation without auth"""
-    response = await client.post(
+    response = await async_client.post(
         "/api/v1/investigations",
         json={"target_name": "Test", "priority": 3},
     )
@@ -37,11 +37,11 @@ async def test_create_investigation_unauthorized(client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_create_investigation_success(client: AsyncClient):
+async def test_create_investigation_success(async_client: AsyncClient):
     """Test creating investigation"""
-    headers = await get_auth_headers(client)
+    headers = await get_auth_headers(async_client)
     
-    response = await client.post(
+    response = await async_client.post(
         "/api/v1/investigations",
         json={
             "target_name": "João Silva",
@@ -61,11 +61,11 @@ async def test_create_investigation_success(client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_create_investigation_invalid_data(client: AsyncClient):
+async def test_create_investigation_invalid_data(async_client: AsyncClient):
     """Test creating investigation with invalid data"""
-    headers = await get_auth_headers(client)
+    headers = await get_auth_headers(async_client)
     
-    response = await client.post(
+    response = await async_client.post(
         "/api/v1/investigations",
         json={"priority": 3},  # Missing required target_name
         headers=headers,
@@ -75,11 +75,11 @@ async def test_create_investigation_invalid_data(client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_list_investigations_empty(client: AsyncClient):
+async def test_list_investigations_empty(async_client: AsyncClient):
     """Test listing investigations when empty"""
-    headers = await get_auth_headers(client)
+    headers = await get_auth_headers(async_client)
     
-    response = await client.get("/api/v1/investigations", headers=headers)
+    response = await async_client.get("/api/v1/investigations", headers=headers)
     
     assert response.status_code == 200
     data = response.json()
@@ -88,20 +88,20 @@ async def test_list_investigations_empty(client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_list_investigations_with_data(client: AsyncClient):
+async def test_list_investigations_with_data(async_client: AsyncClient):
     """Test listing investigations"""
-    headers = await get_auth_headers(client)
+    headers = await get_auth_headers(async_client)
     
     # Create investigations
     for i in range(3):
-        await client.post(
+        await async_client.post(
             "/api/v1/investigations",
             json={"target_name": f"Target {i}", "priority": 3},
             headers=headers,
         )
     
     # List investigations
-    response = await client.get("/api/v1/investigations", headers=headers)
+    response = await async_client.get("/api/v1/investigations", headers=headers)
     
     assert response.status_code == 200
     data = response.json()
@@ -110,20 +110,20 @@ async def test_list_investigations_with_data(client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_list_investigations_pagination(client: AsyncClient):
+async def test_list_investigations_pagination(async_client: AsyncClient):
     """Test investigation list pagination"""
-    headers = await get_auth_headers(client)
+    headers = await get_auth_headers(async_client)
     
     # Create investigations
     for i in range(10):
-        await client.post(
+        await async_client.post(
             "/api/v1/investigations",
             json={"target_name": f"Target {i}", "priority": 3},
             headers=headers,
         )
     
     # Get page 1
-    response = await client.get(
+    response = await async_client.get(
         "/api/v1/investigations?page=1&page_size=5",
         headers=headers,
     )
@@ -137,12 +137,12 @@ async def test_list_investigations_pagination(client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_get_investigation_success(client: AsyncClient):
+async def test_get_investigation_success(async_client: AsyncClient):
     """Test getting investigation details"""
-    headers = await get_auth_headers(client)
+    headers = await get_auth_headers(async_client)
     
     # Create investigation
-    create_response = await client.post(
+    create_response = await async_client.post(
         "/api/v1/investigations",
         json={"target_name": "João Silva", "priority": 3},
         headers=headers,
@@ -150,7 +150,7 @@ async def test_get_investigation_success(client: AsyncClient):
     investigation_id = create_response.json()["id"]
     
     # Get investigation
-    response = await client.get(
+    response = await async_client.get(
         f"/api/v1/investigations/{investigation_id}",
         headers=headers,
     )
@@ -162,22 +162,22 @@ async def test_get_investigation_success(client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_get_investigation_not_found(client: AsyncClient):
+async def test_get_investigation_not_found(async_client: AsyncClient):
     """Test getting non-existent investigation"""
-    headers = await get_auth_headers(client)
+    headers = await get_auth_headers(async_client)
     
-    response = await client.get("/api/v1/investigations/999", headers=headers)
+    response = await async_client.get("/api/v1/investigations/999", headers=headers)
     
     assert response.status_code == 404
 
 
 @pytest.mark.asyncio
-async def test_update_investigation_success(client: AsyncClient):
+async def test_update_investigation_success(async_client: AsyncClient):
     """Test updating investigation"""
-    headers = await get_auth_headers(client)
+    headers = await get_auth_headers(async_client)
     
     # Create investigation
-    create_response = await client.post(
+    create_response = await async_client.post(
         "/api/v1/investigations",
         json={"target_name": "João Silva", "priority": 3},
         headers=headers,
@@ -185,7 +185,7 @@ async def test_update_investigation_success(client: AsyncClient):
     investigation_id = create_response.json()["id"]
     
     # Update investigation
-    response = await client.patch(
+    response = await async_client.patch(
         f"/api/v1/investigations/{investigation_id}",
         json={"target_name": "João Silva Updated", "priority": 5},
         headers=headers,
@@ -198,12 +198,12 @@ async def test_update_investigation_success(client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_delete_investigation_success(client: AsyncClient):
+async def test_delete_investigation_success(async_client: AsyncClient):
     """Test deleting investigation"""
-    headers = await get_auth_headers(client)
+    headers = await get_auth_headers(async_client)
     
     # Create investigation
-    create_response = await client.post(
+    create_response = await async_client.post(
         "/api/v1/investigations",
         json={"target_name": "João Silva", "priority": 3},
         headers=headers,
@@ -211,7 +211,7 @@ async def test_delete_investigation_success(client: AsyncClient):
     investigation_id = create_response.json()["id"]
     
     # Delete investigation
-    response = await client.delete(
+    response = await async_client.delete(
         f"/api/v1/investigations/{investigation_id}",
         headers=headers,
     )
@@ -219,7 +219,7 @@ async def test_delete_investigation_success(client: AsyncClient):
     assert response.status_code == 204
     
     # Verify deletion
-    get_response = await client.get(
+    get_response = await async_client.get(
         f"/api/v1/investigations/{investigation_id}",
         headers=headers,
     )
@@ -227,12 +227,12 @@ async def test_delete_investigation_success(client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_get_investigation_properties(client: AsyncClient):
+async def test_get_investigation_properties(async_client: AsyncClient):
     """Test getting investigation properties"""
-    headers = await get_auth_headers(client)
+    headers = await get_auth_headers(async_client)
     
     # Create investigation
-    create_response = await client.post(
+    create_response = await async_client.post(
         "/api/v1/investigations",
         json={"target_name": "João Silva", "priority": 3},
         headers=headers,
@@ -240,7 +240,7 @@ async def test_get_investigation_properties(client: AsyncClient):
     investigation_id = create_response.json()["id"]
     
     # Get properties
-    response = await client.get(
+    response = await async_client.get(
         f"/api/v1/investigations/{investigation_id}/properties",
         headers=headers,
     )
@@ -250,12 +250,12 @@ async def test_get_investigation_properties(client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_get_investigation_companies(client: AsyncClient):
+async def test_get_investigation_companies(async_client: AsyncClient):
     """Test getting investigation companies"""
-    headers = await get_auth_headers(client)
+    headers = await get_auth_headers(async_client)
     
     # Create investigation
-    create_response = await client.post(
+    create_response = await async_client.post(
         "/api/v1/investigations",
         json={"target_name": "João Silva", "priority": 3},
         headers=headers,
@@ -263,7 +263,7 @@ async def test_get_investigation_companies(client: AsyncClient):
     investigation_id = create_response.json()["id"]
     
     # Get companies
-    response = await client.get(
+    response = await async_client.get(
         f"/api/v1/investigations/{investigation_id}/companies",
         headers=headers,
     )
@@ -273,12 +273,12 @@ async def test_get_investigation_companies(client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_get_investigation_lease_contracts(client: AsyncClient):
+async def test_get_investigation_lease_contracts(async_client: AsyncClient):
     """Test getting investigation lease contracts"""
-    headers = await get_auth_headers(client)
+    headers = await get_auth_headers(async_client)
     
     # Create investigation
-    create_response = await client.post(
+    create_response = await async_client.post(
         "/api/v1/investigations",
         json={"target_name": "João Silva", "priority": 3},
         headers=headers,
@@ -286,7 +286,7 @@ async def test_get_investigation_lease_contracts(client: AsyncClient):
     investigation_id = create_response.json()["id"]
     
     # Get lease contracts
-    response = await client.get(
+    response = await async_client.get(
         f"/api/v1/investigations/{investigation_id}/lease-contracts",
         headers=headers,
     )
@@ -296,10 +296,10 @@ async def test_get_investigation_lease_contracts(client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_investigation_ownership_isolation(client: AsyncClient):
+async def test_investigation_ownership_isolation(async_client: AsyncClient):
     """Test that users can only access their own investigations"""
     # User 1
-    await client.post(
+    await async_client.post(
         "/api/v1/auth/register",
         json={
             "email": "user1@example.com",
@@ -308,7 +308,7 @@ async def test_investigation_ownership_isolation(client: AsyncClient):
             "password": "password123",
         },
     )
-    login1 = await client.post(
+    login1 = await async_client.post(
         "/api/v1/auth/login",
         data={"username": "user1", "password": "password123"},
     )
@@ -316,7 +316,7 @@ async def test_investigation_ownership_isolation(client: AsyncClient):
     headers1 = {"Authorization": f"Bearer {token1}"}
     
     # Create investigation as user1
-    create_response = await client.post(
+    create_response = await async_client.post(
         "/api/v1/investigations",
         json={"target_name": "Test", "priority": 3},
         headers=headers1,
@@ -324,7 +324,7 @@ async def test_investigation_ownership_isolation(client: AsyncClient):
     investigation_id = create_response.json()["id"]
     
     # User 2
-    await client.post(
+    await async_client.post(
         "/api/v1/auth/register",
         json={
             "email": "user2@example.com",
@@ -333,7 +333,7 @@ async def test_investigation_ownership_isolation(client: AsyncClient):
             "password": "password123",
         },
     )
-    login2 = await client.post(
+    login2 = await async_client.post(
         "/api/v1/auth/login",
         data={"username": "user2", "password": "password123"},
     )
@@ -341,7 +341,7 @@ async def test_investigation_ownership_isolation(client: AsyncClient):
     headers2 = {"Authorization": f"Bearer {token2}"}
     
     # Try to access user1's investigation as user2
-    response = await client.get(
+    response = await async_client.get(
         f"/api/v1/investigations/{investigation_id}",
         headers=headers2,
     )
@@ -350,12 +350,12 @@ async def test_investigation_ownership_isolation(client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_export_investigation_pdf(client: AsyncClient):
+async def test_export_investigation_pdf(async_client: AsyncClient):
     """Test exporting investigation to PDF"""
-    headers = await get_auth_headers(client)
+    headers = await get_auth_headers(async_client)
     
     # Create investigation
-    create_response = await client.post(
+    create_response = await async_client.post(
         "/api/v1/investigations",
         json={
             "target_name": "João Silva",
@@ -368,7 +368,7 @@ async def test_export_investigation_pdf(client: AsyncClient):
     investigation_id = create_response.json()["id"]
     
     # Export to PDF
-    response = await client.get(
+    response = await async_client.get(
         f"/api/v1/investigations/{investigation_id}/export/pdf",
         headers=headers,
     )
@@ -385,18 +385,18 @@ async def test_export_investigation_pdf(client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_export_investigation_pdf_unauthorized(client: AsyncClient):
+async def test_export_investigation_pdf_unauthorized(async_client: AsyncClient):
     """Test exporting PDF without auth"""
-    response = await client.get("/api/v1/investigations/999/export/pdf")
+    response = await async_client.get("/api/v1/investigations/999/export/pdf")
     assert response.status_code == 401
 
 
 @pytest.mark.asyncio
-async def test_export_investigation_pdf_not_found(client: AsyncClient):
+async def test_export_investigation_pdf_not_found(async_client: AsyncClient):
     """Test exporting PDF for non-existent investigation"""
-    headers = await get_auth_headers(client)
+    headers = await get_auth_headers(async_client)
     
-    response = await client.get(
+    response = await async_client.get(
         "/api/v1/investigations/99999/export/pdf",
         headers=headers,
     )

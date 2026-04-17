@@ -84,6 +84,7 @@ def test_user(db: Session) -> User:
     """Create test user"""
     user = User(
         email="test@example.com",
+        username="testuser",
         full_name="Test User",
         hashed_password=get_password_hash("testpass123"),
         is_active=True,
@@ -100,6 +101,7 @@ def superuser(db: Session) -> User:
     """Create superuser"""
     user = User(
         email="admin@example.com",
+        username="admin",
         full_name="Admin User",
         hashed_password=get_password_hash("adminpass123"),
         is_active=True,
@@ -116,7 +118,7 @@ def auth_headers(client: TestClient, test_user: User) -> dict:
     """Get authentication headers"""
     response = client.post(
         "/api/v1/auth/login",
-        json={"email": "test@example.com", "password": "testpass123"}
+        data={"username": "testuser", "password": "testpass123"},
     )
     token = response.json()["access_token"]
     return {"Authorization": f"Bearer {token}"}
@@ -127,7 +129,7 @@ def admin_headers(client: TestClient, superuser: User) -> dict:
     """Get admin authentication headers"""
     response = client.post(
         "/api/v1/auth/login",
-        json={"email": "admin@example.com", "password": "adminpass123"}
+        data={"username": "admin", "password": "adminpass123"},
     )
     token = response.json()["access_token"]
     return {"Authorization": f"Bearer {token}"}

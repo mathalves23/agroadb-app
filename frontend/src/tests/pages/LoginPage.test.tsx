@@ -43,9 +43,9 @@ describe('LoginPage Component', () => {
       </BrowserRouter>
     )
 
-    expect(screen.getByText('AgroADB')).toBeInTheDocument()
-    expect(screen.getByLabelText(/usuário/i)).toBeInTheDocument()
-    expect(screen.getByLabelText(/senha/i)).toBeInTheDocument()
+    expect(screen.getAllByText('AgroADB').length).toBeGreaterThanOrEqual(1)
+    expect(screen.getByLabelText(/usuário ou email/i)).toBeInTheDocument()
+    expect(screen.getByLabelText(/^senha$/i)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /entrar/i })).toBeInTheDocument()
   })
 
@@ -56,7 +56,7 @@ describe('LoginPage Component', () => {
       </BrowserRouter>
     )
 
-    const registerLink = screen.getByText(/não tem conta\? registre-se/i)
+    const registerLink = screen.getByRole('link', { name: /registre-se/i })
     expect(registerLink).toBeInTheDocument()
   })
 
@@ -87,17 +87,17 @@ describe('LoginPage Component', () => {
       </BrowserRouter>
     )
 
-    const usernameInput = screen.getByLabelText(/usuário/i)
+    const usernameInput = screen.getByLabelText(/usuário ou email/i)
     await user.type(usernameInput, 'ab')
 
-    const passwordInput = screen.getByLabelText(/senha/i)
+    const passwordInput = screen.getByLabelText(/^senha$/i)
     await user.type(passwordInput, '12345')
 
     const submitButton = screen.getByRole('button', { name: /entrar/i })
     await user.click(submitButton)
 
     await waitFor(() => {
-      expect(screen.getByText(/usuário deve ter no mínimo 3 caracteres/i)).toBeInTheDocument()
+      expect(screen.getByText(/usuário ou email deve ter no mínimo 3 caracteres/i)).toBeInTheDocument()
     })
   })
 
@@ -110,10 +110,10 @@ describe('LoginPage Component', () => {
       </BrowserRouter>
     )
 
-    const usernameInput = screen.getByLabelText(/usuário/i)
+    const usernameInput = screen.getByLabelText(/usuário ou email/i)
     await user.type(usernameInput, 'testuser')
 
-    const passwordInput = screen.getByLabelText(/senha/i)
+    const passwordInput = screen.getByLabelText(/^senha$/i)
     await user.type(passwordInput, '1234567')
 
     const submitButton = screen.getByRole('button', { name: /entrar/i })
@@ -133,10 +133,10 @@ describe('LoginPage Component', () => {
       </BrowserRouter>
     )
 
-    const usernameInput = screen.getByLabelText(/usuário/i)
+    const usernameInput = screen.getByLabelText(/usuário ou email/i)
     await user.type(usernameInput, 'testuser')
 
-    const passwordInput = screen.getByLabelText(/senha/i)
+    const passwordInput = screen.getByLabelText(/^senha$/i)
     await user.type(passwordInput, 'password123')
 
     const submitButton = screen.getByRole('button', { name: /entrar/i })

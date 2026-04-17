@@ -6,17 +6,17 @@ from httpx import AsyncClient
 
 
 @pytest.mark.asyncio
-async def test_get_current_user_unauthorized(client: AsyncClient):
+async def test_get_current_user_unauthorized(async_client: AsyncClient):
     """Test getting current user without auth"""
-    response = await client.get("/api/v1/users/me")
+    response = await async_client.get("/api/v1/users/me")
     assert response.status_code == 401
 
 
 @pytest.mark.asyncio
-async def test_get_current_user_success(client: AsyncClient):
+async def test_get_current_user_success(async_client: AsyncClient):
     """Test getting current user"""
     # Register
-    await client.post(
+    await async_client.post(
         "/api/v1/auth/register",
         json={
             "email": "test@example.com",
@@ -27,14 +27,14 @@ async def test_get_current_user_success(client: AsyncClient):
     )
     
     # Login
-    login_response = await client.post(
+    login_response = await async_client.post(
         "/api/v1/auth/login",
         data={"username": "testuser", "password": "password123"},
     )
     token = login_response.json()["access_token"]
     
     # Get current user
-    response = await client.get(
+    response = await async_client.get(
         "/api/v1/users/me",
         headers={"Authorization": f"Bearer {token}"},
     )
@@ -46,10 +46,10 @@ async def test_get_current_user_success(client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_update_current_user(client: AsyncClient):
+async def test_update_current_user(async_client: AsyncClient):
     """Test updating current user"""
     # Register and login
-    await client.post(
+    await async_client.post(
         "/api/v1/auth/register",
         json={
             "email": "test@example.com",
@@ -59,14 +59,14 @@ async def test_update_current_user(client: AsyncClient):
         },
     )
     
-    login_response = await client.post(
+    login_response = await async_client.post(
         "/api/v1/auth/login",
         data={"username": "testuser", "password": "password123"},
     )
     token = login_response.json()["access_token"]
     
     # Update user
-    response = await client.patch(
+    response = await async_client.patch(
         "/api/v1/users/me",
         json={"full_name": "Updated Name"},
         headers={"Authorization": f"Bearer {token}"},
@@ -78,10 +78,10 @@ async def test_update_current_user(client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_update_current_user_password(client: AsyncClient):
+async def test_update_current_user_password(async_client: AsyncClient):
     """Test updating current user password"""
     # Register and login
-    await client.post(
+    await async_client.post(
         "/api/v1/auth/register",
         json={
             "email": "test@example.com",
@@ -91,14 +91,14 @@ async def test_update_current_user_password(client: AsyncClient):
         },
     )
     
-    login_response = await client.post(
+    login_response = await async_client.post(
         "/api/v1/auth/login",
         data={"username": "testuser", "password": "oldpassword"},
     )
     token = login_response.json()["access_token"]
     
     # Update password
-    response = await client.patch(
+    response = await async_client.patch(
         "/api/v1/users/me",
         json={"password": "newpassword123"},
         headers={"Authorization": f"Bearer {token}"},
@@ -107,7 +107,7 @@ async def test_update_current_user_password(client: AsyncClient):
     assert response.status_code == 200
     
     # Try login with new password
-    new_login = await client.post(
+    new_login = await async_client.post(
         "/api/v1/auth/login",
         data={"username": "testuser", "password": "newpassword123"},
     )

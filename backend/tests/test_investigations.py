@@ -5,10 +5,10 @@ import pytest
 from httpx import AsyncClient
 
 
-async def get_auth_token(client: AsyncClient) -> str:
+async def get_auth_token(async_client: AsyncClient) -> str:
     """Helper function to get auth token"""
     # Register user
-    await client.post(
+    await async_client.post(
         "/api/v1/auth/register",
         json={
             "email": "test@example.com",
@@ -19,7 +19,7 @@ async def get_auth_token(client: AsyncClient) -> str:
     )
     
     # Login
-    response = await client.post(
+    response = await async_client.post(
         "/api/v1/auth/login",
         data={"username": "testuser", "password": "testpassword123"},
     )
@@ -28,11 +28,11 @@ async def get_auth_token(client: AsyncClient) -> str:
 
 
 @pytest.mark.asyncio
-async def test_create_investigation(client: AsyncClient):
+async def test_create_investigation(async_client: AsyncClient):
     """Test creating an investigation"""
-    token = await get_auth_token(client)
+    token = await get_auth_token(async_client)
     
-    response = await client.post(
+    response = await async_client.post(
         "/api/v1/investigations",
         json={
             "target_name": "João Silva",
@@ -50,12 +50,12 @@ async def test_create_investigation(client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_list_investigations(client: AsyncClient):
+async def test_list_investigations(async_client: AsyncClient):
     """Test listing investigations"""
-    token = await get_auth_token(client)
+    token = await get_auth_token(async_client)
     
     # Create an investigation
-    await client.post(
+    await async_client.post(
         "/api/v1/investigations",
         json={
             "target_name": "João Silva",
@@ -65,7 +65,7 @@ async def test_list_investigations(client: AsyncClient):
     )
     
     # List investigations
-    response = await client.get(
+    response = await async_client.get(
         "/api/v1/investigations",
         headers={"Authorization": f"Bearer {token}"},
     )
@@ -78,12 +78,12 @@ async def test_list_investigations(client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_get_investigation(client: AsyncClient):
+async def test_get_investigation(async_client: AsyncClient):
     """Test getting a specific investigation"""
-    token = await get_auth_token(client)
+    token = await get_auth_token(async_client)
     
     # Create an investigation
-    create_response = await client.post(
+    create_response = await async_client.post(
         "/api/v1/investigations",
         json={
             "target_name": "João Silva",
@@ -95,7 +95,7 @@ async def test_get_investigation(client: AsyncClient):
     investigation_id = create_response.json()["id"]
     
     # Get investigation
-    response = await client.get(
+    response = await async_client.get(
         f"/api/v1/investigations/{investigation_id}",
         headers={"Authorization": f"Bearer {token}"},
     )
@@ -107,7 +107,7 @@ async def test_get_investigation(client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_unauthorized_access(client: AsyncClient):
+async def test_unauthorized_access(async_client: AsyncClient):
     """Test unauthorized access to investigations"""
-    response = await client.get("/api/v1/investigations")
+    response = await async_client.get("/api/v1/investigations")
     assert response.status_code == 401

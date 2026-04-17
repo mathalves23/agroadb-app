@@ -95,7 +95,6 @@ describe('Navbar Component', () => {
       </BrowserRouter>
     )
 
-    const logoutButton = screen.getByText('Sair')
-    expect(logoutButton).toBeInTheDocument()
+    expect(screen.getByLabelText('Sair da conta')).toBeInTheDocument()
   })
 })

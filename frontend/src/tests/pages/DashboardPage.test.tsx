@@ -17,6 +17,15 @@ jest.mock('@/services/investigationService', () => ({
   },
 }))
 
+jest.mock('@/services/legalService', () => ({
+  legalService: {
+    getLegalSummary: jest.fn().mockResolvedValue({
+      summary: {},
+      updated_at: new Date().toISOString(),
+    }),
+  },
+}))
+
 const createWrapper = () => {
   const queryClient = new QueryClient({
     defaultOptions: {
@@ -68,7 +77,7 @@ describe('DashboardPage Component', () => {
     render(<DashboardPage />, { wrapper: createWrapper() })
 
     expect(screen.getByText('Dashboard')).toBeInTheDocument()
-    expect(screen.getByText(/visão geral das suas investigações/i)).toBeInTheDocument()
+    expect(screen.getByText(/visão geral da plataforma de inteligência patrimonial/i)).toBeInTheDocument()
   })
 
   it('should show "Nova Investigação" button', async () => {
@@ -111,9 +120,9 @@ describe('DashboardPage Component', () => {
     render(<DashboardPage />, { wrapper: createWrapper() })
 
     await waitFor(() => {
-      expect(screen.getByText('Investigações Ativas')).toBeInTheDocument()
-      expect(screen.getByText('Propriedades Encontradas')).toBeInTheDocument()
-      expect(screen.getByText('Empresas Identificadas')).toBeInTheDocument()
+      expect(screen.getByText('Investigações')).toBeInTheDocument()
+      expect(screen.getByText('Propriedades')).toBeInTheDocument()
+      expect(screen.getByText('Empresas')).toBeInTheDocument()
     })
   })
 

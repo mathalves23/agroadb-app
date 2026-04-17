@@ -68,10 +68,10 @@ describe('NewInvestigationPage Integration Tests', () => {
   it('should render form fields', () => {
     render(<NewInvestigationPage />, { wrapper: createWrapper() })
 
-    expect(screen.getByLabelText(/nome do alvo/i)).toBeInTheDocument()
-    expect(screen.getByLabelText(/cpf\/cnpj/i)).toBeInTheDocument()
-    expect(screen.getByLabelText(/descrição\/contexto/i)).toBeInTheDocument()
-    expect(screen.getByLabelText(/prioridade/i)).toBeInTheDocument()
+    expect(screen.getByLabelText(/cpf ou cnpj/i)).toBeInTheDocument()
+    expect(screen.getByLabelText(/nome \(opcional\)/i)).toBeInTheDocument()
+    expect(screen.getByLabelText(/contexto \/ descrição/i)).toBeInTheDocument()
+    expect(screen.getByText('Prioridade')).toBeInTheDocument()
   })
 
   it('should show validation error for empty target name', async () => {
@@ -83,7 +83,7 @@ describe('NewInvestigationPage Integration Tests', () => {
     await user.click(submitButton)
 
     await waitFor(() => {
-      expect(screen.getByText(/nome deve ter no mínimo/i)).toBeInTheDocument()
+      expect(screen.getByText(/informe o nome ou cpf\/cnpj/i)).toBeInTheDocument()
     })
   })
 
@@ -109,14 +109,14 @@ describe('NewInvestigationPage Integration Tests', () => {
 
     render(<NewInvestigationPage />, { wrapper: createWrapper() })
 
-    // Fill form
-    const nameInput = screen.getByLabelText(/nome do alvo/i)
+    // Fill form (CPF válido + nome)
+    const cpfInput = screen.getByLabelText(/cpf ou cnpj/i)
+    await user.type(cpfInput, '12345678900')
+
+    const nameInput = screen.getByLabelText(/nome \(opcional\)/i)
     await user.type(nameInput, 'João Silva')
 
-    const cpfInput = screen.getByLabelText(/cpf\/cnpj/i)
-    await user.type(cpfInput, '123.456.789-00')
-
-    const descInput = screen.getByLabelText(/descrição\/contexto/i)
+    const descInput = screen.getByLabelText(/contexto \/ descrição/i)
     await user.type(descInput, 'Test investigation')
 
     // Submit
@@ -128,7 +128,7 @@ describe('NewInvestigationPage Integration Tests', () => {
       const calls = jest.mocked(investigationService.investigationService.create).mock.calls
       expect(calls[0][0]).toEqual({
         target_name: 'João Silva',
-        target_cpf_cnpj: '123.456.789-00',
+        target_cpf_cnpj: '12345678900',
         target_description: 'Test investigation',
         priority: 3,
       })
@@ -148,7 +148,10 @@ describe('NewInvestigationPage Integration Tests', () => {
 
     render(<NewInvestigationPage />, { wrapper: createWrapper() })
 
-    const nameInput = screen.getByLabelText(/nome do alvo/i)
+    const cpfInput = screen.getByLabelText(/cpf ou cnpj/i)
+    await user.type(cpfInput, '12345678900')
+
+    const nameInput = screen.getByLabelText(/nome \(opcional\)/i)
     await user.type(nameInput, 'João Silva')
 
     const submitButton = screen.getByRole('button', { name: /iniciar investigação/i })
@@ -166,21 +169,19 @@ describe('NewInvestigationPage Integration Tests', () => {
     expect(cancelButton).toBeInTheDocument()
   })
 
-  it('should display help text', () => {
+  it('should display search type and bases sections', () => {
     render(<NewInvestigationPage />, { wrapper: createWrapper() })
 
-    expect(screen.getByText(/como funciona/i)).toBeInTheDocument()
-    expect(screen.getByText(/a investigação será processada automaticamente/i)).toBeInTheDocument()
+    expect(screen.getByText(/tipo de pesquisa/i)).toBeInTheDocument()
+    expect(screen.getByText(/bases que serão consultadas/i)).toBeInTheDocument()
   })
 
-  it('should have all priority options', () => {
+  it('should have all priority level buttons', () => {
     render(<NewInvestigationPage />, { wrapper: createWrapper() })
 
-    const prioritySelect = screen.getByLabelText(/prioridade/i)
-    expect(prioritySelect).toBeInTheDocument()
-    
-    // Check options exist
-    const options = prioritySelect.querySelectorAll('option')
-    expect(options).toHaveLength(5) // 1-5 priorities
+    expect(screen.getByText('Prioridade')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /baixa/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /média/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /urgente/i })).toBeInTheDocument()
   })
 })
