@@ -202,8 +202,6 @@ agroadb/
 │   ├── api/                  # API reference
 │   └── deploy/               # Guias de deploy
 │
-├── scripts/                   # (opcional) automação da sua infra — não versionar segredos
-│
 ├── monitoring/               # Configuração de monitoramento
 │   ├── prometheus.yml        # Config Prometheus
 │   └── grafana/             # Dashboards Grafana
@@ -214,8 +212,7 @@ agroadb/
 │
 ├── docker-compose.production.yml  # Stack de produção
 ├── .env.example              # Exemplo de variáveis
-├── README.md                 # Documentação principal
-└── docs/                     # Tutoriais, API, deploy e referências
+├── README.md                 # Documentação principal (índice; detalhe em docs/)
 ```
 
 ---

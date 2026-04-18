@@ -27,8 +27,6 @@ git remote set-url origin https://github.com/SEU_USUARIO/SEU_REPO.git
 git config --local url."git@github.com:SEU_USUARIO/SEU_REPO.git".insteadOf "https://github.com/SEU_USUARIO/SEU_REPO.git"
 ```
 
-Ou usa o script `scripts/setup-git-remote.sh`.
-
 ## 2. Política de branches (recomendado)
 
 No GitHub: **Settings → Branches → Branch protection rules**.
