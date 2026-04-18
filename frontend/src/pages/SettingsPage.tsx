@@ -16,6 +16,8 @@ import {
   Zap,
 } from 'lucide-react'
 import { legalService } from '@/services/legalService'
+import { PanelListLoader } from '@/components/Loading'
+import { EmptyState } from '@/components/EmptyState'
 
 interface IntegrationInfo {
   name: string
@@ -213,7 +215,7 @@ export default function SettingsPage() {
   const navigate = useNavigate()
   const [selectedCategory, setSelectedCategory] = useState<'all' | 'free' | 'key' | 'conecta'>('all')
 
-  const { data: integrationStatus, isLoading, refetch } = useQuery({
+  const { data: integrationStatus, isLoading, isError, error, refetch } = useQuery({
     queryKey: ['integration-status'],
     queryFn: () => legalService.getIntegrationStatus(),
     staleTime: 60_000,
@@ -295,6 +297,26 @@ export default function SettingsPage() {
         </button>
       </div>
 
+      {isLoading ? (
+        <PanelListLoader
+          message="A carregar estado das integrações..."
+          subMessage="A sincronizar com o backend para indicar APIs ativas e credenciais."
+        />
+      ) : isError ? (
+        <EmptyState
+          variant="embedded"
+          illustration="settings"
+          title="Não foi possível obter o estado das integrações"
+          description={error instanceof Error ? error.message : 'Verifique a ligação ao servidor e tente novamente.'}
+          action={{
+            label: 'Tentar novamente',
+            onClick: () => void refetch(),
+          }}
+        />
+      ) : null}
+
+      {!isLoading && !isError && (
+      <>
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
         {(Object.entries(categoryConfig) as [string, typeof categoryConfig.free][]).map(([key, cfg]) => {
@@ -438,8 +460,10 @@ export default function SettingsPage() {
           )
         })}
       </div>
+      </>
+      )}
 
-      {/* How to configure */}
+      {/* How to configure — visível mesmo com falha na API de estado */}
       <div className="bg-white rounded-xl border border-gray-200/60 p-6">
         <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
           <Globe className="h-5 w-5 text-emerald-600" />

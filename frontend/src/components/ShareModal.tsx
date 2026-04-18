@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { X, Share2, UserPlus, Mail, Check, Trash2, Shield, Eye, Edit3, Crown, Search, AlertCircle, MessageCircle } from 'lucide-react';
 
 interface ShareModalProps {
@@ -26,13 +26,7 @@ export default function ShareModal({ investigationId, investigationName, isOpen,
   const [success, setSuccess] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
 
-  useEffect(() => {
-    if (isOpen) {
-      loadSharedUsers();
-    }
-  }, [isOpen, investigationId]);
-
-  const loadSharedUsers = async () => {
+  const loadSharedUsers = useCallback(async () => {
     try {
       const response = await fetch(`/api/v1/collaboration/investigations/${investigationId}/shares`, {
         headers: {
@@ -46,7 +40,13 @@ export default function ShareModal({ investigationId, investigationName, isOpen,
     } catch (error) {
       // silenced for production
     }
-  };
+  }, [investigationId]);
+
+  useEffect(() => {
+    if (isOpen) {
+      void loadSharedUsers();
+    }
+  }, [isOpen, loadSharedUsers]);
 
   const handleShare = async () => {
     if (!email.trim()) {

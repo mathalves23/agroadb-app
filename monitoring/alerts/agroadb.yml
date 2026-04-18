@@ -1,0 +1,60 @@
+# Regras Prometheus — AgroADB (circuitos Celery e filas)
+# Ajuste thresholds e labels `severity` ao seu processo de on-call.
+
+groups:
+  - name: agroadb_celery
+    interval: 30s
+    rules:
+      - alert: CeleryTaskFailuresHigh
+        expr: |
+          sum by (task_name) (
+            increase(celery_task_runs_total{state="FAILURE"}[10m])
+          ) > 8
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Taxa elevada de falhas Celery ({{ $labels.task_name }})"
+          description: "Mais de 8 falhas/rejeições em 10m por tarefa. Rever logs do worker e integrações."
+
+      - alert: CeleryTaskDurationHigh
+        expr: |
+          histogram_quantile(0.95,
+            sum by (le, task_name) (rate(celery_task_duration_seconds_bucket[10m]))
+          ) > 600
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "P95 de duração Celery alto ({{ $labels.task_name }})"
+          description: "P95 acima de 10 minutos — possível bloqueio ou integração lenta."
+
+  - name: agroadb_circuit_queues
+    interval: 30s
+    rules:
+      - alert: ScraperQueueCircuitBreakerOpen
+        expr: agroadb_scraper_circuit_breaker_open == 1
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Circuit breaker Redis aberto ({{ $labels.scraper_type }})"
+          description: "O scraper deixou de enfileirar/processar até o circuito expirar ou haver sucessos."
+
+      - alert: ExternalCircuitBreakerOpen
+        expr: agroadb_external_circuit_breaker_open == 1
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Circuit breaker HTTP aberto ({{ $labels.name }})"
+          description: "Serviço externo protegido pelo circuit breaker in-memory."
+
+      - alert: QueueDepthHigh
+        expr: sum by (scraper_type) (agroadb_queue_tasks) > 200
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Profundidade de fila elevada ({{ $labels.scraper_type }})"
+          description: "Muitas tarefas pendentes — escalar workers ou investigar bloqueios."

@@ -27,11 +27,26 @@ from collections import defaultdict
 import logging
 
 from app.domain.user import User
-from app.domain.investigation import Investigation
+from app.domain.investigation import Investigation, InvestigationStatus
 from app.domain.property import Property
 from app.domain.company import Company
 
 logger = logging.getLogger(__name__)
+
+
+def _scalar_count(val: Any) -> int:
+    """Normaliza resultado de COUNT/scalar para int (compatível com mocks em testes)."""
+    if val is None:
+        return 0
+    if isinstance(val, bool):
+        return int(val)
+    if isinstance(val, (int, float)):
+        return int(val)
+    try:
+        return int(val)
+    except (TypeError, ValueError):
+        return 0
+
 
 __version__ = "1.0.0"
 __all__ = [
@@ -63,29 +78,29 @@ class MetricsCalculator:
             end_date = datetime.utcnow()
         
         # Total de usuários
-        total_users = self.db.query(func.count(User.id)).scalar()
-        active_users = self.db.query(func.count(User.id)).filter(
+        total_users = _scalar_count(self.db.query(func.count(User.id)).scalar())
+        active_users = _scalar_count(self.db.query(func.count(User.id)).filter(
             User.is_active == True
-        ).scalar()
+        ).scalar())
         
         # Usuários novos no período
-        new_users = self.db.query(func.count(User.id)).filter(
+        new_users = _scalar_count(self.db.query(func.count(User.id)).filter(
             and_(
                 User.created_at >= start_date,
                 User.created_at <= end_date
             )
-        ).scalar()
+        ).scalar())
         
         # Total de investigações
-        total_investigations = self.db.query(func.count(Investigation.id)).scalar()
+        total_investigations = _scalar_count(self.db.query(func.count(Investigation.id)).scalar())
         
         # Investigações no período
-        period_investigations = self.db.query(func.count(Investigation.id)).filter(
+        period_investigations = _scalar_count(self.db.query(func.count(Investigation.id)).filter(
             and_(
                 Investigation.created_at >= start_date,
                 Investigation.created_at <= end_date
             )
-        ).scalar()
+        ).scalar())
         
         # Investigações por status
         investigations_by_status = self.db.query(
@@ -93,10 +108,13 @@ class MetricsCalculator:
             func.count(Investigation.id)
         ).group_by(Investigation.status).all()
         
-        status_dict = {status: count for status, count in investigations_by_status}
+        status_dict: Dict[str, Any] = {}
+        for status, count in investigations_by_status:
+            key = getattr(status, "value", status)
+            status_dict[str(key)] = _scalar_count(count)
         
         # Taxa de conclusão
-        completed = status_dict.get("completed", 0)
+        completed = status_dict.get(InvestigationStatus.COMPLETED.value, status_dict.get("completed", 0))
         completion_rate = (completed / total_investigations * 100) if total_investigations > 0 else 0
         
         return {

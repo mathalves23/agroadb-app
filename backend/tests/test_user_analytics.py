@@ -24,7 +24,7 @@ from app.analytics.user_analytics_part2 import (
     NPSResponse
 )
 from app.domain.user import User
-from app.domain.investigation import Investigation
+from app.domain.investigation import Investigation, InvestigationStatus
 from app.domain.property import Property
 from app.domain.company import Company
 
@@ -43,31 +43,49 @@ def mock_db():
 def sample_users():
     """Usuários de exemplo"""
     return [
-        User(id=i, username=f"user{i}", email=f"user{i}@example.com", is_active=True, role="user")
+        User(
+            id=i,
+            username=f"user{i}",
+            email=f"user{i}@example.com",
+            full_name=f"User {i}",
+            hashed_password="fixture",
+            is_active=True,
+        )
         for i in range(1, 101)
     ]
 
 
+def _ua_prop(iid: int, pid: int) -> Property:
+    return Property(id=pid, investigation_id=iid, data_source="fixture")
+
+
+def _ua_comp(iid: int, cid: int) -> Company:
+    return Company(id=cid, investigation_id=iid, cnpj=f"{cid % 10**14:014d}", data_source="fixture")
+
+
 @pytest.fixture
 def sample_investigations():
-    """Investigações de exemplo"""
+    """Investigações de exemplo (ORM)."""
     now = datetime.utcnow()
     invs = []
-    
+
     for i in range(1, 51):
+        st = InvestigationStatus.COMPLETED if i % 3 != 0 else InvestigationStatus.IN_PROGRESS
+        comp_at = now - timedelta(days=29 - i) if i % 3 != 0 else None
         inv = Investigation(
             id=i,
             user_id=(i % 10) + 1,
-            cpf_cnpj=f"1234567890{i}",
-            status="completed" if i % 3 != 0 else "in_progress",
-            created_at=now - timedelta(days=30-i),
-            updated_at=now - timedelta(days=29-i),
-            completed_at=now - timedelta(days=29-i) if i % 3 != 0 else None,
-            properties=[Property(id=j) for j in range(i, i+3)],
-            companies=[Company(id=j) for j in range(i, i+2)]
+            target_name=f"Alvo {i}",
+            target_cpf_cnpj=f"1234567890{i:02d}",
+            status=st,
+            created_at=now - timedelta(days=30 - i),
+            updated_at=now - timedelta(days=29 - i),
+            completed_at=comp_at,
+            properties=[_ua_prop(i, j) for j in range(i, i + 3)],
+            companies=[_ua_comp(i, j) for j in range(i, i + 2)],
         )
         invs.append(inv)
-    
+
     return invs
 
 
@@ -222,7 +240,14 @@ class TestFeatureAdoptionAnalytics:
         """Testa perfil de adoção de usuário"""
         analytics = FeatureAdoptionAnalytics(mock_db)
         
-        user = User(id=1, username="test", email="test@example.com", is_active=True)
+        user = User(
+            id=1,
+            username="test",
+            email="test@example.com",
+            full_name="Test",
+            hashed_password="fixture",
+            is_active=True,
+        )
         mock_db.query().filter().first.return_value = user
         mock_db.query().filter().scalar.return_value = 15
         

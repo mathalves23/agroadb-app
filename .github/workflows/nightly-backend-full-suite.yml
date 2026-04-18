@@ -1,0 +1,70 @@
+# Suíte completa backend (pytest tests/) — opcional, agendada.
+# O job principal em ci.yml mantém subconjunto para feedback rápido em PR.
+name: Nightly backend — suíte completa
+
+on:
+  schedule:
+    - cron: "0 5 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  PYTHON_VERSION: "3.11"
+
+jobs:
+  backend-full-tests:
+    name: Pytest completo (tests/)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: agroadb
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: agroadb_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Instalar dependências
+        env:
+          PIP_INDEX_URL: https://pypi.org/simple
+        run: pip install -r backend/requirements.txt
+
+      - name: Pytest suíte completa
+        env:
+          _CI_DATABASE_URL: ${{ secrets.CI_DATABASE_URL }}
+          _CI_REDIS_URL: ${{ secrets.CI_REDIS_URL }}
+          _CI_SECRET_KEY: ${{ secrets.CI_SECRET_KEY }}
+          _CI_ENCRYPTION_KEY: ${{ secrets.CI_ENCRYPTION_KEY }}
+        run: |
+          export DATABASE_URL="${_CI_DATABASE_URL:-postgresql+asyncpg://agroadb:test_password@localhost:5432/agroadb_test}"
+          export REDIS_URL="${_CI_REDIS_URL:-redis://localhost:6379/0}"
+          export SECRET_KEY="${_CI_SECRET_KEY:-ci-test-secret-key-at-least-32-chars-long}"
+          export ENCRYPTION_KEY="${_CI_ENCRYPTION_KEY:-MDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDA=}"
+          cd backend
+          pytest tests/ -q --tb=short

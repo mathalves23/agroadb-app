@@ -21,9 +21,12 @@ def client() -> TestClient:
 CONTRACT_PATHS: list[tuple[str, str, bool]] = [
     ("GET", "/health", False),
     ("GET", "/", False),
+    ("GET", "/metrics", False),
     ("GET", "/api/docs", False),
     ("GET", "/api/v1/ml/health", False),
     ("GET", "/api/v1/integrations/health", False),
+    ("GET", "/api/v1/integrations/tribunais/systems", False),
+    ("GET", "/api/v1/analytics/overview", True),
     ("GET", "/api/v1/platform/proposition", False),
     ("GET", "/api/v1/platform/compliance-summary", False),
     ("GET", "/api/openapi.json", False),
@@ -47,6 +50,8 @@ def test_openapi_lists_stable_public_paths(client: TestClient) -> None:
         "/api/v1/platform/compliance-summary",
         "/api/v1/ml/health",
         "/api/v1/integrations/health",
+        "/api/v1/integrations/tribunais/systems",
+        "/api/v1/analytics/overview",
     ):
         assert path in paths, f"OpenAPI em falta: {path}"
 
@@ -75,3 +80,11 @@ def test_integrations_health_shape(client: TestClient) -> None:
     assert "car" in data and isinstance(data["car"], dict)
     assert data["car"].get("status")
     assert "tribunais" in data
+
+
+def test_tribunal_systems_contract_shape(client: TestClient) -> None:
+    data = client.get("/api/v1/integrations/tribunais/systems").json()
+    assert "esaj_states" in data and isinstance(data["esaj_states"], list)
+    assert "projudi_states" in data and isinstance(data["projudi_states"], list)
+    assert "pje" in data and isinstance(data["pje"], dict)
+    assert "SP" in data["esaj_states"]

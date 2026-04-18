@@ -52,3 +52,13 @@ async def get_current_superuser(
 CurrentUser = Annotated[User, Depends(get_current_active_user)]
 CurrentSuperuser = Annotated[User, Depends(get_current_superuser)]
 DatabaseSession = Annotated[AsyncSession, Depends(get_db)]
+
+
+async def require_admin(
+    current_user: Annotated[User, Depends(get_current_superuser)],
+) -> User:
+    """
+    Administrador da plataforma: superutilizador autenticado.
+    Usado em rotas de analytics/admin; alinha-se a políticas mínimas quando não existe papel `admin` separado.
+    """
+    return current_user

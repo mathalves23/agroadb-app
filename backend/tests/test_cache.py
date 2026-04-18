@@ -14,6 +14,8 @@ class TestCacheService:
         """Create cache service instance"""
         service = CacheService()
         await service.connect()
+        if service.redis_client:
+            await service.redis_client.flushdb()
         yield service
         await service.disconnect()
     
@@ -183,7 +185,16 @@ class TestCacheService:
 
 class TestCachePerformance:
     """Test cache performance"""
-    
+
+    @pytest.fixture
+    async def cache_service(self):
+        service = CacheService()
+        await service.connect()
+        if service.redis_client:
+            await service.redis_client.flushdb()
+        yield service
+        await service.disconnect()
+
     @pytest.mark.asyncio
     async def test_bulk_set_performance(self, cache_service: CacheService):
         """Test bulk setting performance"""

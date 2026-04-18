@@ -6,7 +6,7 @@ Testes unitários e de integração para métricas, dashboards e relatórios.
 
 import pytest
 from datetime import datetime, timedelta
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, patch, MagicMock
 from sqlalchemy.orm import Session
 
 from app.analytics import MetricsCalculator, AnalyticsAggregator
@@ -28,8 +28,36 @@ from app.domain.investigation import Investigation
 
 @pytest.fixture
 def mock_db():
-    """Mock da sessão do banco de dados"""
-    return Mock(spec=Session)
+    """Mock da sessão do banco de dados (cadeia query compatível com SQLAlchemy-like)."""
+    return MagicMock(spec=Session)
+
+
+def _stub_executive_summary(overview=None):
+    overview = overview or {"investigations": {"by_status": {"completed": 0}}}
+    return {
+        "kpis": {
+            "active_users": 1,
+            "total_investigations": 1,
+            "completion_rate": 0.0,
+            "mrr": 0.0,
+        },
+        "health_score": 85.0,
+        "usage": {"daily_activity": [], "top_users": []},
+        "overview": overview,
+        "scrapers": {},
+        "geographic": {"by_state": [{"state": "SP", "properties_count": 1}]},
+        "performance": {
+            "api": {
+                "average_response_time_ms": 120.0,
+                "error_rate": 0.01,
+                "requests_per_second": 5.0,
+            }
+        },
+        "financial": {
+            "revenue": {"mrr": 50000.0, "arr": 600000.0},
+            "roi": {"margin_percentage": 10.0, "profit": 100.0},
+        },
+    }
 
 
 @pytest.fixture
@@ -104,14 +132,14 @@ class TestMetricsCalculator:
     def test_get_overview_metrics_structure(self, mock_db):
         """Testa estrutura do retorno de overview_metrics"""
         calculator = MetricsCalculator(mock_db)
-        
-        # Mock das queries
-        mock_db.query().scalar.return_value = 10
-        mock_db.query().filter().scalar.return_value = 8
-        mock_db.query().group_by().all.return_value = [
+        q = mock_db.query.return_value
+        q.filter.return_value = q
+        q.scalar.side_effect = [10, 8, 2, 100, 15]
+        q.group_by.return_value = q
+        q.all.return_value = [
             ("completed", 5),
             ("in_progress", 3),
-            ("pending", 2)
+            ("pending", 2),
         ]
         
         result = calculator.get_overview_metrics()
@@ -136,9 +164,11 @@ class TestMetricsCalculator:
         start = datetime(2024, 1, 1)
         end = datetime(2024, 1, 31)
         
-        mock_db.query().scalar.return_value = 5
-        mock_db.query().filter().scalar.return_value = 3
-        mock_db.query().group_by().all.return_value = []
+        q = mock_db.query.return_value
+        q.filter.return_value = q
+        q.scalar.side_effect = [5, 3, 0, 100, 10]
+        q.group_by.return_value = q
+        q.all.return_value = []
         
         result = calculator.get_overview_metrics(start, end)
         
@@ -365,13 +395,24 @@ class TestDashboardBuilder:
                     "active_users": 100,
                     "total_investigations": 500,
                     "completion_rate": 75.0,
-                    "mrr": 50000
+                    "mrr": 50000,
                 },
                 "health_score": 85.0,
                 "usage": {"daily_activity": [], "top_users": []},
                 "overview": {"investigations": {"by_status": {"completed": 300}}},
-                "financial": {"revenue": {"mrr": 50000}},
-                "performance": {"api": {"average_response_time_ms": 120}}
+                "financial": {
+                    "revenue": {"mrr": 50000, "arr": 600000},
+                    "roi": {"margin_percentage": 10.0, "profit": 100.0},
+                },
+                "performance": {
+                    "api": {
+                        "average_response_time_ms": 120,
+                        "error_rate": 0.01,
+                        "requests_per_second": 5.0,
+                    }
+                },
+                "geographic": {"by_state": [{"state": "SP", "properties_count": 10}]},
+                "scrapers": {},
             }
             
             dashboard = builder.build_executive_dashboard()
@@ -391,10 +432,12 @@ class TestDashboardBuilder:
         
         with patch.object(builder.aggregator, 'generate_operational_report') as mock_report:
             mock_report.return_value = {
-                "overview": {"investigations": {"in_period": 50}},
+                "overview": {
+                    "investigations": {"in_period": 50, "completion_rate": 40.0},
+                },
                 "usage": {"daily_activity": [], "completion_time": {"average_hours": 24}},
                 "scrapers": {"by_scraper": {}},
-                "recommendations": ["Tudo ok"]
+                "recommendations": ["Tudo ok"],
             }
             
             dashboard = builder.build_operations_dashboard()
@@ -608,16 +651,7 @@ class TestAnalyticsIntegration:
         # 2. Gerar dashboard
         builder = DashboardBuilder(mock_db)
         with patch.object(builder.aggregator, 'generate_executive_summary') as mock_summary:
-            mock_summary.return_value = {
-                "kpis": {},
-                "health_score": 85.0,
-                "overview": overview,
-                "usage": {"daily_activity": [], "top_users": []},
-                "scrapers": {},
-                "geographic": {"by_state": []},
-                "performance": {"api": {}},
-                "financial": {"revenue": {}}
-            }
+            mock_summary.return_value = _stub_executive_summary(overview)
             
             dashboard = builder.build_executive_dashboard()
             assert len(dashboard.widgets) > 0
@@ -650,8 +684,11 @@ class TestAnalyticsPerformance:
         import time
         
         calculator = MetricsCalculator(mock_db)
-        mock_db.query().scalar.return_value = 1000
-        mock_db.query().group_by().all.return_value = []
+        q = mock_db.query.return_value
+        q.filter.return_value = q
+        q.scalar.side_effect = [1000] * 10
+        q.group_by.return_value = q
+        q.all.return_value = []
         
         start = time.time()
         calculator.get_overview_metrics()
@@ -667,16 +704,7 @@ class TestAnalyticsPerformance:
         builder = DashboardBuilder(mock_db)
         
         with patch.object(builder.aggregator, 'generate_executive_summary') as mock_summary:
-            mock_summary.return_value = {
-                "kpis": {},
-                "health_score": 85.0,
-                "overview": {"users": {}, "investigations": {"by_status": {}}},
-                "usage": {"daily_activity": [], "top_users": []},
-                "scrapers": {"by_scraper": {}},
-                "geographic": {"by_state": []},
-                "performance": {"api": {}},
-                "financial": {"revenue": {}}
-            }
+            mock_summary.return_value = _stub_executive_summary()
             
             start = time.time()
             builder.build_executive_dashboard()

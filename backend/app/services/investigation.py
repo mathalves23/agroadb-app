@@ -20,6 +20,20 @@ class InvestigationService:
     
     def __init__(self, investigation_repo: InvestigationRepository):
         self.investigation_repo = investigation_repo
+
+    @staticmethod
+    def plaintext_target_document(stored: Optional[str]) -> Optional[str]:
+        """Valor em texto claro para APIs/scrapers (BD pode estar cifrada)."""
+        if not stored:
+            return None
+        if not settings.ENCRYPTION_KEY:
+            return stored
+        try:
+            from app.core.encryption import data_encryption
+
+            return data_encryption.decrypt(stored)
+        except Exception:
+            return stored
     
     async def create_investigation(
         self, user_id: int, investigation_data: InvestigationCreate
@@ -74,13 +88,14 @@ class InvestigationService:
         )
 
         results = {"properties": [], "lease_contracts": [], "companies": []}
+        target_doc = self.plaintext_target_document(investigation.target_cpf_cnpj)
 
         try:
             # CAR
             try:
                 logger.info(f"[sync-fallback] Executando CAR para investigação {investigation.id}")
                 car = CARScraper()
-                car_res = await car.search(investigation.target_name, investigation.target_cpf_cnpj)
+                car_res = await car.search(investigation.target_name, target_doc)
                 results["properties"].extend(car_res)
             except Exception as exc:
                 logger.warning(f"[sync-fallback] CAR falhou para investigação {investigation.id}: {exc}")
@@ -89,17 +104,17 @@ class InvestigationService:
             try:
                 logger.info(f"[sync-fallback] Executando INCRA para investigação {investigation.id}")
                 incra = INCRAScraper()
-                incra_res = await incra.search(investigation.target_name, investigation.target_cpf_cnpj)
+                incra_res = await incra.search(investigation.target_name, target_doc)
                 results["properties"].extend(incra_res)
             except Exception as exc:
                 logger.warning(f"[sync-fallback] INCRA falhou para investigação {investigation.id}: {exc}")
 
             # Receita Federal
-            if investigation.target_cpf_cnpj:
+            if target_doc:
                 try:
                     logger.info(f"[sync-fallback] Executando Receita para investigação {investigation.id}")
                     receita = ReceitaScraper()
-                    company_res = await receita.search(investigation.target_cpf_cnpj)
+                    company_res = await receita.search(target_doc)
                     results["companies"].extend(company_res)
                 except Exception as exc:
                     logger.warning(f"[sync-fallback] Receita falhou para investigação {investigation.id}: {exc}")

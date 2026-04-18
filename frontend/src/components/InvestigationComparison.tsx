@@ -6,7 +6,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FadeIn } from '../components/Animations';
-import { useToast } from '../components/Toast';
+import { useToast } from '@/hooks/useToast'
 
 interface Investigation {
   id: string;

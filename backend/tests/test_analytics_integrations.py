@@ -471,10 +471,52 @@ async def test_zapier_trigger(mock_post):
 @pytest.mark.asyncio
 async def test_complete_dashboard_generation(admin_dashboard, mock_db):
     """Testa geração completa do dashboard"""
-    mock_db.query.return_value.filter.return_value.scalar.return_value = 100
-    mock_db.query.return_value.filter.return_value.all.return_value = []
-    
-    result = await admin_dashboard.get_complete_dashboard()
+    stub_platform = {
+        "period": {"start_date": "", "end_date": "", "days": 30},
+        "users": {"total": 10, "active": 5, "new": 1, "growth_rate": 0.0, "active_percentage": 50.0},
+        "investigations": {
+            "total": 3,
+            "period": 1,
+            "completed": 0,
+            "active": 0,
+            "growth_rate": 0.0,
+            "completion_rate": 0.0,
+        },
+    }
+    with (
+        patch.object(admin_dashboard, "get_platform_metrics", AsyncMock(return_value=stub_platform)),
+        patch.object(
+            admin_dashboard,
+            "get_investigations_by_period",
+            AsyncMock(return_value={"data": [], "totals": {}, "period": {"group_by": "day"}}),
+        ),
+        patch.object(
+            admin_dashboard,
+            "get_average_completion_time",
+            AsyncMock(return_value={"average_time": {"days": 1}, "total_completed": 0}),
+        ),
+        patch.object(
+            admin_dashboard,
+            "get_conversion_rate",
+            AsyncMock(return_value={"conversion_rates": {}, "funnel": [], "health_score": 0}),
+        ),
+        patch.object(
+            admin_dashboard,
+            "get_most_active_users",
+            AsyncMock(return_value={"active_users": [], "total_investigations": 0}),
+        ),
+        patch.object(
+            admin_dashboard,
+            "get_most_used_scrapers",
+            AsyncMock(return_value={"scrapers": [], "summary": {}}),
+        ),
+        patch.object(
+            admin_dashboard,
+            "get_most_consulted_data_sources",
+            AsyncMock(return_value={"sources": [], "summary": {}}),
+        ),
+    ):
+        result = await admin_dashboard.get_complete_dashboard()
     
     assert "platform_metrics" in result
     assert "investigations_by_period" in result

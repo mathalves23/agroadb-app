@@ -5,7 +5,7 @@
  */
 import { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useOnboarding } from '../contexts/OnboardingContext';
+import { useOnboarding } from '@/hooks/useOnboarding'
 
 export function OnboardingTooltip() {
   const {

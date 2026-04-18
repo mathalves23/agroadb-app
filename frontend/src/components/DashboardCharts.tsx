@@ -21,7 +21,7 @@ import {
 } from 'recharts';
 import { StaggerChildren } from '../components/Animations';
 import { Loading } from '../components/Loading';
-import { useTheme } from '../contexts/ThemeContext';
+import { useTheme } from '@/hooks/useTheme'
 import { investigationService } from '@/services/investigationService';
 
 export function DashboardCharts() {

@@ -18,7 +18,7 @@ import logging
 from collections import defaultdict
 
 from app.domain.user import User
-from app.domain.investigation import Investigation
+from app.domain.investigation import Investigation, InvestigationStatus
 from app.domain.property import Property
 from app.domain.company import Company
 
@@ -305,16 +305,19 @@ class ROIReport:
         
         roi_absolute = revenue - total_cost
         
+        st = investigation.status
+        status_str = st.value if isinstance(st, InvestigationStatus) else str(st)
+
         return ROIMetrics(
             investigation_id=investigation.id,
-            investigation_cpf_cnpj=investigation.cpf_cnpj,
+            investigation_cpf_cnpj=investigation.target_cpf_cnpj or "",
             created_at=investigation.created_at,
             completed_at=investigation.completed_at,
             total_cost=total_cost,
             revenue_generated=revenue,
             roi_percentage=roi_percentage,
             roi_absolute=roi_absolute,
-            status=investigation.status,
+            status=status_str,
             user_id=investigation.user_id,
             properties_found=properties_count,
             companies_found=companies_count

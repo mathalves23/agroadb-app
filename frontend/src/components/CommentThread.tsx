@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { MessageSquare, Send, Edit3, Trash2, Lock, CheckCheck } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { formatDistanceToNow } from 'date-fns';
@@ -30,11 +30,7 @@ export default function CommentThread({ investigationId, currentUserId }: Commen
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editContent, setEditContent] = useState('');
 
-  useEffect(() => {
-    loadComments();
-  }, [investigationId]);
-
-  const loadComments = async () => {
+  const loadComments = useCallback(async () => {
     try {
       const response = await fetch(
         `/api/v1/collaboration/investigations/${investigationId}/comments`,
@@ -51,7 +47,11 @@ export default function CommentThread({ investigationId, currentUserId }: Commen
     } catch (error) {
       // silenced for production
     }
-  };
+  }, [investigationId]);
+
+  useEffect(() => {
+    void loadComments();
+  }, [loadComments]);
 
   const handleAddComment = async () => {
     if (!newComment.trim()) return;

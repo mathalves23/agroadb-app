@@ -72,12 +72,10 @@ class TestReceitaScraper:
         assert isinstance(result, list)
     
     @pytest.mark.asyncio
-    @patch('app.scrapers.receita_scraper.ReceitaScraper.fetch')
+    @patch("app.scrapers.receita_scraper.ReceitaScraper._fetch_from_provider", new_callable=AsyncMock)
     async def test_search_with_mock_data(self, mock_fetch):
         """Test search with mocked API response"""
-        # Mock response
-        mock_response = Mock()
-        mock_response.json.return_value = {
+        mock_fetch.return_value = {
             "cnpj": "12345678000100",
             "razao_social": "Test Company",
             "nome_fantasia": "Test",
@@ -94,15 +92,14 @@ class TestReceitaScraper:
                     "nome_socio": "João Silva",
                     "qualificacao_socio": "Administrador",
                 }
-            ]
+            ],
         }
-        mock_fetch.return_value = mock_response
         
         scraper = ReceitaScraper()
         result = await scraper.search("12.345.678/0001-00")
         
         assert len(result) == 1
-        assert result[0]["cnpj"] == "12345678000100"
+        assert result[0]["cnpj"] == "12.345.678/0001-00"
         assert result[0]["corporate_name"] == "Test Company"
         assert len(result[0]["partners"]) == 1
     
@@ -133,10 +130,8 @@ async def test_receita_scraper_success_response():
     """Test Receita scraper with successful response"""
     scraper = ReceitaScraper()
     
-    # Mock a successful response
-    with patch.object(scraper, 'fetch') as mock_fetch:
-        mock_response = Mock()
-        mock_response.json.return_value = {
+    with patch.object(ReceitaScraper, "_fetch_from_provider", new_callable=AsyncMock) as mock_fetch:
+        mock_fetch.return_value = {
             "cnpj": "12345678000100",
             "razao_social": "Test Company LTDA",
             "nome_fantasia": "Test Company",
@@ -154,14 +149,13 @@ async def test_receita_scraper_success_response():
                     "cpf_cnpj_socio": "12345678900",
                     "qualificacao_socio": "Sócio-Administrador"
                 }
-            ]
+            ],
         }
-        mock_fetch.return_value = mock_response
         
         result = await scraper.search("12.345.678/0001-00")
         
         assert len(result) == 1
-        assert result[0]["cnpj"] == "12345678000100"
+        assert result[0]["cnpj"] == "12.345.678/0001-00"
         assert result[0]["corporate_name"] == "Test Company LTDA"
         assert len(result[0]["partners"]) == 1
         assert result[0]["partners"][0]["name"] == "João Silva"
@@ -185,14 +179,12 @@ async def test_receita_scraper_empty_qsa():
     """Test Receita scraper with empty partners list"""
     scraper = ReceitaScraper()
     
-    with patch.object(scraper, 'fetch') as mock_fetch:
-        mock_response = Mock()
-        mock_response.json.return_value = {
+    with patch.object(ReceitaScraper, "_fetch_from_provider", new_callable=AsyncMock) as mock_fetch:
+        mock_fetch.return_value = {
             "cnpj": "12345678000100",
             "razao_social": "Test Company",
-            "qsa": []  # Empty partners
+            "qsa": [],  # Empty partners
         }
-        mock_fetch.return_value = mock_response
         
         result = await scraper.search("12.345.678/0001-00")
         

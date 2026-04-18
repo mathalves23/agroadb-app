@@ -1,62 +1,37 @@
-# Prometheus Configuration for AgroADB
+# Prometheus — AgroADB (compose com profile `obs`)
+# Targets usam nomes de serviço Docker na rede do projecto.
 
 global:
   scrape_interval: 15s
-  evaluation_interval: 15s
+  evaluation_interval: 30s
   external_labels:
-    cluster: 'agroadb-production'
-    environment: 'production'
+    cluster: agroadb
+    environment: docker-compose
 
-# Alertmanager configuration (opcional)
 alerting:
   alertmanagers:
     - static_configs:
-        - targets:
-          # - alertmanager:9093
+        - targets: []
 
-# Rules
 rule_files:
-  # - "alerts/*.yml"
+  - /etc/prometheus/alerts/agroadb.yml
 
-# Scrape configurations
 scrape_configs:
-  # Backend API
-  - job_name: 'agroadb-backend'
-    metrics_path: '/metrics'
+  - job_name: agroadb-backend
+    metrics_path: /metrics
     static_configs:
-      - targets: ['backend:8000']
+      - targets: ["backend:8000"]
         labels:
-          service: 'backend'
-          app: 'agroadb'
-  
-  # PostgreSQL (com postgres_exporter)
-  - job_name: 'postgres'
+          service: api
+
+  - job_name: agroadb-celery-worker
+    metrics_path: /metrics
     static_configs:
-      - targets: ['postgres-exporter:9187']
+      - targets: ["celery-worker:9464"]
         labels:
-          service: 'postgres'
-          app: 'agroadb'
-  
-  # Redis (com redis_exporter)
-  - job_name: 'redis'
-    static_configs:
-      - targets: ['redis-exporter:9121']
-        labels:
-          service: 'redis'
-          app: 'agroadb'
-  
-  # Nginx
-  - job_name: 'nginx'
-    static_configs:
-      - targets: ['nginx-exporter:9113']
-        labels:
-          service: 'nginx'
-          app: 'agroadb'
-  
-  # Node Exporter (métricas do sistema)
-  - job_name: 'node'
-    static_configs:
-      - targets: ['node-exporter:9100']
-        labels:
-          service: 'node'
-          app: 'agroadb'
+          service: celery-worker
+
+  # --- Opcional: activar quando tiver exporters na mesma rede ---
+  # - job_name: postgres
+  #   static_configs:
+  #     - targets: ["postgres-exporter:9187"]

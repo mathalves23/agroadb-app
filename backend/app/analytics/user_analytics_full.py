@@ -25,6 +25,17 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+def _count_int(val) -> int:
+    if val is None:
+        return 0
+    if isinstance(val, (int, float)) and not isinstance(val, bool):
+        return int(val)
+    try:
+        return int(val)
+    except (TypeError, ValueError):
+        return 0
+
+
 class UserAnalytics:
     """Classe para analytics avançado de usuário"""
     
@@ -65,24 +76,25 @@ class UserAnalytics:
             from app.domain.investigation import Investigation
             
             # Estágio 1: Usuários registrados
-            total_registered = self.db.query(func.count(User.id)).filter(
+            total_registered = _count_int(
+                self.db.query(func.count(User.id)).filter(
                 and_(
                     User.created_at >= start_date,
                     User.created_at <= end_date
                 )
-            ).scalar() or 0
+            ).scalar())
             
             # Estágio 2: Primeiro login
-            users_first_login = self.db.query(func.count(User.id)).filter(
+            users_first_login = _count_int(self.db.query(func.count(User.id)).filter(
                 and_(
                     User.created_at >= start_date,
                     User.created_at <= end_date,
                     User.last_login.isnot(None)
                 )
-            ).scalar() or 0
+            ).scalar())
             
             # Estágio 3: Primeira investigação
-            users_first_investigation = self.db.query(
+            users_first_investigation = _count_int(self.db.query(
                 func.count(User.id.distinct())
             ).join(
                 Investigation, Investigation.user_id == User.id
@@ -91,7 +103,7 @@ class UserAnalytics:
                     User.created_at >= start_date,
                     User.created_at <= end_date
                 )
-            ).scalar() or 0
+            ).scalar())
             
             # Estágio 4: Primeira colaboração (simulado)
             users_first_collaboration = int(users_first_investigation * 0.6)
@@ -100,7 +112,7 @@ class UserAnalytics:
             users_first_report = int(users_first_investigation * 0.45)
             
             # Estágio 6: Usuário ativo recorrente (mais de 5 investigações)
-            active_recurring = self.db.query(
+            active_recurring = _count_int(self.db.query(
                 func.count(User.id.distinct())
             ).join(
                 Investigation, Investigation.user_id == User.id
@@ -111,7 +123,7 @@ class UserAnalytics:
                 )
             ).group_by(User.id).having(
                 func.count(Investigation.id) >= 5
-            ).scalar() or 0
+            ).scalar())
             
             # Calcula conversões
             funnel_stages = [

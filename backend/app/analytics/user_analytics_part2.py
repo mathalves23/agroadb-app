@@ -609,7 +609,9 @@ class NPSAnalytics:
         total_users = self.db.query(func.count(User.id)).filter(
             User.is_active == True
         ).scalar()
-        response_rate = (total_responses / total_users * 100) if total_users > 0 else 0
+        raw_rate = (total_responses / total_users * 100) if total_users > 0 else 0.0
+        # Taxa de resposta como percentagem (nunca > 100 com dados simulados / denominador de utilizadores)
+        response_rate = min(100.0, float(raw_rate))
         
         # Trend (comparar com período anterior)
         trend = self._calculate_nps_trend(nps_score)

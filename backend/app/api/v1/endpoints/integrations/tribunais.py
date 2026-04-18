@@ -18,7 +18,11 @@ from app.core.config import settings
 from app.api.v1.deps import get_current_user
 from app.domain.user import User
 from app.integrations.car_estados import CARIntegration, query_car_single
-from app.integrations.tribunais import TribunalIntegration, query_process_by_number
+from app.integrations.tribunais import (
+    TribunalIntegration,
+    TribunalConfig,
+    query_process_by_number,
+)
 from app.integrations.orgaos_federais import OrgaoFederalIntegration
 from app.integrations.bureaus import BureauIntegration
 from app.integrations.comunicacao import ComunicacaoIntegration
@@ -62,6 +66,20 @@ from app.api.v1.endpoints.integrations_helpers import (
 logger = logging.getLogger(__name__)
 audit_logger = AuditLogger()
 router = APIRouter()
+
+
+@router.get("/tribunais/systems", summary="Sistemas e estados de tribunais suportados")
+async def list_tribunal_systems() -> Dict[str, Any]:
+    """Lista estados com e-SAJ, Projudi e referência ao PJe (contrato estável para clientes)."""
+    return {
+        "esaj_states": sorted(TribunalConfig.ESAJ_STATES.keys()),
+        "projudi_states": sorted(TribunalConfig.PROJUDI_STATES.keys()),
+        "pje": {
+            "base_url": TribunalConfig.PJE_URL,
+            "description": "PJe 2.0 — consulta nacional",
+        },
+    }
+
 
 # Schemas
 class CARQueryRequest(BaseModel):

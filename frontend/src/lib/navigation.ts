@@ -46,6 +46,11 @@ export function getBreadcrumbs(pathname: string): Crumb[] {
     return crumbs
   }
 
+  if (path === '/guide') {
+    crumbs.push({ to: '/guide', label: 'Manual do utilizador' })
+    return crumbs
+  }
+
   crumbs.push({ to: path, label: 'Página' })
   return crumbs
 }

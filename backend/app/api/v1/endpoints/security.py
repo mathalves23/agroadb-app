@@ -6,7 +6,7 @@ from fastapi.responses import JSONResponse
 from typing import Optional
 from datetime import datetime, date
 
-from app.api.v1.deps import get_current_user, get_db
+from app.api.v1.deps import get_current_user, get_current_superuser, get_db
 from app.domain.user import User
 from app.core.audit import audit_logger, AuditAction
 from app.core.lgpd import lgpd_service, ConsentType
@@ -401,18 +401,14 @@ async def search_audit_logs(
     end_date: Optional[date] = None,
     limit: int = 100,
     offset: int = 0,
-    current_user: User = Depends(get_current_user),
-    db = Depends(get_db)
+    _admin: User = Depends(get_current_superuser),
+    db = Depends(get_db),
 ):
     """
     Busca avançada em audit logs (Admin apenas)
     
-    **Requer**: Permissão de administrador
+    **Requer**: superutilizador (`is_superuser`).
     """
-    # TODO: Verificar se usuário é admin
-    # if not current_user.is_admin:
-    #     raise HTTPException(status_code=403, detail="Admin access required")
-    
     logs, total = await audit_logger.search_logs(
         db,
         user_id=user_id,
@@ -434,15 +430,14 @@ async def search_audit_logs(
 @router.get("/admin/lgpd/deletion-requests")
 async def get_deletion_requests(
     status_filter: Optional[str] = None,
-    current_user: User = Depends(get_current_user),
-    db = Depends(get_db)
+    _admin: User = Depends(get_current_superuser),
+    db = Depends(get_db),
 ):
     """
     Lista solicitações de exclusão de dados (Admin apenas)
     
-    **Requer**: Permissão de administrador
+    **Requer**: superutilizador (`is_superuser`).
     """
-    # TODO: Verificar se usuário é admin
     # TODO: Implementar query de deletion requests
     
     return {

@@ -1,40 +1,12 @@
 /**
  * Onboarding Context - Sistema de Onboarding para Novos Usuários
- * 
+ *
  * Gerencia o fluxo de onboarding e tour guiado
  */
-import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
+import { useState, useEffect, useCallback, type ReactNode } from 'react'
+import { OnboardingContext, type OnboardingFlow } from '@/contexts/onboardingRootContext'
 
-// Tipos
-export interface OnboardingStep {
-  id: string;
-  title: string;
-  description: string;
-  target?: string; // Seletor CSS do elemento alvo
-  position?: 'top' | 'bottom' | 'left' | 'right';
-  action?: () => void;
-  canSkip?: boolean;
-}
-
-export interface OnboardingFlow {
-  id: string;
-  name: string;
-  steps: OnboardingStep[];
-}
-
-interface OnboardingContextType {
-  isOnboardingActive: boolean;
-  currentFlow: OnboardingFlow | null;
-  currentStepIndex: number;
-  currentStep: OnboardingStep | null;
-  hasCompletedOnboarding: boolean;
-  startOnboarding: (flowId: string) => void;
-  nextStep: () => void;
-  previousStep: () => void;
-  skipOnboarding: () => void;
-  completeOnboarding: () => void;
-  resetOnboarding: () => void;
-}
+export type { OnboardingStep, OnboardingFlow } from '@/contexts/onboardingRootContext'
 
 // Fluxos de onboarding predefinidos
 const onboardingFlows: Record<string, OnboardingFlow> = {
@@ -118,12 +90,8 @@ const onboardingFlows: Record<string, OnboardingFlow> = {
       }
     ]
   }
-};
+}
 
-// Context
-const OnboardingContext = createContext<OnboardingContextType | undefined>(undefined);
-
-// Provider
 export function OnboardingProvider({ children }: { children: ReactNode }) {
   const [isOnboardingActive, setIsOnboardingActive] = useState(false);
   const [currentFlow, setCurrentFlow] = useState<OnboardingFlow | null>(null);
@@ -132,25 +100,24 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
     return localStorage.getItem('agroadb-onboarding-completed') === 'true';
   });
 
+  const startOnboarding = useCallback((flowId: string) => {
+    const flow = onboardingFlows[flowId]
+    if (flow) {
+      setCurrentFlow(flow)
+      setCurrentStepIndex(0)
+      setIsOnboardingActive(true)
+    }
+  }, [])
+
   // Iniciar onboarding automaticamente para novos usuários
   useEffect(() => {
     if (!hasCompletedOnboarding && !isOnboardingActive) {
-      // Aguardar 1 segundo para a página carregar
       const timer = setTimeout(() => {
-        startOnboarding('first-time');
-      }, 1000);
-      return () => clearTimeout(timer);
+        startOnboarding('first-time')
+      }, 1000)
+      return () => clearTimeout(timer)
     }
-  }, [hasCompletedOnboarding]);
-
-  const startOnboarding = (flowId: string) => {
-    const flow = onboardingFlows[flowId];
-    if (flow) {
-      setCurrentFlow(flow);
-      setCurrentStepIndex(0);
-      setIsOnboardingActive(true);
-    }
-  };
+  }, [hasCompletedOnboarding, isOnboardingActive, startOnboarding])
 
   const nextStep = () => {
     if (!currentFlow) return;
@@ -208,13 +175,4 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
       {children}
     </OnboardingContext.Provider>
   );
-}
-
-// Hook
-export function useOnboarding() {
-  const context = useContext(OnboardingContext);
-  if (!context) {
-    throw new Error('useOnboarding must be used within OnboardingProvider');
-  }
-  return context;
 }

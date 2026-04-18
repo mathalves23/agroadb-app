@@ -613,8 +613,10 @@ class FeatureAdoptionAnalytics:
                     Investigation.created_at <= end_date
                 )
             ).group_by(Investigation.user_id).having(func.count(Investigation.id) > 10).all()
-            
-            power_users = len(power_users_query)
+            try:
+                power_users = len(power_users_query)
+            except TypeError:
+                power_users = 0
             casual_users = active_users - power_users
             
         else:

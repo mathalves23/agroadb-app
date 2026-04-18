@@ -7,6 +7,7 @@ e montagem canónica (compatibilidade de URLs antigas).
 from fastapi import APIRouter
 
 from app.api.v1.endpoints import (
+    analytics,
     api_keys,
     auth,
     billing,
@@ -31,6 +32,7 @@ from app.api.v1.endpoints import (
 api_router = APIRouter()
 
 api_router.include_router(platform.router)
+api_router.include_router(analytics.router)
 api_router.include_router(auth.router, prefix="/auth", tags=["Authentication"])
 api_router.include_router(users.router, prefix="/users", tags=["Users"])
 api_router.include_router(investigations.router, prefix="/investigations", tags=["Investigations"])

@@ -62,11 +62,14 @@ services:
       dockerfile: Dockerfile
     container_name: agroadb-celery-worker
     command: celery -A app.workers.celery_app worker --loglevel=info
+    ports:
+      - "9464:9464"
     environment:
       - DATABASE_URL=postgresql://agroadb:agroadb_dev_password@postgres:5432/agroadb
       - REDIS_URL=redis://redis:6379/0
       - SECRET_KEY=dev_secret_key_change_in_production
       - ENVIRONMENT=development
+      - CELERY_METRICS_PORT=9464
     volumes:
       - ./backend:/app
     depends_on:
@@ -110,6 +113,39 @@ services:
       - /app/node_modules
     depends_on:
       - backend
+
+  prometheus:
+    profiles: ["obs"]
+    image: prom/prometheus:v2.53.3
+    container_name: agroadb-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./monitoring/alerts:/etc/prometheus/alerts:ro
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --web.enable-lifecycle
+    depends_on:
+      - backend
+      - celery-worker
+
+  grafana:
+    profiles: ["obs"]
+    image: grafana/grafana:11.3.1
+    container_name: agroadb-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_SERVER_ROOT_URL: http://localhost:3000
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on:
+      - prometheus
 
 volumes:
   postgres_data:

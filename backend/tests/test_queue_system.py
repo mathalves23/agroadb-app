@@ -374,7 +374,8 @@ async def test_investigation_progress_multiple_tasks(queue_manager):
         await queue_manager.complete_task(task.id, {})
     
     task = await queue_manager.dequeue(ScraperType.CAR)
-    task.retry_count = 3  # Forçar falha definitiva
+    task.retry_count = 3  # Próximo fail_task incrementa para 4 > max_retries (3)
+    await queue_manager._save_task(task)
     await queue_manager.fail_task(task.id, "Error")
     
     # Verificar progresso

@@ -336,10 +336,18 @@ class CollaborationService:
         shared_investigations = []
         
         for investigation, share in result:
-            inv_dict = investigation.to_dict() if hasattr(investigation, 'to_dict') else {}
-            inv_dict['permission'] = share.permission
-            inv_dict['shared_by'] = share.owner_id
-            inv_dict['is_shared'] = True
+            st = investigation.status
+            status_val = st.value if hasattr(st, "value") else str(st)
+            inv_dict = {
+                "id": investigation.id,
+                "user_id": investigation.user_id,
+                "target_name": investigation.target_name,
+                "target_cpf_cnpj": investigation.target_cpf_cnpj,
+                "status": status_val,
+            }
+            inv_dict["permission"] = share.permission
+            inv_dict["shared_by"] = share.owner_id
+            inv_dict["is_shared"] = True
             shared_investigations.append(inv_dict)
         
         # Investigações próprias (se solicitado)
@@ -348,10 +356,18 @@ class CollaborationService:
             owned_result = await db.execute(owned_query)
             
             for investigation in owned_result.scalars():
-                inv_dict = investigation.to_dict() if hasattr(investigation, 'to_dict') else {}
-                inv_dict['permission'] = PermissionLevel.ADMIN.value
-                inv_dict['is_owner'] = True
-                inv_dict['is_shared'] = False
+                st = investigation.status
+                status_val = st.value if hasattr(st, "value") else str(st)
+                inv_dict = {
+                    "id": investigation.id,
+                    "user_id": investigation.user_id,
+                    "target_name": investigation.target_name,
+                    "target_cpf_cnpj": investigation.target_cpf_cnpj,
+                    "status": status_val,
+                }
+                inv_dict["permission"] = PermissionLevel.ADMIN.value
+                inv_dict["is_owner"] = True
+                inv_dict["is_shared"] = False
                 shared_investigations.append(inv_dict)
         
         return shared_investigations

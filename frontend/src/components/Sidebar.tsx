@@ -8,6 +8,7 @@ import {
   ChevronRight,
   Bell,
   UserCircle,
+  BookOpen,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -31,6 +32,7 @@ type SidebarProps = {
 export default function Sidebar({ mobileOpen = false, onNavigate }: SidebarProps) {
   const location = useLocation()
   const settingsActive = location.pathname === '/settings'
+  const guideActive = location.pathname === '/guide'
 
   const linkClass = (isActive: boolean) =>
     cn(
@@ -116,6 +118,26 @@ export default function Sidebar({ mobileOpen = false, onNavigate }: SidebarProps
               </NavLink>
             )
           })}
+        </div>
+
+        <div className="pt-4">
+          <p className="px-3 mb-2 text-[10px] font-semibold uppercase tracking-wider text-gray-400">Ajuda</p>
+          <NavLink
+            to="/guide"
+            data-tour="sidebar-user-guide"
+            onClick={() => onNavigate?.()}
+            aria-current={guideActive ? 'page' : undefined}
+            className={linkClass(guideActive)}
+          >
+            <BookOpen
+              className={cn(
+                'h-4 w-4 shrink-0',
+                guideActive ? 'text-emerald-600' : 'text-gray-400 group-hover:text-gray-600'
+              )}
+            />
+            <span className="flex-1">Manual do utilizador</span>
+            {guideActive && <ChevronRight className="h-3.5 w-3.5 text-emerald-400" aria-hidden />}
+          </NavLink>
         </div>
 
         <div className="pt-4">

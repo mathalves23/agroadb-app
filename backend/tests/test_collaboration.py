@@ -21,15 +21,15 @@ async def test_share_investigation(db_session, test_user, test_user2, test_inves
     share = await collaboration_service.share_investigation(
         db_session,
         investigation_id=test_investigation.id,
-        owner_id=test_user.id,
-        shared_with_email=test_user2.email,
+        owner_id=test_user["id"],
+        shared_with_email=test_user2["email"],
         permission=PermissionLevel.EDIT
     )
     
     assert share is not None
     assert share.investigation_id == test_investigation.id
-    assert share.owner_id == test_user.id
-    assert share.shared_with_id == test_user2.id
+    assert share.owner_id == test_user["id"]
+    assert share.shared_with_id == test_user2["id"]
     assert share.permission == PermissionLevel.EDIT.value
     assert share.is_active is True
 
@@ -42,8 +42,8 @@ async def test_share_with_expiration(db_session, test_user, test_user2, test_inv
     share = await collaboration_service.share_investigation(
         db_session,
         investigation_id=test_investigation.id,
-        owner_id=test_user.id,
-        shared_with_email=test_user2.email,
+        owner_id=test_user["id"],
+        shared_with_email=test_user2["email"],
         permission=PermissionLevel.VIEW,
         expires_at=expires_at
     )
@@ -59,7 +59,7 @@ async def test_share_nonexistent_user(db_session, test_user, test_investigation)
         await collaboration_service.share_investigation(
             db_session,
             investigation_id=test_investigation.id,
-            owner_id=test_user.id,
+            owner_id=test_user["id"],
             shared_with_email="naoexiste@example.com",
             permission=PermissionLevel.VIEW
         )
@@ -72,8 +72,8 @@ async def test_update_existing_share(db_session, test_user, test_user2, test_inv
     share1 = await collaboration_service.share_investigation(
         db_session,
         investigation_id=test_investigation.id,
-        owner_id=test_user.id,
-        shared_with_email=test_user2.email,
+        owner_id=test_user["id"],
+        shared_with_email=test_user2["email"],
         permission=PermissionLevel.VIEW
     )
     
@@ -83,8 +83,8 @@ async def test_update_existing_share(db_session, test_user, test_user2, test_inv
     share2 = await collaboration_service.share_investigation(
         db_session,
         investigation_id=test_investigation.id,
-        owner_id=test_user.id,
-        shared_with_email=test_user2.email,
+        owner_id=test_user["id"],
+        shared_with_email=test_user2["email"],
         permission=PermissionLevel.EDIT
     )
     
@@ -99,8 +99,8 @@ async def test_revoke_access(db_session, test_user, test_user2, test_investigati
     share = await collaboration_service.share_investigation(
         db_session,
         investigation_id=test_investigation.id,
-        owner_id=test_user.id,
-        shared_with_email=test_user2.email,
+        owner_id=test_user["id"],
+        shared_with_email=test_user2["email"],
         permission=PermissionLevel.VIEW
     )
     
@@ -110,8 +110,8 @@ async def test_revoke_access(db_session, test_user, test_user2, test_investigati
     success = await collaboration_service.revoke_access(
         db_session,
         investigation_id=test_investigation.id,
-        owner_id=test_user.id,
-        shared_with_id=test_user2.id
+        owner_id=test_user["id"],
+        shared_with_id=test_user2["id"]
     )
     
     assert success is True
@@ -129,14 +129,14 @@ async def test_check_permission_owner(db_session, test_user, test_investigation)
     has_view = await collaboration_service.check_permission(
         db_session,
         test_investigation.id,
-        test_user.id,
+        test_user["id"],
         PermissionLevel.VIEW
     )
     
     has_admin = await collaboration_service.check_permission(
         db_session,
         test_investigation.id,
-        test_user.id,
+        test_user["id"],
         PermissionLevel.ADMIN
     )
     
@@ -151,8 +151,8 @@ async def test_check_permission_shared_user(db_session, test_user, test_user2, t
     await collaboration_service.share_investigation(
         db_session,
         investigation_id=test_investigation.id,
-        owner_id=test_user.id,
-        shared_with_email=test_user2.email,
+        owner_id=test_user["id"],
+        shared_with_email=test_user2["email"],
         permission=PermissionLevel.COMMENT
     )
     
@@ -160,7 +160,7 @@ async def test_check_permission_shared_user(db_session, test_user, test_user2, t
     has_view = await collaboration_service.check_permission(
         db_session,
         test_investigation.id,
-        test_user2.id,
+        test_user2["id"],
         PermissionLevel.VIEW
     )
     assert has_view is True
@@ -169,7 +169,7 @@ async def test_check_permission_shared_user(db_session, test_user, test_user2, t
     has_comment = await collaboration_service.check_permission(
         db_session,
         test_investigation.id,
-        test_user2.id,
+        test_user2["id"],
         PermissionLevel.COMMENT
     )
     assert has_comment is True
@@ -178,7 +178,7 @@ async def test_check_permission_shared_user(db_session, test_user, test_user2, t
     has_admin = await collaboration_service.check_permission(
         db_session,
         test_investigation.id,
-        test_user2.id,
+        test_user2["id"],
         PermissionLevel.ADMIN
     )
     assert has_admin is False
@@ -191,22 +191,22 @@ async def test_check_permission_hierarchy(db_session, test_user, test_user2, tes
     await collaboration_service.share_investigation(
         db_session,
         investigation_id=test_investigation.id,
-        owner_id=test_user.id,
-        shared_with_email=test_user2.email,
+        owner_id=test_user["id"],
+        shared_with_email=test_user2["email"],
         permission=PermissionLevel.EDIT
     )
     
     # EDIT deve dar acesso a VIEW e COMMENT também
     assert await collaboration_service.check_permission(
-        db_session, test_investigation.id, test_user2.id, PermissionLevel.VIEW
+        db_session, test_investigation.id, test_user2["id"], PermissionLevel.VIEW
     ) is True
     
     assert await collaboration_service.check_permission(
-        db_session, test_investigation.id, test_user2.id, PermissionLevel.COMMENT
+        db_session, test_investigation.id, test_user2["id"], PermissionLevel.COMMENT
     ) is True
     
     assert await collaboration_service.check_permission(
-        db_session, test_investigation.id, test_user2.id, PermissionLevel.EDIT
+        db_session, test_investigation.id, test_user2["id"], PermissionLevel.EDIT
     ) is True
 
 
@@ -219,8 +219,8 @@ async def test_check_permission_expired_share(db_session, test_user, test_user2,
     await collaboration_service.share_investigation(
         db_session,
         investigation_id=test_investigation.id,
-        owner_id=test_user.id,
-        shared_with_email=test_user2.email,
+        owner_id=test_user["id"],
+        shared_with_email=test_user2["email"],
         permission=PermissionLevel.VIEW,
         expires_at=expired_date
     )
@@ -229,7 +229,7 @@ async def test_check_permission_expired_share(db_session, test_user, test_user2,
     has_permission = await collaboration_service.check_permission(
         db_session,
         test_investigation.id,
-        test_user2.id,
+        test_user2["id"],
         PermissionLevel.VIEW
     )
     
@@ -244,13 +244,13 @@ async def test_add_comment(db_session, test_user, test_investigation):
     comment = await collaboration_service.add_comment(
         db_session,
         investigation_id=test_investigation.id,
-        user_id=test_user.id,
+        user_id=test_user["id"],
         content="Este é um comentário de teste"
     )
     
     assert comment is not None
     assert comment.investigation_id == test_investigation.id
-    assert comment.user_id == test_user.id
+    assert comment.user_id == test_user["id"]
     assert comment.content == "Este é um comentário de teste"
     assert comment.is_internal is False
     assert comment.is_deleted is False
@@ -262,7 +262,7 @@ async def test_add_internal_comment(db_session, test_user, test_investigation):
     comment = await collaboration_service.add_comment(
         db_session,
         investigation_id=test_investigation.id,
-        user_id=test_user.id,
+        user_id=test_user["id"],
         content="Anotação privada",
         is_internal=True
     )
@@ -277,7 +277,7 @@ async def test_add_reply_comment(db_session, test_user, test_investigation):
     parent_comment = await collaboration_service.add_comment(
         db_session,
         investigation_id=test_investigation.id,
-        user_id=test_user.id,
+        user_id=test_user["id"],
         content="Comentário pai"
     )
     
@@ -285,7 +285,7 @@ async def test_add_reply_comment(db_session, test_user, test_investigation):
     reply = await collaboration_service.add_comment(
         db_session,
         investigation_id=test_investigation.id,
-        user_id=test_user.id,
+        user_id=test_user["id"],
         content="Resposta ao comentário",
         parent_id=parent_comment.id
     )
@@ -301,7 +301,7 @@ async def test_log_change(db_session, test_user, test_investigation):
     log = await collaboration_service.log_change(
         db_session,
         investigation_id=test_investigation.id,
-        user_id=test_user.id,
+        user_id=test_user["id"],
         action="updated",
         field_changed="status",
         old_value={"status": "pending"},
@@ -311,7 +311,7 @@ async def test_log_change(db_session, test_user, test_investigation):
     
     assert log is not None
     assert log.investigation_id == test_investigation.id
-    assert log.user_id == test_user.id
+    assert log.user_id == test_user["id"]
     assert log.action == "updated"
     assert log.field_changed == "status"
     assert log.old_value == {"status": "pending"}
@@ -325,15 +325,15 @@ async def test_get_shared_investigations(db_session, test_user, test_user2, test
     await collaboration_service.share_investigation(
         db_session,
         investigation_id=test_investigation.id,
-        owner_id=test_user.id,
-        shared_with_email=test_user2.email,
+        owner_id=test_user["id"],
+        shared_with_email=test_user2["email"],
         permission=PermissionLevel.VIEW
     )
     
     # Buscar investigações compartilhadas com test_user2
     shared = await collaboration_service.get_shared_investigations(
         db_session,
-        user_id=test_user2.id,
+        user_id=test_user2["id"],
         include_owned=False
     )
     
@@ -385,7 +385,7 @@ async def test_user2(db_session):
 @pytest.fixture
 async def test_investigation(db_session, test_user):
     investigation = Investigation(
-        user_id=test_user.id,
+        user_id=test_user["id"],
         target_name="Test Target",
         target_cpf_cnpj="123.456.789-00",
         status="pending"

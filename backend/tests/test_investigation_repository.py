@@ -34,7 +34,7 @@ async def test_create_investigation(db_session: AsyncSession):
     investigation_data = {
         "user_id": user.id,
         "target_name": "João Silva",
-        "target_cpf_cnpj": "123.456.789-00",
+        "target_cpf_cnpj": "52998224725",
         "priority": 3,
     }
     

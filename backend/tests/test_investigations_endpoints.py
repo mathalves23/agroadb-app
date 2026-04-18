@@ -45,7 +45,7 @@ async def test_create_investigation_success(async_client: AsyncClient):
         "/api/v1/investigations",
         json={
             "target_name": "João Silva",
-            "target_cpf_cnpj": "123.456.789-00",
+            "target_cpf_cnpj": "52998224725",
             "target_description": "Test investigation",
             "priority": 3,
         },
@@ -55,8 +55,9 @@ async def test_create_investigation_success(async_client: AsyncClient):
     assert response.status_code == 201
     data = response.json()
     assert data["target_name"] == "João Silva"
-    assert data["target_cpf_cnpj"] == "123.456.789-00"
-    assert data["status"] == "pending"
+    assert data["target_cpf_cnpj"] == "52998224725"
+    # Com workers desligados o fallback síncrono pode concluir antes da resposta HTTP.
+    assert data["status"] in ("pending", "in_progress", "completed")
     assert data["priority"] == 3
 
 
@@ -359,7 +360,7 @@ async def test_export_investigation_pdf(async_client: AsyncClient):
         "/api/v1/investigations",
         json={
             "target_name": "João Silva",
-            "target_cpf_cnpj": "123.456.789-00",
+            "target_cpf_cnpj": "52998224725",
             "target_description": "Test investigation for PDF export",
             "priority": 3,
         },

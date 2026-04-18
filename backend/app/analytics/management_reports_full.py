@@ -819,7 +819,8 @@ class ManagementReports:
             recommendations.append("📊 ROI médio abaixo de 100%. Revisar processos e otimizar custos.")
         
         # Custos
-        if costs['summary']['cost_breakdown']['human_resources'] / costs['summary']['total_cost'] > 0.7:
+        total_cost = costs["summary"].get("total_cost") or 0
+        if total_cost and costs['summary']['cost_breakdown']['human_resources'] / total_cost > 0.7:
             recommendations.append("💰 Custos de RH representam >70% do total. Considerar automações.")
         
         # Uptime

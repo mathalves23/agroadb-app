@@ -97,10 +97,10 @@ async def test_update_current_user_password(async_client: AsyncClient):
     )
     token = login_response.json()["access_token"]
     
-    # Update password
-    response = await async_client.patch(
-        "/api/v1/users/me",
-        json={"password": "newpassword123"},
+    # Alteração de senha via endpoint dedicado (PATCH /me ignora password)
+    response = await async_client.post(
+        "/api/v1/users/me/password",
+        json={"current_password": "oldpassword", "new_password": "newpassword123"},
         headers={"Authorization": f"Bearer {token}"},
     )
     

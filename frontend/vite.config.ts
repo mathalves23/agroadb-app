@@ -15,6 +15,7 @@ export default defineConfig(({ mode }) => ({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
+      '@product': path.resolve(__dirname, '../product'),
     },
   },
   build: {
@@ -29,6 +30,9 @@ export default defineConfig(({ mode }) => ({
   server: {
     host: '0.0.0.0',
     port: 5173,
+    fs: {
+      allow: [path.resolve(__dirname), path.resolve(__dirname, '..')],
+    },
     headers: {
       'X-Content-Type-Options': 'nosniff',
     },

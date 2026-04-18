@@ -22,6 +22,8 @@ from app.core.rate_limiting import RateLimitMiddleware
 from app.core.circuit_breaker import CircuitBreakerRegistry
 from app.core.indexes import create_optimized_indexes
 from app.workers.scraper_workers import orchestrator
+from app.core.queue import queue_manager
+from app.core.queue_prometheus import prometheus_gauge_refresh_loop, refresh_queue_and_registry_gauges
 
 logger = logging.getLogger(__name__)
 
@@ -45,12 +47,29 @@ async def lifespan(app: FastAPI) -> AsyncGenerator:
         logger.info("✅ Workers iniciados em background")
     else:
         logger.info("⚠️  Workers desabilitados (ENABLE_WORKERS=false)")
-    
+
+    _prom_gauge_task: asyncio.Task | None = None
+    if settings.PROMETHEUS_ENABLED:
+        try:
+            await queue_manager.connect()
+            await refresh_queue_and_registry_gauges(queue_manager)
+            _prom_gauge_task = asyncio.create_task(prometheus_gauge_refresh_loop(queue_manager))
+            logger.info("✅ Métricas Prometheus de filas/circuitos: refresh periódico activo")
+        except Exception as exc:
+            logger.warning("Métricas de fila/circuito: Redis indisponível (%s) — gauges omitidos", exc)
+
     yield
 
     from app.core.telemetry import shutdown_trace_provider
 
     shutdown_trace_provider()
+
+    if _prom_gauge_task is not None:
+        _prom_gauge_task.cancel()
+        try:
+            await _prom_gauge_task
+        except asyncio.CancelledError:
+            pass
 
     # Shutdown
     logger.info("🛑 Encerrando aplicação...")

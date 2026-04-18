@@ -30,6 +30,7 @@ from sqlalchemy.orm import Session, sessionmaker
 from app.main import app
 from app.core.database import Base, engine, AsyncSessionLocal
 from app.domain.user import User
+from app.domain.investigation import Investigation, InvestigationStatus
 from app.core.security import get_password_hash
 
 
@@ -50,7 +51,8 @@ async def db_session() -> AsyncGenerator:
 
 @pytest_asyncio.fixture
 async def async_client() -> AsyncGenerator[AsyncClient, None]:
-    transport = ASGITransport(app=app, lifespan="on")
+    # httpx >= 0.26: ASGITransport não aceita lifespan= (o lifespan da app corre normalmente).
+    transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac
 
@@ -74,6 +76,37 @@ def test_user(client: TestClient) -> dict:
     )
     assert resp.status_code == 201, resp.text
     return resp.json()
+
+
+@pytest.fixture
+def test_user2(client: TestClient) -> dict:
+    resp = client.post(
+        "/api/v1/auth/register",
+        json={
+            "email": "test2@example.com",
+            "username": "testuser2",
+            "full_name": "Test User Two",
+            "password": "testpass123",
+        },
+    )
+    assert resp.status_code == 201, resp.text
+    return resp.json()
+
+
+@pytest_asyncio.fixture
+async def test_investigation(db_session, test_user: dict) -> Investigation:
+    """Investigação pertencente a `test_user` (para testes async de colaboração)."""
+    inv = Investigation(
+        user_id=test_user["id"],
+        target_name="Investigação colaboração",
+        target_cpf_cnpj=None,
+        target_description=None,
+        status=InvestigationStatus.PENDING,
+    )
+    db_session.add(inv)
+    await db_session.flush()
+    await db_session.refresh(inv)
+    return inv
 
 
 @pytest.fixture

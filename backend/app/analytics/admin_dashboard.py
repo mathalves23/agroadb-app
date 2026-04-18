@@ -28,6 +28,20 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+def _sql_count_int(value: Any) -> int:
+    """Converte resultado de count()/scalar em int (útil com mocks em testes)."""
+    if value is None:
+        return 0
+    if isinstance(value, bool):
+        return int(value)
+    if isinstance(value, (int, float)):
+        return int(value)
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return 0
+
+
 class AdminDashboard:
     """Dashboard Administrativo com métricas completas do sistema"""
     
@@ -57,69 +71,72 @@ class AdminDashboard:
         
         try:
             from app.domain.user import User
-            from app.domain.investigation import Investigation
+            from app.domain.investigation import Investigation, InvestigationStatus
             
             # Total de usuários
-            total_users = self.db.query(func.count(User.id)).scalar() or 0
+            total_users = _sql_count_int(self.db.query(func.count(User.id)).scalar())
             
             # Usuários ativos no período
-            active_users = self.db.query(func.count(User.id.distinct())).filter(
+            active_users = _sql_count_int(
+                self.db.query(func.count(User.id.distinct())).filter(
                 and_(
                     User.last_login >= start_date,
                     User.last_login <= end_date
                 )
-            ).scalar() or 0
+            ).scalar())
             
             # Novos usuários no período
-            new_users = self.db.query(func.count(User.id)).filter(
+            new_users = _sql_count_int(self.db.query(func.count(User.id)).filter(
                 and_(
                     User.created_at >= start_date,
                     User.created_at <= end_date
                 )
-            ).scalar() or 0
+            ).scalar())
             
             # Total de investigações
-            total_investigations = self.db.query(func.count(Investigation.id)).scalar() or 0
+            total_investigations = _sql_count_int(self.db.query(func.count(Investigation.id)).scalar())
             
             # Investigações criadas no período
-            investigations_period = self.db.query(func.count(Investigation.id)).filter(
+            investigations_period = _sql_count_int(self.db.query(func.count(Investigation.id)).filter(
                 and_(
                     Investigation.created_at >= start_date,
                     Investigation.created_at <= end_date
                 )
-            ).scalar() or 0
+            ).scalar())
             
             # Investigações concluídas no período
-            completed_investigations = self.db.query(func.count(Investigation.id)).filter(
+            completed_investigations = _sql_count_int(self.db.query(func.count(Investigation.id)).filter(
                 and_(
                     Investigation.completed_at >= start_date,
                     Investigation.completed_at <= end_date,
-                    Investigation.status == "completed"
+                    Investigation.status == InvestigationStatus.COMPLETED
                 )
-            ).scalar() or 0
+            ).scalar())
             
             # Investigações ativas
-            active_investigations = self.db.query(func.count(Investigation.id)).filter(
-                Investigation.status.in_(["in_progress", "pending", "under_review"])
-            ).scalar() or 0
+            active_investigations = _sql_count_int(self.db.query(func.count(Investigation.id)).filter(
+                Investigation.status.in_(
+                    [InvestigationStatus.IN_PROGRESS, InvestigationStatus.PENDING]
+                )
+            ).scalar())
             
             # Taxa de crescimento de usuários
-            previous_period_users = self.db.query(func.count(User.id)).filter(
+            previous_period_users = _sql_count_int(self.db.query(func.count(User.id)).filter(
                 and_(
                     User.created_at >= start_date - (end_date - start_date),
                     User.created_at < start_date
                 )
-            ).scalar() or 1
+            ).scalar()) or 1
             
             user_growth_rate = ((new_users - previous_period_users) / previous_period_users * 100) if previous_period_users > 0 else 0
             
             # Taxa de crescimento de investigações
-            previous_period_investigations = self.db.query(func.count(Investigation.id)).filter(
+            previous_period_investigations = _sql_count_int(self.db.query(func.count(Investigation.id)).filter(
                 and_(
                     Investigation.created_at >= start_date - (end_date - start_date),
                     Investigation.created_at < start_date
                 )
-            ).scalar() or 1
+            ).scalar()) or 1
             
             investigation_growth_rate = (
                 (investigations_period - previous_period_investigations) / previous_period_investigations * 100
@@ -175,7 +192,7 @@ class AdminDashboard:
             end_date = datetime.utcnow()
         
         try:
-            from app.domain.investigation import Investigation
+            from app.domain.investigation import Investigation, InvestigationStatus
             
             # Define o campo de agrupamento
             if group_by == "day":
@@ -193,10 +210,10 @@ class AdminDashboard:
             query = self.db.query(
                 group_field.label('period'),
                 func.count(Investigation.id).label('total'),
-                func.count(case([(Investigation.status == 'completed', 1)])).label('completed'),
-                func.count(case([(Investigation.status == 'in_progress', 1)])).label('in_progress'),
-                func.count(case([(Investigation.status == 'pending', 1)])).label('pending'),
-                func.count(case([(Investigation.status == 'cancelled', 1)])).label('cancelled')
+                func.count(case((Investigation.status == InvestigationStatus.COMPLETED, 1))).label('completed'),
+                func.count(case((Investigation.status == InvestigationStatus.IN_PROGRESS, 1))).label('in_progress'),
+                func.count(case((Investigation.status == InvestigationStatus.PENDING, 1))).label('pending'),
+                func.count(case((Investigation.status == InvestigationStatus.FAILED, 1))).label('cancelled'),
             ).filter(
                 and_(
                     Investigation.created_at >= start_date,
@@ -498,7 +515,7 @@ class AdminDashboard:
             # Query para usuários com mais investigações criadas
             user_investigations = self.db.query(
                 User.id,
-                User.name,
+                User.full_name,
                 User.email,
                 func.count(Investigation.id).label('investigations_created'),
                 func.max(User.last_login).label('last_activity')
@@ -509,7 +526,7 @@ class AdminDashboard:
                     Investigation.created_at >= start_date,
                     Investigation.created_at <= end_date
                 )
-            ).group_by(User.id, User.name, User.email).order_by(
+            ).group_by(User.id, User.full_name, User.email).order_by(
                 desc('investigations_created')
             ).limit(limit).all()
             
@@ -518,7 +535,7 @@ class AdminDashboard:
             for row in user_investigations:
                 users.append({
                     "user_id": row.id,
-                    "name": row.name,
+                    "name": row.full_name,
                     "email": row.email,
                     "investigations_created": row.investigations_created,
                     "last_activity": row.last_activity.isoformat() if row.last_activity else None

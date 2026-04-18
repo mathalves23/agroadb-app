@@ -59,7 +59,16 @@ async def create_investigation(
         endpoint=str(request.url.path),
     )
 
-    return InvestigationResponse.model_validate(investigation)
+    response = InvestigationResponse.model_validate(investigation)
+    if settings.ENCRYPTION_KEY and response.target_cpf_cnpj:
+        try:
+            from app.core.encryption import data_encryption
+
+            plain = data_encryption.decrypt(response.target_cpf_cnpj)
+            return response.model_copy(update={"target_cpf_cnpj": plain})
+        except Exception:
+            pass
+    return response
 
 
 @router.get("", response_model=InvestigationListResponse)
@@ -567,7 +576,7 @@ async def export_investigation_pdf(
     companies = investigation.companies or []
     
     # Get legal queries for this investigation
-    legal_queries = await legal_query_repo.find_by_investigation(investigation_id)
+    legal_queries = await legal_query_repo.list_by_investigation(investigation_id)
     
     # Convert to dictionaries for PDF generation
     investigation_dict = {

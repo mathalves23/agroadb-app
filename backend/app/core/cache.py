@@ -48,7 +48,8 @@ class CacheService:
     async def disconnect(self):
         """Desconecta do Redis"""
         if self.redis_client:
-            await self.redis_client.close()
+            await self.redis_client.aclose()
+            self.redis_client = None
             logger.info("🔌 Cache Redis desconectado")
     
     def _generate_key(self, prefix: str, *args, **kwargs) -> str:
@@ -149,6 +150,66 @@ class CacheService:
             logger.error(f"❌ Erro ao remover do cache: {e}")
             return False
     
+    async def exists(self, key: str) -> bool:
+        """Verifica se a chave existe no Redis."""
+        try:
+            if not self.redis_client:
+                await self.connect()
+            return bool(await self.redis_client.exists(key))
+        except Exception as e:
+            logger.error(f"❌ Erro ao verificar existência da chave: {e}")
+            return False
+
+    async def increment(self, key: str, amount: int = 1) -> int:
+        """
+        Incrementa contador inteiro na chave.
+        Compatível com valores gravados via set() (JSON numérico).
+        """
+        try:
+            if not self.redis_client:
+                await self.connect()
+            return int(await self.redis_client.incrby(key, amount))
+        except Exception as e:
+            logger.error(f"❌ Erro ao incrementar chave {key}: {e}")
+            return 0
+
+    async def lpush(self, key: str, *values: str) -> int:
+        if not self.redis_client:
+            await self.connect()
+        return int(await self.redis_client.lpush(key, *values))
+
+    async def llen(self, key: str) -> int:
+        if not self.redis_client:
+            await self.connect()
+        return int(await self.redis_client.llen(key))
+
+    async def lrange(self, key: str, start: int, end: int) -> list:
+        if not self.redis_client:
+            await self.connect()
+        raw = await self.redis_client.lrange(key, start, end)
+        return list(raw) if raw else []
+
+    def cached(self, ttl: Optional[int] = None):
+        """
+        Decorator de instância: cacheia resultado de função async usando este serviço.
+        """
+
+        def decorator(func: Callable):
+            @wraps(func)
+            async def wrapper(*args, **kwargs):
+                cache_key = self._generate_key(func.__name__, *args, **kwargs)
+                cached_value = await self.get(cache_key)
+                if cached_value is not None:
+                    return cached_value
+                result = await func(*args, **kwargs)
+                if result is not None:
+                    await self.set(cache_key, result, ttl=ttl or self.default_ttl)
+                return result
+
+            return wrapper
+
+        return decorator
+
     async def delete_pattern(self, pattern: str) -> int:
         """
         Remove todas as chaves que correspondem ao padrão

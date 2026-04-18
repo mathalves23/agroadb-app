@@ -38,6 +38,7 @@ class AuditAction(str, Enum):
     INVESTIGATION_DELETED = "investigation.deleted"
     INVESTIGATION_VIEWED = "investigation.viewed"
     INVESTIGATION_LISTED = "investigation.listed"
+    INVESTIGATION_EXPORTED = "investigation.exported"
     INVESTIGATION_STARTED = "investigation.started"
     INVESTIGATION_CANCELLED = "investigation.cancelled"
     

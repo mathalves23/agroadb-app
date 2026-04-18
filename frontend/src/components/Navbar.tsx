@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { LogOut, User, Shield, Settings, ChevronDown, HelpCircle, Menu, X } from 'lucide-react'
+import { LogOut, User, Shield, Settings, ChevronDown, HelpCircle, Menu, X, BookOpen } from 'lucide-react'
 import { useAuthStore } from '@/stores/authStore'
 import { useState, useRef, useEffect } from 'react'
 import NotificationDropdown from './NotificationDropdown'
@@ -148,6 +148,16 @@ export default function Navbar({ onToggleMobileSidebar, mobileSidebarOpen }: Nav
                     >
                       <Settings className="h-4 w-4 text-gray-400" />
                       Configurações
+                    </Link>
+
+                    <Link
+                      to="/guide"
+                      role="menuitem"
+                      onClick={() => setShowUserMenu(false)}
+                      className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition"
+                    >
+                      <BookOpen className="h-4 w-4 text-gray-400" />
+                      Manual do utilizador
                     </Link>
 
                     <button

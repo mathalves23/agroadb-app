@@ -1,3 +1,4 @@
+/** Export cliente: SheetJS (`xlsx`). Roadmap: migrar para ExcelJS ou build suportado se avisos npm high bloquearem política de risco. */
 import * as XLSX from 'xlsx';
 import { format } from 'date-fns';
 import { saveAs } from 'file-saver';

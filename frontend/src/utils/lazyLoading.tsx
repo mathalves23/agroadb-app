@@ -3,26 +3,10 @@
  * 
  * Otimiza performance carregando dados apenas quando necessário
  */
-import React, { Suspense, lazy, type ComponentType } from 'react'
-import { Loading } from '../components/Loading';
+import React from 'react'
+import { Loading } from '../components/Loading'
 
-// ==================== Lazy Loading de Componentes ====================
-
-/**
- * Lazy load de páginas
- */
-export const lazyLoad = <T extends ComponentType<Record<string, unknown>>>(
-  importFunc: () => Promise<{ default: T }>,
-  fallback?: React.ReactNode
-) => {
-  const LazyComponent = lazy(importFunc) as React.LazyExoticComponent<ComponentType<Record<string, unknown>>>
-
-  return (props: React.ComponentProps<T>) => (
-    <Suspense fallback={fallback || <Loading type="spinner" size="lg" fullScreen />}>
-      <LazyComponent {...(props as Record<string, unknown>)} />
-    </Suspense>
-  );
-};
+// lazyLoad, useInView e useInfiniteScroll: importar de @/utils/lazyLoadComponent e @/hooks/* (react-refresh).
 
 // ==================== Intersection Observer para Lazy Loading ====================
 
@@ -236,80 +220,6 @@ export function VirtualScroll<T>({
       </div>
     </div>
   );
-}
-
-// ==================== Hooks Utilitários ====================
-
-/**
- * Hook para detectar se elemento está visível
- */
-export function useInView(options?: IntersectionObserverInit) {
-  const [isInView, setIsInView] = React.useState(false);
-  const ref = React.useRef<HTMLElement>(null);
-
-  React.useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => setIsInView(entry.isIntersecting),
-      options
-    );
-
-    if (ref.current) {
-      observer.observe(ref.current);
-    }
-
-    return () => observer.disconnect();
-  }, [options]);
-
-  return [ref, isInView] as const;
-}
-
-/**
- * Hook para infinite scroll
- */
-export function useInfiniteScroll<T>(
-  fetchFn: (cursor?: string) => Promise<{ items: T[]; nextCursor?: string; hasMore: boolean }>,
-  options?: { initialCursor?: string }
-) {
-  const [items, setItems] = React.useState<T[]>([]);
-  const [cursor, setCursor] = React.useState<string | undefined>(options?.initialCursor);
-  const [hasMore, setHasMore] = React.useState(true);
-  const [isLoading, setIsLoading] = React.useState(false);
-  const [error, setError] = React.useState<Error | null>(null);
-
-  const loadMore = React.useCallback(async () => {
-    if (isLoading || !hasMore) return;
-
-    try {
-      setIsLoading(true);
-      setError(null);
-      
-      const result = await fetchFn(cursor);
-      
-      setItems((prev) => [...prev, ...result.items]);
-      setCursor(result.nextCursor);
-      setHasMore(result.hasMore);
-    } catch (err) {
-      setError(err as Error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [cursor, hasMore, isLoading, fetchFn]);
-
-  const reset = React.useCallback(() => {
-    setItems([]);
-    setCursor(options?.initialCursor);
-    setHasMore(true);
-    setError(null);
-  }, [options?.initialCursor]);
-
-  return {
-    items,
-    isLoading,
-    hasMore,
-    error,
-    loadMore,
-    reset
-  };
 }
 
 // ==================== Exemplo de Uso ====================

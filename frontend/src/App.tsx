@@ -21,6 +21,7 @@ const NewInvestigationPage = lazy(() => import('./pages/NewInvestigationPage'))
 const SettingsPage = lazy(() => import('./pages/SettingsPage'))
 const ProfilePage = lazy(() => import('./pages/ProfilePage'))
 const NotificationsPage = lazy(() => import('./pages/NotificationsPage'))
+const UserGuidePage = lazy(() => import('./pages/UserGuidePage'))
 
 function SuspenseFallback() {
   return (
@@ -61,6 +62,7 @@ const router = createBrowserRouter(
         { path: 'settings', element: <Suspense fallback={<SuspenseFallback />}><SettingsPage /></Suspense> },
         { path: 'profile', element: <Suspense fallback={<SuspenseFallback />}><ProfilePage /></Suspense> },
         { path: 'notifications', element: <Suspense fallback={<SuspenseFallback />}><NotificationsPage /></Suspense> },
+        { path: 'guide', element: <Suspense fallback={<SuspenseFallback />}><UserGuidePage /></Suspense> },
       ],
     },
   ],

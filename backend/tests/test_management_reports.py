@@ -13,7 +13,7 @@ from app.analytics.management_reports import ROIReport, CostReport
 from app.analytics.management_reports_part2 import ScraperPerformanceReport, UptimeReport
 from app.analytics.management_reports_part3 import ErrorReport, ManagementReportsConsolidator
 from app.domain.user import User
-from app.domain.investigation import Investigation
+from app.domain.investigation import Investigation, InvestigationStatus
 from app.domain.property import Property
 from app.domain.company import Company
 
@@ -28,53 +28,67 @@ def mock_db():
     return Mock(spec=Session)
 
 
+def _prop(iid: int, pid: int) -> Property:
+    return Property(id=pid, investigation_id=iid, data_source="fixture")
+
+
+def _comp(iid: int, cid: int) -> Company:
+    return Company(id=cid, investigation_id=iid, cnpj=f"{cid:014d}"[:14], data_source="fixture")
+
+
 @pytest.fixture
 def sample_investigations():
-    """Investigações de exemplo"""
+    """Investigações de exemplo (campos alinhados ao modelo ORM)."""
     now = datetime.utcnow()
     return [
         Investigation(
             id=1,
             user_id=1,
-            cpf_cnpj="12345678901",
-            status="completed",
+            target_name="Alvo 1",
+            target_cpf_cnpj="12345678901",
+            status=InvestigationStatus.COMPLETED,
             created_at=now - timedelta(days=10),
             updated_at=now - timedelta(days=9),
             completed_at=now - timedelta(days=9),
-            properties=[Property(id=1), Property(id=2)],
-            companies=[Company(id=1)]
+            properties=[_prop(1, 1), _prop(1, 2)],
+            companies=[_comp(1, 1)],
         ),
         Investigation(
             id=2,
             user_id=1,
-            cpf_cnpj="98765432100",
-            status="in_progress",
+            target_name="Alvo 2",
+            target_cpf_cnpj="98765432100",
+            status=InvestigationStatus.IN_PROGRESS,
             created_at=now - timedelta(days=5),
             updated_at=now - timedelta(days=4),
-            properties=[Property(id=3)],
-            companies=[]
+            completed_at=None,
+            properties=[_prop(2, 3)],
+            companies=[],
         ),
         Investigation(
             id=3,
             user_id=2,
-            cpf_cnpj="11122233344",
-            status="completed",
+            target_name="Alvo 3",
+            target_cpf_cnpj="11122233344",
+            status=InvestigationStatus.COMPLETED,
             created_at=now - timedelta(days=3),
             updated_at=now - timedelta(days=2),
             completed_at=now - timedelta(days=2),
-            properties=[Property(id=4), Property(id=5), Property(id=6)],
-            companies=[Company(id=2), Company(id=3)]
+            properties=[_prop(3, 4), _prop(3, 5), _prop(3, 6)],
+            companies=[_comp(3, 2), _comp(3, 3)],
         ),
         Investigation(
             id=4,
             user_id=2,
-            cpf_cnpj="44455566677",
-            status="failed",
+            target_name="Alvo 4",
+            target_cpf_cnpj="44455566677",
+            status=InvestigationStatus.FAILED,
             created_at=now - timedelta(days=1),
             updated_at=now - timedelta(days=1),
+            completed_at=None,
             properties=[],
-            companies=[]
-        )
+            companies=[],
+        ),
     ]
 
 
@@ -115,12 +129,13 @@ class TestROIReport:
         inv = Investigation(
             id=1,
             user_id=1,
-            cpf_cnpj="12345678901",
-            status="completed",
+            target_name="ROI test",
+            target_cpf_cnpj="12345678901",
+            status=InvestigationStatus.COMPLETED,
             created_at=datetime.utcnow() - timedelta(hours=2),
             completed_at=datetime.utcnow(),
-            properties=[Property(id=i) for i in range(5)],
-            companies=[Company(id=i) for i in range(3)]
+            properties=[_prop(1, i) for i in range(5)],
+            companies=[_comp(1, i) for i in range(3)],
         )
         
         roi_data = report._calculate_investigation_roi(inv)
@@ -184,12 +199,13 @@ class TestCostReport:
         inv = Investigation(
             id=1,
             user_id=1,
-            cpf_cnpj="12345678901",
-            status="completed",
+            target_name="Cost test",
+            target_cpf_cnpj="12345678901",
+            status=InvestigationStatus.COMPLETED,
             created_at=datetime.utcnow() - timedelta(hours=1),
             completed_at=datetime.utcnow(),
-            properties=[Property(id=i) for i in range(10)],
-            companies=[Company(id=i) for i in range(5)]
+            properties=[_prop(1, i) for i in range(10)],
+            companies=[_comp(1, i) for i in range(5)],
         )
         
         cost_data = report._calculate_investigation_cost(inv)

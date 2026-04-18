@@ -216,9 +216,18 @@ async def test_get_stats(connection_manager):
 # ==================== Testes de Funções de Notificação ====================
 
 
+def _last_message_of_type(mock_ws, event_type: str) -> dict:
+    for call in reversed(mock_ws.send_json.call_args_list):
+        msg = call[0][0]
+        if isinstance(msg, dict) and msg.get("type") == event_type:
+            return msg
+    raise AssertionError(f"nenhuma mensagem type={event_type!r}")
+
+
 @pytest.mark.asyncio
-async def test_notify_task_started(connection_manager, mock_websocket):
+async def test_notify_task_started(connection_manager, mock_websocket, monkeypatch):
     """Testa notificação de início de task"""
+    monkeypatch.setattr("app.core.websocket.connection_manager", connection_manager)
     await connection_manager.connect(mock_websocket, "inv_123", "user_456")
     
     await notify_task_started("inv_123", "task_abc", ScraperType.CAR)
@@ -226,9 +235,7 @@ async def test_notify_task_started(connection_manager, mock_websocket):
     # Verificar que mensagem foi enviada
     assert mock_websocket.send_json.call_count >= 1
     
-    # Verificar conteúdo da última mensagem
-    last_call = mock_websocket.send_json.call_args_list[-1]
-    message = last_call[0][0]
+    message = _last_message_of_type(mock_websocket, "task_started")
     
     assert message["type"] == "task_started"
     assert message["task_id"] == "task_abc"
@@ -236,24 +243,24 @@ async def test_notify_task_started(connection_manager, mock_websocket):
 
 
 @pytest.mark.asyncio
-async def test_notify_task_completed(connection_manager, mock_websocket):
+async def test_notify_task_completed(connection_manager, mock_websocket, monkeypatch):
     """Testa notificação de conclusão de task"""
+    monkeypatch.setattr("app.core.websocket.connection_manager", connection_manager)
     await connection_manager.connect(mock_websocket, "inv_123", "user_456")
     
     result = {"data": "success"}
     await notify_task_completed("inv_123", "task_abc", ScraperType.CAR, result)
     
-    # Verificar mensagem
-    last_call = mock_websocket.send_json.call_args_list[-1]
-    message = last_call[0][0]
+    message = _last_message_of_type(mock_websocket, "task_completed")
     
     assert message["type"] == "task_completed"
     assert message["result"] == result
 
 
 @pytest.mark.asyncio
-async def test_notify_task_failed(connection_manager, mock_websocket):
+async def test_notify_task_failed(connection_manager, mock_websocket, monkeypatch):
     """Testa notificação de falha de task"""
+    monkeypatch.setattr("app.core.websocket.connection_manager", connection_manager)
     await connection_manager.connect(mock_websocket, "inv_123", "user_456")
     
     await notify_task_failed(
@@ -265,9 +272,7 @@ async def test_notify_task_failed(connection_manager, mock_websocket):
         max_retries=3
     )
     
-    # Verificar mensagem
-    last_call = mock_websocket.send_json.call_args_list[-1]
-    message = last_call[0][0]
+    message = _last_message_of_type(mock_websocket, "task_retrying")
     
     assert message["type"] == "task_retrying"
     assert message["error"] == "Test error"
@@ -276,8 +281,9 @@ async def test_notify_task_failed(connection_manager, mock_websocket):
 
 
 @pytest.mark.asyncio
-async def test_notify_investigation_progress(connection_manager, mock_websocket):
+async def test_notify_investigation_progress(connection_manager, mock_websocket, monkeypatch):
     """Testa notificação de progresso"""
+    monkeypatch.setattr("app.core.websocket.connection_manager", connection_manager)
     await connection_manager.connect(mock_websocket, "inv_123", "user_456")
     
     progress = {
@@ -289,9 +295,7 @@ async def test_notify_investigation_progress(connection_manager, mock_websocket)
     
     await notify_investigation_progress("inv_123", progress)
     
-    # Verificar mensagem
-    last_call = mock_websocket.send_json.call_args_list[-1]
-    message = last_call[0][0]
+    message = _last_message_of_type(mock_websocket, "investigation_progress")
     
     assert message["type"] == "investigation_progress"
     assert message["total_tasks"] == 6
@@ -319,9 +323,11 @@ async def test_broadcast_only_to_correct_investigation(connection_manager):
     message = {"type": "test"}
     await connection_manager.broadcast_to_investigation(message, "inv_123")
     
-    # Verificar que apenas ws1 recebeu
-    ws1.send_json.assert_called_once()
-    ws2.send_json.assert_not_called()
+    # connect() envia "connected"; broadcast envia a mensagem de teste
+    test_msgs = [c[0][0] for c in ws1.send_json.call_args_list if c[0][0].get("type") == "test"]
+    assert len(test_msgs) == 1
+    assert test_msgs[0] == message
+    assert not any(c[0][0].get("type") == "test" for c in ws2.send_json.call_args_list)
 
 
 @pytest.mark.asyncio

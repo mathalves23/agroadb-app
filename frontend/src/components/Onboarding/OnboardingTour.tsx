@@ -145,6 +145,25 @@ export default function OnboardingTour({ run = false, onComplete }: OnboardingTo
       disableBeacon: true,
     },
     {
+      target: '[data-tour="sidebar-user-guide"]',
+      content: (
+        <div className="space-y-2">
+          <h3 className="text-lg font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">📖 Manual do utilizador</h3>
+          <p className="text-gray-600 leading-relaxed">
+            Aceda à documentação de produto: fluxos da plataforma, boas práticas e ajuda contextual. Está separada da
+            documentação técnica para programadores.
+          </p>
+          <div className="bg-emerald-50 rounded-lg p-2 mt-2">
+            <p className="text-xs text-emerald-800">
+              O conteúdo em Markdown mantém-se em <code className="font-mono text-[10px]">product/</code> no repositório.
+            </p>
+          </div>
+        </div>
+      ),
+      placement: 'right',
+      disableBeacon: true,
+    },
+    {
       target: '[data-tour="notifications"]',
       content: (
         <div className="space-y-2">

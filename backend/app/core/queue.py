@@ -10,6 +10,8 @@ import logging
 from dataclasses import dataclass, asdict
 import redis.asyncio as redis
 
+from app.core.config import settings
+
 logger = logging.getLogger(__name__)
 
 
@@ -135,7 +137,8 @@ class QueueManager:
     async def disconnect(self):
         """Desconecta do Redis"""
         if self.redis_client:
-            await self.redis_client.close()
+            await self.redis_client.aclose()
+            self.redis_client = None
             logger.info("🔌 Desconectado do Redis")
     
     def _get_queue_key(self, scraper_type: ScraperType, priority: TaskPriority) -> str:
@@ -482,7 +485,7 @@ class QueueManager:
         """Registra falha no circuit breaker"""
         key = self._get_circuit_breaker_key(scraper_type)
         failures = await self.redis_client.incr(f"{key}:failures")
-        
+
         if failures >= self.CIRCUIT_BREAKER_THRESHOLD:
             # Abrir circuit breaker
             await self.redis_client.setex(
@@ -490,6 +493,12 @@ class QueueManager:
                 timedelta(seconds=self.CIRCUIT_BREAKER_TIMEOUT),
                 "1"
             )
+            try:
+                from app.core.queue_prometheus import scraper_circuit_opened
+
+                scraper_circuit_opened(scraper_type.value)
+            except Exception:
+                pass
             logger.error(
                 f"⚡ CIRCUIT BREAKER ABERTO para {scraper_type.value} "
                 f"após {failures} falhas consecutivas"
@@ -500,6 +509,12 @@ class QueueManager:
         key = self._get_circuit_breaker_key(scraper_type)
         await self.redis_client.delete(f"{key}:failures")
         await self.redis_client.delete(f"{key}:open")
+        try:
+            from app.core.queue_prometheus import scraper_circuit_closed
+
+            scraper_circuit_closed(scraper_type.value)
+        except Exception:
+            pass
     
     async def _is_circuit_open(self, scraper_type: ScraperType) -> bool:
         """Verifica se circuit breaker está aberto"""
@@ -573,5 +588,5 @@ class QueueManager:
             return False
 
 
-# Instância global do gerenciador de filas
-queue_manager = QueueManager()
+# Instância global do gerenciador de filas (URL alinhada ao ambiente)
+queue_manager = QueueManager(str(settings.REDIS_URL))

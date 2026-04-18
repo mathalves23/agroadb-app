@@ -100,8 +100,10 @@ async def test_calculate_area(sigef_scraper):
 @pytest.mark.asyncio
 async def test_verify_overlap(sigef_scraper):
     """Testa verificação de sobreposição"""
-    geometry1 = {"type": "Polygon", "coordinates": [[[-47.1, -22.9]]]}
-    geometry2 = {"type": "Polygon", "coordinates": [[[-47.2, -23.0]]]}
+    ring1 = [[-47.1, -22.9], [-47.0, -22.9], [-47.0, -22.8], [-47.1, -22.8], [-47.1, -22.9]]
+    ring2 = [[-47.2, -23.0], [-47.1, -23.0], [-47.1, -22.9], [-47.2, -22.9], [-47.2, -23.0]]
+    geometry1 = {"type": "Polygon", "coordinates": [ring1]}
+    geometry2 = {"type": "Polygon", "coordinates": [ring2]}
     
     result = await sigef_scraper.verify_overlap(geometry1, geometry2)
     
