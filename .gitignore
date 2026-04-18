@@ -7,6 +7,7 @@ __pycache__/
 env/
 venv/
 .venv-ci/
+.venv-agroadb/
 ENV/
 build/
 develop-eggs/

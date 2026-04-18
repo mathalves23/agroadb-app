@@ -19,9 +19,8 @@ def mount_prometheus_instrumentator(app) -> None:
         if not path.startswith("/"):
             path = "/" + path
         Instrumentator(
-            should_include_handler=True,
             should_ignore_untemplated=True,
-        ).instrument(app).expose(app, endpoint=path[1:], include_in_schema=False)
+        ).instrument(app).expose(app, endpoint=path, include_in_schema=False)
         logger.info("Prometheus: métricas HTTP em %s", path)
     except Exception as exc:
         logger.warning("Prometheus instrumentador não montado: %s", exc)

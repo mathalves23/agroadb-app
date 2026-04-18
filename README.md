@@ -99,7 +99,7 @@ Sem Docker, execute o mesmo `python scripts/create_superuser.py` a partir de `ba
 No ficheiro `.github/workflows/ci.yml`:
 
 - **Backend:** `flake8` (erros críticos E9/F63/F7/F82), `pip-audit`, e um **subconjunto** de `pytest` (smoke, segurança, auth, ML, contrato público, helpers de integração, observabilidade) com relatório de cobertura sobre `app` — **não** equivale a suíte completa nem a um compromisso de SLA ou de “100% coberto”.
-- **Frontend:** `npm audit` (produção), `lint`, `type-check`, `build` e `test:ci`.
+- **Frontend:** `npm audit` (produção, **severidade critical** — o pacote `xlsx` comunitário ainda aparece como high sem patch no registo público), `lint`, `type-check`, `build` e `test:ci`.
 - **E2E:** Playwright com API mockada (fluxos críticos), sem garantir todos os caminhos de utilizador.
 
 Um CI verde indica **qualidade mínima** e regressões óbvias evitadas nesse subconjunto. Para prometer níveis de serviço ou cobertura elevada, alargue primeiro os testes e a monitorização em produção.

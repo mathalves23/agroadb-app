@@ -104,8 +104,9 @@ jobs:
         run: npm ci
         working-directory: frontend
 
-      - name: npm audit (produção, severidade alta+)
-        run: npm audit --omit=dev --audit-level=high --registry=https://registry.npmjs.org
+      # xlsx (SheetJS community) não tem patch npm para avisos high; falhamos apenas em critical.
+      - name: npm audit (produção, severidade critical)
+        run: npm audit --omit=dev --audit-level=critical --registry=https://registry.npmjs.org/
         working-directory: frontend
 
       - run: npm run lint

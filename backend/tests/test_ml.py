@@ -515,7 +515,8 @@ def test_network_export_json_endpoint(
     assert "application/json" in r.headers.get("content-type", "")
     data = r.json()
     assert "nodes" in data
-    assert "edges" in data
+    # Exporto em formato node-link (links); versões antigas esperavam "edges"
+    assert "links" in data or "edges" in data
 
 
 def test_network_analysis_endpoint(
