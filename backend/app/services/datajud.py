@@ -9,6 +9,21 @@ from app.core.retry import retry_with_backoff
 from app.core.circuit_breaker import circuit_protected
 
 
+def datajud_result_count(result: Any) -> int:
+    """
+    Heurística para contagens em respostas típicas do DataJud (hits / processos).
+    Usado ao persistir legal_queries e em testes unitários.
+    """
+    if isinstance(result, dict):
+        hits = result.get("hits")
+        if isinstance(hits, list):
+            return len(hits)
+        processos = result.get("processos")
+        if isinstance(processos, list):
+            return len(processos)
+    return 0
+
+
 class DataJudService:
     """Cliente simples para API Pública do DataJud (CNJ)"""
 

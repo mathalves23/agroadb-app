@@ -16,8 +16,8 @@ from app.services.legal_integration import (
     DueDiligenceExport,
     LegalSystemIntegration
 )
-from app.services.datajud import DataJudService
 from app.repositories.legal_query import LegalQueryRepository
+from app.services.datajud_proxy import run_datajud_proxy
 from app.repositories.legal_integration_config import LegalIntegrationConfigRepository
 from app.services.investigation_access import (
     legal_queries_to_public_list,
@@ -71,14 +71,6 @@ class DataJudProxyRequest(BaseModel):
     investigation_id: Optional[int] = Field(None, description="ID da investigação")
     query_type: Optional[str] = Field(None, description="Tipo de consulta (ex: processos, movimentacoes)")
 
-
-def _datajud_result_count(result: Dict[str, Any]) -> int:
-    if isinstance(result, dict):
-        if isinstance(result.get("hits"), list):
-            return len(result["hits"])
-        if isinstance(result.get("processos"), list):
-            return len(result["processos"])
-    return 0
 
 # ==================== Endpoints PJe ====================
 
@@ -225,36 +217,18 @@ async def datajud_proxy(
     🔎 Proxy para API Pública do DataJud (CNJ)
     """
     try:
-        service = DataJudService()
-        result = await service.request(
+        return await run_datajud_proxy(
+            db,
+            audit_logger,
+            user_id=current_user.id,
+            ip_address=request.client.host if request.client else None,
             method=data.method,
             path=data.path,
             params=data.params,
             payload=data.payload,
+            investigation_id=data.investigation_id,
+            query_type=data.query_type,
         )
-
-        if data.investigation_id:
-            repo = LegalQueryRepository(db)
-            await repo.create({
-                "investigation_id": data.investigation_id,
-                "provider": "datajud",
-                "query_type": data.query_type or data.path,
-                "query_params": {"params": data.params or {}, "payload": data.payload or {}},
-                "result_count": _datajud_result_count(result),
-                "response": result if isinstance(result, dict) else {"result": result},
-            })
-
-        await audit_logger.log_action(
-            db=db,
-            user_id=current_user.id,
-            action="consulta_datajud",
-            resource_type="datajud",
-            resource_id=data.path,
-            details={"method": data.method, "path": data.path},
-            ip_address=request.client.host
-        )
-
-        return result
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
