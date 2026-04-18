@@ -51,7 +51,7 @@ jobs:
             prom/prometheus:v2.53.3 \
             check rules /rules/agroadb.yml
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: pip
