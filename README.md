@@ -96,20 +96,30 @@ Sem Docker, execute o mesmo `python scripts/create_superuser.py` a partir de `ba
 
 No ficheiro `.github/workflows/ci.yml`:
 
-- **Backend:** `flake8` (erros críticos E9/F63/F7/F82) e `pytest` em `tests/test_ci_smoke.py` + `tests/test_security.py`, com cobertura sobre `app`, contra PostgreSQL e Redis de serviço.
-- **Frontend:** `npm run lint`, `type-check`, `build` e `test:ci`.
+- **Backend:** `flake8` (erros críticos E9/F63/F7/F82), `pip-audit`, e um **subconjunto** de `pytest` (smoke, segurança, auth, ML, contrato público, helpers de integração, observabilidade) com relatório de cobertura sobre `app` — **não** equivale a suíte completa nem a um compromisso de SLA ou de “100% coberto”.
+- **Frontend:** `npm audit` (produção), `lint`, `type-check`, `build` e `test:ci`.
+- **E2E:** Playwright com API mockada (fluxos críticos), sem garantir todos os caminhos de utilizador.
+
+Um CI verde indica **qualidade mínima** e regressões óbvias evitadas nesse subconjunto. Para prometer níveis de serviço ou cobertura elevada, alargue primeiro os testes e a monitorização em produção.
 
 ### Localmente
 
 ```bash
 make lint
-make test                    # backend: smoke + segurança (alinhado ao CI)
+make test                    # backend: mesmo subconjunto que o job Pytest no CI
 
-cd frontend && npm run lint && npm run build && npm run test:ci
+cd frontend && npm run lint && npm run type-check && npm run build && npm run test:ci
+cd frontend && npm run test:e2e:ci   # opcional: Playwright (Chromium)
 
 # Suíte completa de backend (muitos testes legacy ainda precisam de revisão de fixtures)
 cd backend && pytest tests/
 ```
+
+### Checklist antes de considerar “pronto” para produção
+
+1. `make lint` e `make test` na raiz; no `frontend/`, `npm run type-check`, `build` e `test:ci`.
+2. Commit e push para o remoto; confirmar workflow **CI** verde no GitHub.
+3. **Deploy:** não há pipeline cloud fixo neste repositório; use `docker-compose` / `docker-compose.prod.yml` ou a plataforma onde hospeda (defina variáveis e segredos fora do Git). Ver `docs/deploy/` e `Makefile` (`build`, `deploy`).
 
 Não commite `.env` nem segredos. Use `.env.example` como referência. Para reporte de vulnerabilidades, veja [SECURITY.md](SECURITY.md).
 

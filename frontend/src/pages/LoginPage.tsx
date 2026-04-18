@@ -68,6 +68,10 @@ export default function LoginPage() {
             Acesse dados de 27+ bases governamentais em uma única plataforma.
             SNCR, SIGEF, SICAR, DataJud, Receita Federal, BNMP e muito mais.
           </p>
+          <p className="mt-3 text-emerald-50/90 text-xs leading-relaxed max-w-md border border-white/10 rounded-lg p-3 bg-white/5">
+            <span className="font-semibold text-white">B2B:</span> pensado para escritórios de agronegócio e crédito rural —
+            conformidade LGPD, trilhos de auditoria e relatórios exportáveis (PDF, Excel, grafos).
+          </p>
           <div className="mt-8 flex items-center gap-6">
             {['SNCR', 'SIGEF', 'SICAR', 'DataJud', 'CNPJ'].map((name) => (
               <span key={name} className="text-[10px] font-medium text-emerald-300/60 uppercase tracking-wider">

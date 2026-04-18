@@ -15,7 +15,7 @@ interface OCRResult {
   entities: Record<string, string[]>
   page_count: number
   processing_time: number
-  metadata: Record<string, any>
+  metadata: Record<string, unknown>
 }
 
 export default function OCRModal({ isOpen, onClose, onSuccess }: OCRModalProps) {
@@ -83,7 +83,7 @@ export default function OCRModal({ isOpen, onClose, onSuccess }: OCRModalProps) 
       const formData = new FormData()
       formData.append('file', file)
 
-      const response = await api.post<OCRResult>('/api/v1/ocr/process', formData, {
+      const response = await api.post<OCRResult>('/ocr/process', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -93,8 +93,9 @@ export default function OCRModal({ isOpen, onClose, onSuccess }: OCRModalProps) 
       if (onSuccess) {
         onSuccess(response.data)
       }
-    } catch (err: any) {
-      const errorMsg = err.response?.data?.detail || err.message || 'Erro ao processar documento'
+    } catch (err: unknown) {
+      const ax = err as { response?: { data?: { detail?: string } }; message?: string }
+      const errorMsg = ax.response?.data?.detail || (err instanceof Error ? err.message : undefined) || 'Erro ao processar documento'
       setError(errorMsg)
     } finally {
       setIsProcessing(false)

@@ -1,0 +1,7 @@
+{
+  "enabled": false,
+  "method": "identity",
+  "trained_on": "none",
+  "legal_basis": "Sem ficheiro activo: o score bruto (soma ponderada dos indicadores) é devolvido sem transformação pós-processo.",
+  "notes": "Para activar calibração com dados reais (onde houver base legal e anonimização), defina RISK_CALIBRATION_PATH para um JSON produzido por scripts/train_risk_calibration.py."
+}

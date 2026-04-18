@@ -69,6 +69,10 @@ export default function RegisterPage() {
             Investigação patrimonial inteligente com acesso a bases governamentais integradas.
             Ideal para advogados, analistas e investigadores.
           </p>
+          <p className="mt-3 text-emerald-50/90 text-xs leading-relaxed max-w-md border border-white/10 rounded-lg p-3 bg-white/5">
+            <span className="font-semibold text-white">B2B:</span> LGPD, auditoria de acções e exportação de relatórios —
+            segmentos agronegócio e crédito rural.
+          </p>
         </div>
         <p className="text-xs text-emerald-200/40">&copy; {new Date().getFullYear()} AgroADB — Todos os direitos reservados</p>
       </div>

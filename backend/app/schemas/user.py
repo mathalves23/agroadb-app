@@ -59,3 +59,14 @@ class TokenPayload(BaseModel):
     sub: int
     exp: datetime
     type: str
+
+
+class RefreshTokenRequest(BaseModel):
+    """Corpo JSON para renovação de tokens."""
+    refresh_token: str
+
+
+class ChangePasswordRequest(BaseModel):
+    """Alteração de senha do utilizador autenticado."""
+    current_password: str
+    new_password: str = Field(..., min_length=8, max_length=100)

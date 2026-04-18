@@ -13,6 +13,9 @@ describe('Sidebar Component', () => {
 
     expect(screen.getByText('Dashboard')).toBeInTheDocument()
     expect(screen.getByText('Investigações')).toBeInTheDocument()
+    expect(screen.getByText('Notificações')).toBeInTheDocument()
+    expect(screen.getByText('Perfil')).toBeInTheDocument()
+    expect(screen.getByText('Fontes públicas')).toBeInTheDocument()
   })
 
   it('should have correct href attributes', () => {
@@ -24,9 +27,11 @@ describe('Sidebar Component', () => {
 
     const dashboardLink = screen.getByText('Dashboard').closest('a')
     const investigationsLink = screen.getByText('Investigações').closest('a')
+    const notificationsLink = screen.getByText('Notificações').closest('a')
 
     expect(dashboardLink).toHaveAttribute('href', '/dashboard')
     expect(investigationsLink).toHaveAttribute('href', '/investigations')
+    expect(notificationsLink).toHaveAttribute('href', '/notifications')
   })
 
   it('should display navigation icons', () => {

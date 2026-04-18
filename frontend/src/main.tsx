@@ -10,6 +10,7 @@ import './index.css'
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
+      // Backoff visível para 502/503/429/etc. no `lib/axios.ts`; aqui fica 1 re-fetch simples após falha final.
       retry: 1,
       refetchOnWindowFocus: false,
       staleTime: 5 * 60 * 1000, // 5 minutos

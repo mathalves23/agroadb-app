@@ -1,5 +1,12 @@
 import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom'
 import { Suspense, lazy, useState, useEffect } from 'react'
+
+function routerBasename(): string | undefined {
+  const base = (import.meta.env.BASE_URL || '/').replace(/\/+/g, '/')
+  if (base === '/' || base === '') return undefined
+  const trimmed = base.endsWith('/') ? base.slice(0, -1) : base
+  return trimmed || undefined
+}
 import { useAuthStore } from './stores/authStore'
 import Layout from './components/Layout'
 import { OnboardingTour } from './components/Onboarding'
@@ -56,7 +63,8 @@ const router = createBrowserRouter(
         { path: 'notifications', element: <Suspense fallback={<SuspenseFallback />}><NotificationsPage /></Suspense> },
       ],
     },
-  ]
+  ],
+  { basename: routerBasename() },
 )
 
 function App() {

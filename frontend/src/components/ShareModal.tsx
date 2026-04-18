@@ -224,7 +224,10 @@ export default function ShareModal({ investigationId, investigationName, isOpen,
               </div>
               <select
                 value={permission}
-                onChange={(e) => setPermission(e.target.value as any)}
+                onChange={(e) => {
+                  const v = e.target.value
+                  if (v === 'view' || v === 'comment' || v === 'edit' || v === 'admin') setPermission(v)
+                }}
                 className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
               >
                 <option value="view">Visualizar</option>

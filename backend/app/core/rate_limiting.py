@@ -69,8 +69,7 @@ class RateLimiter:
         # 2. API Key (se implementado)
         api_key = request.headers.get("X-API-Key")
         if api_key:
-            # Hash da API key para não expor
-            key_hash = hashlib.sha256(api_key.encode()).hexdigest()[:16]
+            key_hash = hashlib.sha256(api_key.encode()).hexdigest()
             return f"api_key:{key_hash}"
         
         # 3. IP address (com fallback para X-Forwarded-For)
@@ -103,6 +102,23 @@ class RateLimiter:
             return self.DEFAULT_LIMITS["authenticated"]
         
         return self.DEFAULT_LIMITS["anonymous"]
+
+    async def _resolve_limit(self, request: Request) -> int:
+        """Limite por minuto, com override Redis por API key (RPM personalizado)."""
+        limit = self._get_limit(request)
+        api_key = request.headers.get("X-API-Key")
+        if not api_key:
+            return limit
+        try:
+            if not self.redis_client:
+                await self.connect()
+            full_hash = hashlib.sha256(api_key.encode()).hexdigest()
+            custom = await self.redis_client.get(f"apikey:rpm:{full_hash}")
+            if custom is not None:
+                return max(1, int(custom))
+        except Exception as exc:
+            logger.debug("Override RPM por API key ignorado: %s", exc)
+        return limit
     
     async def is_allowed(self, request: Request) -> Tuple[bool, Dict[str, any]]:
         """
@@ -118,7 +134,7 @@ class RateLimiter:
             await self.connect()
         
         identifier = self._get_identifier(request)
-        limit = self._get_limit(request)
+        limit = await self._resolve_limit(request)
         window = 60  # 1 minuto em segundos
         
         # Chave Redis: ratelimit:{identifier}:{timestamp}

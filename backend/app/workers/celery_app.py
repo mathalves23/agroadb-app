@@ -26,3 +26,9 @@ celery_app.conf.update(
 
 # Auto-discover tasks
 celery_app.autodiscover_tasks(["app.workers"])
+
+from app.core.telemetry import instrument_celery
+
+instrument_celery(celery_app)
+
+import app.workers.celery_prometheus  # noqa: E402, F401 — regista métricas Celery

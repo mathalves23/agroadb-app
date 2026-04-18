@@ -19,7 +19,9 @@ from app.services.legal_integration import (
 from app.services.datajud import DataJudService
 from app.repositories.legal_query import LegalQueryRepository
 from app.repositories.investigation import InvestigationRepository
+from app.repositories.legal_integration_config import LegalIntegrationConfigRepository
 from app.core.audit import AuditLogger
+from app.core.config import settings as app_settings
 
 # Inicializar o audit logger
 audit_logger = AuditLogger()
@@ -275,6 +277,11 @@ async def list_legal_queries_by_investigation(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
+    inv_repo = InvestigationRepository(db)
+    inv = await inv_repo.get(investigation_id)
+    if not inv or (inv.user_id != current_user.id and not current_user.is_superuser):
+        raise HTTPException(status_code=404, detail="Investigação não encontrada")
+
     repo = LegalQueryRepository(db)
     queries = await repo.list_by_investigation(investigation_id)
     return [
@@ -444,11 +451,25 @@ async def configurar_integracao(
     
     Define configurações para integração com sistema externo
     """
-    # TODO: Salvar configuração no banco de dados
-    # integration = LegalIntegration(**data.dict(), user_id=current_user.id)
-    # db.add(integration)
-    # db.commit()
-    
+    repo = LegalIntegrationConfigRepository(db)
+    api_key_encrypted = None
+    if data.api_key:
+        if app_settings.ENCRYPTION_KEY:
+            from app.core.encryption import data_encryption
+
+            api_key_encrypted = data_encryption.encrypt(data.api_key)
+        else:
+            api_key_encrypted = data.api_key
+
+    await repo.upsert(
+        user_id=current_user.id,
+        system_name=data.system_name,
+        api_endpoint=data.api_endpoint,
+        api_key_encrypted=api_key_encrypted,
+        credentials=data.credentials,
+        enabled=data.enabled,
+    )
+
     # Log de auditoria
     await audit_logger.log_action(
         db=db,
@@ -467,7 +488,10 @@ async def configurar_integracao(
     return {
         "success": True,
         "message": "Integração configurada com sucesso",
-        "integration": data.model_dump()
+        "integration": {
+            **data.model_dump(exclude={"api_key"}),
+            "has_api_key": bool(data.api_key),
+        },
     }
 
 @router.get("/integrations/list")
@@ -480,23 +504,18 @@ async def listar_integracoes(
     
     Retorna todas as integrações jurídicas configuradas pelo usuário
     """
-    # TODO: Buscar integrações do banco de dados
-    # integrations = db.query(LegalIntegration).filter_by(user_id=current_user.id).all()
-    
-    # Exemplo mockado
+    repo = LegalIntegrationConfigRepository(db)
+    rows = await repo.list_by_user(current_user.id)
     integrations = [
         {
-            "system_name": "PJe",
-            "enabled": True,
-            "description": "Processo Judicial Eletrônico"
-        },
-        {
-            "system_name": "Thomson Reuters",
-            "enabled": False,
-            "description": "Plataforma de due diligence"
+            "system_name": r.system_name,
+            "api_endpoint": r.api_endpoint,
+            "enabled": r.enabled,
+            "has_api_key": bool(r.api_key_encrypted),
         }
+        for r in rows
     ]
-    
+
     return {
         "success": True,
         "total": len(integrations),

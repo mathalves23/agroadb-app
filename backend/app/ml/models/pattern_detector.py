@@ -13,7 +13,7 @@ Padrões detectados:
 - Estruturas societárias complexas
 """
 
-from typing import Dict, List, Optional, Any, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
 from collections import defaultdict, Counter
@@ -26,6 +26,37 @@ from app.domain.company import Company
 from app.domain.lease_contract import LeaseContract
 
 logger = logging.getLogger(__name__)
+
+
+def _raw(obj: Any) -> dict:
+    d = getattr(obj, "raw_data", None) if obj is not None else None
+    return d if isinstance(d, dict) else {}
+
+
+def _prop_label(prop: Property) -> str:
+    return (prop.property_name or prop.address or "Propriedade").strip()
+
+
+def _company_label(company: Company) -> str:
+    return (
+        (company.corporate_name or company.trade_name or company.cnpj or "Empresa").strip()
+    )
+
+
+def _company_partners_list(company: Company) -> list:
+    raw = getattr(company, "partners", None)
+    if isinstance(raw, list):
+        return raw
+    if isinstance(raw, dict):
+        inner = raw.get("partners")
+        if isinstance(inner, list):
+            return inner
+    pr = _raw(company).get("partners")
+    return pr if isinstance(pr, list) else []
+
+
+def _lease_document_number(lease: LeaseContract) -> Optional[str]:
+    return _raw(lease).get("document_number")
 
 
 class Pattern:
@@ -170,14 +201,14 @@ class PatternDetector:
         properties = investigation.properties or []
         
         for prop in properties:
-            prop_data = prop.additional_data or {}
+            prop_data = _raw(prop)
             evidence = []
             confidence = 0.0
             
             # 1. Propriedade muito grande sem CAR ou matrícula
-            area = float(prop_data.get("area_hectares", 0) or 0)
-            has_car = bool(prop_data.get("car_code"))
-            has_matricula = bool(prop_data.get("matricula"))
+            area = float(prop_data.get("area_hectares", 0) or prop.area_hectares or 0)
+            has_car = bool(prop_data.get("car_code")) or bool(prop.car_number)
+            has_matricula = bool(prop_data.get("matricula")) or bool(prop.matricula)
             
             if area > 1000 and not (has_car or has_matricula):
                 confidence += 0.4
@@ -219,7 +250,7 @@ class PatternDetector:
                     description="Possível grilagem de terras detectada",
                     evidence=evidence,
                     severity=severity,
-                    entities_involved=[prop.name or prop.address or "Propriedade"]
+                    entities_involved=[_prop_label(prop)]
                 ))
         
         return patterns
@@ -245,7 +276,7 @@ class PatternDetector:
         # 1. Empresas offshore
         offshore_count = 0
         for company in companies:
-            company_data = company.additional_data or {}
+            company_data = _raw(company)
             country = company_data.get("country", "Brasil")
             
             tax_havens = [
@@ -255,7 +286,7 @@ class PatternDetector:
             
             if any(haven in country.lower() for haven in tax_havens):
                 offshore_count += 1
-                entities.append(company.name)
+                entities.append(_company_label(company))
         
         if offshore_count > 0:
             confidence += 0.4 + (offshore_count * 0.1)
@@ -266,7 +297,7 @@ class PatternDetector:
         # 2. Múltiplas transações recentes
         recent_transactions = 0
         for prop in properties:
-            prop_data = prop.additional_data or {}
+            prop_data = _raw(prop)
             last_transaction = prop_data.get("last_transaction_date")
             
             if last_transaction:
@@ -289,7 +320,7 @@ class PatternDetector:
         
         # 3. Valores muito altos
         total_value = sum(
-            float(p.additional_data.get("estimated_value", 0) or 0)
+            float(_raw(p).get("estimated_value", 0) or 0)
             for p in properties
         )
         
@@ -339,9 +370,10 @@ class PatternDetector:
         # Coletar CPFs e informações dos proprietários
         owners_info = []
         for prop in properties:
-            prop_data = prop.additional_data or {}
-            owner_cpf = prop_data.get("owner_cpf")
-            owner_name = prop_data.get("owner_name")
+            prop_data = _raw(prop)
+            digits = "".join(c for c in (prop.owner_cpf_cnpj or "") if c.isdigit())
+            owner_cpf = prop_data.get("owner_cpf") or digits or None
+            owner_name = prop_data.get("owner_name") or prop.owner_name
             owner_phone = prop_data.get("owner_phone")
             owner_address = prop_data.get("owner_address")
             
@@ -520,31 +552,34 @@ class PatternDetector:
         ghost_properties = []
         
         for prop in properties:
-            prop_data = prop.additional_data or {}
+            prop_data = _raw(prop)
             red_flags = []
             
             # 1. Sem localização
             has_location = (
-                prop_data.get("latitude") and prop_data.get("longitude")
-            ) or prop_data.get("coordinates")
+                (prop_data.get("latitude") and prop_data.get("longitude"))
+                or prop_data.get("coordinates")
+                or prop.coordinates
+            )
             
             if not has_location:
                 red_flags.append("sem geolocalização")
             
             # 2. Sem documentação
-            has_car = bool(prop_data.get("car_code"))
-            has_matricula = bool(prop_data.get("matricula"))
-            has_ccir = bool(prop_data.get("ccir"))
+            has_car = bool(prop_data.get("car_code")) or bool(prop.car_number)
+            has_matricula = bool(prop_data.get("matricula")) or bool(prop.matricula)
+            has_ccir = bool(prop_data.get("ccir")) or bool(prop.ccir_number)
             
             if not (has_car or has_matricula or has_ccir):
                 red_flags.append("sem documentação (CAR/matrícula/CCIR)")
             
             # 3. Dados muito incompletos
-            essential_fields = ["area_hectares", "municipality", "state"]
-            missing_fields = [
-                field for field in essential_fields
-                if not prop_data.get(field)
-            ]
+            essential = {
+                "area_hectares": prop_data.get("area_hectares") or prop.area_hectares,
+                "municipality": prop_data.get("municipality") or prop.city,
+                "state": prop_data.get("state") or prop.state,
+            }
+            missing_fields = [k for k, v in essential.items() if not v]
             
             if len(missing_fields) >= 2:
                 red_flags.append(f"dados incompletos ({len(missing_fields)} campos essenciais faltando)")
@@ -556,7 +591,7 @@ class PatternDetector:
             
             if len(red_flags) >= 3:
                 ghost_properties.append({
-                    "name": prop.name or prop.address or "Propriedade",
+                    "name": _prop_label(prop),
                     "red_flags": red_flags
                 })
         
@@ -601,8 +636,7 @@ class PatternDetector:
         # 2. Empresas com múltiplas camadas
         layers_count = 0
         for company in companies:
-            company_data = company.additional_data or {}
-            partners = company_data.get("partners", [])
+            partners = _company_partners_list(company)
             
             # Verificar se algum sócio é PJ
             pj_partners = sum(1 for p in partners if p.get("cnpj"))
@@ -618,7 +652,7 @@ class PatternDetector:
         # 3. Empresas offshore
         offshore_count = sum(
             1 for c in companies
-            if "offshore" in (c.additional_data or {}).get("type", "").lower()
+            if "offshore" in (_raw(c)).get("type", "").lower()
         )
         
         if offshore_count > 0:
@@ -632,7 +666,7 @@ class PatternDetector:
                 description="Estrutura societária excessivamente complexa",
                 evidence=evidence,
                 severity="high",
-                entities_involved=[c.name for c in companies[:5]]
+                entities_involved=[_company_label(c) for c in companies[:5]]
             ))
         
         return patterns
@@ -657,19 +691,20 @@ class PatternDetector:
         # 1. Empresas inativas com propriedades
         inactive_with_properties = 0
         for company in companies:
-            company_data = company.additional_data or {}
-            status = company_data.get("status", "").lower()
+            company_data = _raw(company)
+            status = (company.status or company_data.get("status") or "").lower()
             
             if "inativa" in status or "baixada" in status or "suspensa" in status:
                 # Verificar se tem propriedades
                 company_properties = [
                     p for p in properties
-                    if company.cnpj in str(p.additional_data)
+                    if company.cnpj in str(_raw(p))
+                    or company.cnpj in (p.owner_cpf_cnpj or "")
                 ]
                 
                 if company_properties:
                     inactive_with_properties += 1
-                    entities.append(company.name)
+                    entities.append(_company_label(company))
         
         if inactive_with_properties > 0:
             confidence += 0.5
@@ -680,8 +715,8 @@ class PatternDetector:
         # 2. Valores declarados muito baixos
         low_value_properties = 0
         for prop in properties:
-            prop_data = prop.additional_data or {}
-            area = float(prop_data.get("area_hectares", 0) or 0)
+            prop_data = _raw(prop)
+            area = float(prop_data.get("area_hectares", 0) or prop.area_hectares or 0)
             value = float(prop_data.get("estimated_value", 0) or 0)
             
             # Se propriedade grande (>100ha) com valor muito baixo (<100k)
@@ -697,13 +732,15 @@ class PatternDetector:
         # 3. Empresas Simples Nacional com movimentação alta
         simples_suspeito = 0
         for company in companies:
-            company_data = company.additional_data or {}
+            company_data = _raw(company)
             regime = company_data.get("tax_regime", "").lower()
-            capital = float(company_data.get("capital_social", 0) or 0)
+            capital = float(
+                company_data.get("capital_social", 0) or company.capital or 0
+            )
             
             if "simples" in regime and capital > 5_000_000:
                 simples_suspeito += 1
-                entities.append(company.name)
+                entities.append(_company_label(company))
         
         if simples_suspeito > 0:
             confidence += 0.4
@@ -741,11 +778,11 @@ class PatternDetector:
         leases = investigation.lease_contracts or []
         
         # 1. Matrículas duplicadas
-        matriculas = [
-            p.additional_data.get("matricula")
-            for p in properties
-            if p.additional_data and p.additional_data.get("matricula")
-        ]
+        matriculas = []
+        for p in properties:
+            m = p.matricula or _raw(p).get("matricula")
+            if m:
+                matriculas.append(m)
         
         if len(matriculas) != len(set(matriculas)):
             duplicates = len(matriculas) - len(set(matriculas))
@@ -753,11 +790,11 @@ class PatternDetector:
             evidence.append(f"{duplicates} matrícula(s) duplicada(s)")
         
         # 2. CARs duplicados
-        cars = [
-            p.additional_data.get("car_code")
-            for p in properties
-            if p.additional_data and p.additional_data.get("car_code")
-        ]
+        cars = []
+        for p in properties:
+            c = p.car_number or _raw(p).get("car_code")
+            if c:
+                cars.append(c)
         
         if len(cars) != len(set(cars)):
             duplicates = len(cars) - len(set(cars))
@@ -772,11 +809,12 @@ class PatternDetector:
                     evidence.append(
                         f"Contrato com data de fim antes da data de início"
                     )
-                    entities.append(f"Contrato {lease.document_number or 'sem número'}")
+                    doc_ref = _lease_document_number(lease)
+                    entities.append(f"Contrato {doc_ref or 'sem número'}")
         
         # 4. Documentos com números inválidos ou suspeitos
         for lease in leases:
-            doc_num = lease.document_number
+            doc_num = _lease_document_number(lease)
             if doc_num:
                 # Verificar padrões suspeitos
                 if doc_num in ["00000", "11111", "12345", "99999"]:

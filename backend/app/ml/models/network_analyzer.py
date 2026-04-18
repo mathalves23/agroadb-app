@@ -28,6 +28,40 @@ from app.domain.lease_contract import LeaseContract
 logger = logging.getLogger(__name__)
 
 
+def _raw(obj: Any) -> dict:
+    d = getattr(obj, "raw_data", None) if obj is not None else None
+    return d if isinstance(d, dict) else {}
+
+
+def _inv_target_id(investigation: Investigation) -> Tuple[Optional[str], str]:
+    """(id do nó alvo, tipo person|company)."""
+    raw = (investigation.target_cpf_cnpj or "").strip()
+    digits = "".join(c for c in raw if c.isdigit())
+    if len(digits) == 11:
+        return f"cpf_{digits}", "person"
+    if len(digits) == 14:
+        return f"cnpj_{digits}", "company"
+    if digits:
+        return f"doc_{digits}", "person"
+    return None, "person"
+
+
+def _prop_display_name(prop: Property) -> str:
+    return (prop.property_name or prop.address or "Propriedade").strip()
+
+
+def _company_partners_list(company: Company) -> list:
+    raw = getattr(company, "partners", None)
+    if isinstance(raw, list):
+        return raw
+    if isinstance(raw, dict):
+        inner = raw.get("partners")
+        if isinstance(inner, list):
+            return inner
+    pr = _raw(company).get("partners")
+    return pr if isinstance(pr, list) else []
+
+
 class Node:
     """Representa um nó (pessoa ou empresa) na rede"""
     
@@ -326,34 +360,29 @@ class NetworkAnalyzer:
         graph = NetworkGraph()
         
         # Adicionar alvo da investigação
-        target_id = None
-        if investigation.target_cpf:
-            target_id = f"cpf_{investigation.target_cpf}"
+        target_id, target_kind = _inv_target_id(investigation)
+        if target_id:
             graph.add_node(Node(
                 node_id=target_id,
-                node_type="person",
+                node_type="person" if target_kind == "person" else "company",
                 name=investigation.target_name or "Alvo",
-                metadata={"is_target": True, "cpf": investigation.target_cpf}
-            ))
-        elif investigation.target_cnpj:
-            target_id = f"cnpj_{investigation.target_cnpj}"
-            graph.add_node(Node(
-                node_id=target_id,
-                node_type="company",
-                name=investigation.target_name or "Alvo",
-                metadata={"is_target": True, "cnpj": investigation.target_cnpj}
+                metadata={
+                    "is_target": True,
+                    "target_cpf_cnpj": investigation.target_cpf_cnpj,
+                },
             ))
         
         # Adicionar propriedades
         for prop in (investigation.properties or []):
             prop_id = f"prop_{prop.id}"
+            pd = _raw(prop)
             graph.add_node(Node(
                 node_id=prop_id,
                 node_type="property",
-                name=prop.name or prop.address or "Propriedade",
+                name=_prop_display_name(prop),
                 metadata={
                     "address": prop.address,
-                    "area": prop.additional_data.get("area_hectares") if prop.additional_data else None
+                    "area": prop.area_hectares or pd.get("area_hectares"),
                 }
             ))
             
@@ -367,11 +396,12 @@ class NetworkAnalyzer:
                 ))
             
             # Adicionar proprietários das propriedades
-            if prop.additional_data:
-                owner_cpf = prop.additional_data.get("owner_cpf")
-                owner_cnpj = prop.additional_data.get("owner_cnpj")
-                owner_name = prop.additional_data.get("owner_name", "Proprietário")
-                
+            owner_name = pd.get("owner_name") or prop.owner_name or "Proprietário"
+            digits = "".join(c for c in (prop.owner_cpf_cnpj or "") if c.isdigit())
+            owner_cpf = pd.get("owner_cpf") or (digits if len(digits) == 11 else None)
+            owner_cnpj = pd.get("owner_cnpj") or (digits if len(digits) == 14 else None)
+            
+            if owner_cpf or owner_cnpj:
                 if owner_cpf:
                     owner_id = f"cpf_{owner_cpf}"
                     if owner_id not in graph.nodes:
@@ -411,10 +441,10 @@ class NetworkAnalyzer:
                 graph.add_node(Node(
                     node_id=company_id,
                     node_type="company",
-                    name=company.name,
+                    name=company.corporate_name or company.trade_name or company.cnpj,
                     metadata={
                         "cnpj": company.cnpj,
-                        "status": company.additional_data.get("status") if company.additional_data else None
+                        "status": company.status or _raw(company).get("status"),
                     }
                 ))
             
@@ -428,8 +458,8 @@ class NetworkAnalyzer:
                 ))
             
             # Adicionar sócios
-            if company.additional_data:
-                partners = company.additional_data.get("partners", [])
+            partners = _company_partners_list(company)
+            if partners:
                 for partner in partners:
                     partner_cpf = partner.get("cpf")
                     partner_cnpj = partner.get("cnpj")
@@ -504,7 +534,7 @@ class NetworkAnalyzer:
                     relationship_type="leases",
                     weight=0.6,
                     metadata={
-                        "monthly_value": lease.monthly_value,
+                        "value": lease.value,
                         "start_date": lease.start_date.isoformat() if lease.start_date else None,
                         "end_date": lease.end_date.isoformat() if lease.end_date else None
                     }
@@ -712,11 +742,7 @@ class NetworkAnalyzer:
         suspicious_paths = []
         
         # 1. Encontrar caminhos longos (> 4 nós)
-        target_id = None
-        if investigation.target_cpf:
-            target_id = f"cpf_{investigation.target_cpf}"
-        elif investigation.target_cnpj:
-            target_id = f"cnpj_{investigation.target_cnpj}"
+        target_id, _ = _inv_target_id(investigation)
         
         if target_id and target_id in graph.nodes:
             for node_id in graph.nodes.keys():

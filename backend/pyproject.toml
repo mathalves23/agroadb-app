@@ -11,6 +11,7 @@ addopts = [
     "--strict-markers",
     "--tb=short",
 ]
+asyncio_mode = "auto"
 markers = [
     "asyncio: mark test as async (pytest-asyncio)",
     "unit: Unit tests",

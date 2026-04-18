@@ -80,9 +80,10 @@ create-superuser: ## Cria superutilizador (defina AGROADB_ADMIN_EMAIL e AGROADB_
 	docker-compose exec -e AGROADB_ADMIN_EMAIL -e AGROADB_ADMIN_PASSWORD -e AGROADB_ADMIN_USERNAME -e AGROADB_ADMIN_FULL_NAME backend python scripts/create_superuser.py
 
 ## Testes
-test: ## Executa testes backend (CI mínimo: smoke + segurança)
-	@echo "🧪 Executando testes do backend (smoke + segurança)..."
-	cd backend && pytest tests/test_ci_smoke.py tests/test_security.py -v
+test: ## Mesmo subconjunto de pytest que `.github/workflows/ci.yml` (requer Redis se os testes o usarem)
+	@echo "🧪 Executando testes do backend (subconjunto CI)..."
+	cd backend && pytest tests/test_ci_smoke.py tests/test_observability.py tests/test_security.py tests/test_auth.py tests/test_ml.py \
+		tests/contract/test_public_api_contract.py tests/test_integrations_helpers.py -v
 	@echo "✅ Testes concluídos! (suíte completa: cd backend && pytest tests/)"
 
 test-cov: ## Executa testes com cobertura

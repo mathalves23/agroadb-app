@@ -22,7 +22,7 @@ from app.repositories.legal_query import LegalQueryRepository
 from app.core.config import settings
 from app.core.audit import audit_logger, AuditAction
 from app.schemas.dashboard_statistics import DashboardStatisticsResponse
-from app.services.dashboard_statistics import get_dashboard_statistics
+from app.services.dashboard_statistics import get_dashboard_statistics_cached
 
 router = APIRouter()
 
@@ -141,7 +141,7 @@ async def dashboard_statistics(
     db: DatabaseSession,
 ) -> DashboardStatisticsResponse:
     """Dados reais da base (investigações, imóveis por UF, consultas legais por provider)."""
-    data = await get_dashboard_statistics(
+    data = await get_dashboard_statistics_cached(
         db,
         current_user.id,
         is_superuser=current_user.is_superuser,

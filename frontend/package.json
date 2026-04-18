@@ -9,7 +9,10 @@
     "test": "jest --coverage",
     "test:watch": "jest --watch",
     "test:ci": "jest --ci --coverage --maxWorkers=2",
-    "lint": "eslint src --ext ts,tsx --report-unused-disable-directives --max-warnings 80",
+    "lint": "eslint src e2e --ext ts,tsx --report-unused-disable-directives --max-warnings 50",
+    "test:e2e": "playwright test",
+    "test:e2e:ci": "playwright test --reporter=line",
+    "test:e2e:ui": "playwright test --ui",
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
@@ -38,6 +41,7 @@
     "zustand": "^5.0.11"
   },
   "devDependencies": {
+    "@playwright/test": "^1.59.1",
     "@tanstack/react-query": "^5.90.20",
     "@testing-library/jest-dom": "^6.1.0",
     "@testing-library/react": "^14.1.0",
@@ -82,10 +86,10 @@
     ],
     "coverageThreshold": {
       "global": {
-        "branches": 3,
-        "functions": 3,
-        "lines": 3,
-        "statements": 3
+        "branches": 4,
+        "functions": 4,
+        "lines": 5,
+        "statements": 5
       }
     },
     "coverageReporters": [
@@ -96,6 +100,10 @@
     "testMatch": [
       "**/__tests__/**/*.{ts,tsx}",
       "**/*.{spec,test}.{ts,tsx}"
+    ],
+    "testPathIgnorePatterns": [
+      "/node_modules/",
+      "<rootDir>/e2e/"
     ]
   }
 }

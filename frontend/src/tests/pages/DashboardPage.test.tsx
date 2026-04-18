@@ -157,7 +157,8 @@ describe('DashboardPage Component', () => {
     render(<DashboardPage />, { wrapper: createWrapper() })
 
     await waitFor(() => {
-      expect(screen.getByText(/nenhuma investigação encontrada/i)).toBeInTheDocument()
+      expect(screen.getByText(/nenhuma investigação/i)).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /nova investigação/i })).toBeInTheDocument()
     })
   })
 

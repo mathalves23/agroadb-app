@@ -34,6 +34,8 @@ import ShareModal from '@/components/ShareModal'
 import CommentThread from '@/components/CommentThread'
 import ChangeLog from '@/components/ChangeLog'
 import { formatDate, formatDateTime, formatCPFCNPJ } from '@/lib/utils'
+import { PanelListLoader } from '@/components/Loading'
+import { EmptyState } from '@/components/EmptyState'
 
 interface AxiosLikeError {
   response?: { data?: { detail?: string } }
@@ -283,14 +285,13 @@ export default function InvestigationDetailPage() {
   }, [investigation?.id, investigation?.target_cpf_cnpj, investigation?.target_name, investigation?.target_description, autoEnrichDone, queryClient])
 
   useEffect(() => {
-    if (defaultCpfCnpj) {
-      if (!sncrCpfCnpj) setSncrCpfCnpj(defaultCpfCnpj)
-      if (!sicarCpfCnpj) setSicarCpfCnpj(defaultCpfCnpj)
-      if (!cnpjValue) setCnpjValue(defaultCpfCnpj)
-      if (!cndContribuinteConsulta) setCndContribuinteConsulta(defaultCpfCnpj)
-      if (!cadinCpf) setCadinCpf(defaultCpfCnpj)
-    }
-  }, [defaultCpfCnpj]) // eslint-disable-line react-hooks/exhaustive-deps
+    if (!defaultCpfCnpj) return
+    setSncrCpfCnpj((v) => v || defaultCpfCnpj)
+    setSicarCpfCnpj((v) => v || defaultCpfCnpj)
+    setCnpjValue((v) => v || defaultCpfCnpj)
+    setCndContribuinteConsulta((v) => v || defaultCpfCnpj)
+    setCadinCpf((v) => v || defaultCpfCnpj)
+  }, [defaultCpfCnpj])
 
   const summaryCpfCnpj = useMemo(() => {
     const raw =
@@ -1134,11 +1135,27 @@ export default function InvestigationDetailPage() {
   })
 
   if (isLoading) {
-    return <div className="p-8 text-center">Carregando...</div>
+    return (
+      <PanelListLoader
+        message="Carregando..."
+        subMessage="Carregando detalhes da investigação e integrações disponíveis."
+      />
+    )
   }
 
   if (!investigation) {
-    return <div className="p-8 text-center">Investigação não encontrada</div>
+    return (
+      <EmptyState
+        variant="embedded"
+        illustration="folder"
+        title="Investigação não encontrada"
+        description="O identificador não corresponde a nenhum registro ou foi removido."
+        action={{
+          label: 'Voltar às investigações',
+          onClick: () => navigate('/investigations'),
+        }}
+      />
+    )
   }
 
   return (

@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import {
   Plus,
   Search,
@@ -34,10 +34,13 @@ import { investigationService } from '@/services/investigationService'
 import { legalService } from '@/services/legalService'
 import { formatDate, formatCPFCNPJ } from '@/lib/utils'
 import { DashboardCharts } from '@/components/DashboardCharts'
+import { EmptyState } from '@/components/EmptyState'
+import { PanelListLoader } from '@/components/Loading'
 
 const PIE_COLORS = ['#059669', '#2563eb', '#7c3aed', '#d97706', '#0d9488', '#dc2626']
 
 export default function DashboardPage() {
+  const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { data: investigations, isLoading } = useQuery({
     queryKey: ['investigations', 1, 20],
@@ -60,7 +63,7 @@ export default function DashboardPage() {
     if (window.confirm(`Excluir "${name}"?`)) deleteMutation.mutate(id)
   }
 
-  const items = investigations?.items ?? []
+  const items = useMemo(() => investigations?.items ?? [], [investigations])
   const activeCount = items.filter((i) => i.status === 'in_progress').length
   const completedCount = items.filter((i) => i.status === 'completed').length
   const failedCount = items.filter((i) => i.status === 'failed').length
@@ -241,15 +244,18 @@ export default function DashboardPage() {
         </div>
 
         {isLoading ? (
-          <div className="p-12 text-center text-gray-400 text-sm">Carregando...</div>
+          <PanelListLoader message="Carregando..." subMessage="Sincronizando a lista recente com a API." />
         ) : items.length === 0 ? (
-          <div className="p-12 text-center">
-            <Search className="mx-auto h-8 w-8 text-gray-300" />
-            <p className="mt-2 text-sm text-gray-500">Nenhuma investigação encontrada</p>
-            <Link to="/investigations/new" className="mt-3 inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white text-xs rounded-lg hover:bg-emerald-700 transition">
-              <Plus className="h-3.5 w-3.5" /> Nova Investigação
-            </Link>
-          </div>
+          <EmptyState
+            variant="embedded"
+            illustration="search"
+            title="Nenhuma investigação"
+            description="Ainda não há investigações para mostrar aqui."
+            action={{
+              label: 'Nova investigação',
+              onClick: () => navigate('/investigations/new'),
+            }}
+          />
         ) : (
           <div className="divide-y divide-gray-50">
             {items.slice(0, 8).map((inv) => (

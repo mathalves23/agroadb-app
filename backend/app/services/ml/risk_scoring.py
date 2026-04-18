@@ -4,9 +4,13 @@ Detecta padrões e calcula score de risco para investigações
 """
 import numpy as np
 import logging
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 from datetime import datetime, timedelta
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+
+from app.core.config import settings
+from app.services.ml.risk_calibration import apply_risk_calibration, load_calibration_config
+from app.services.ml.risk_shap import additive_shap_for_indicators
 
 logger = logging.getLogger(__name__)
 
@@ -24,13 +28,16 @@ class RiskIndicator:
 @dataclass
 class RiskScore:
     """Score de risco calculado"""
-    total_score: float  # 0-100
+    total_score: float  # 0-100 (pós-calibração, se activa)
     risk_level: str  # very_low, low, medium, high, critical
     confidence: float  # 0-1
     indicators: List[RiskIndicator]
     patterns_detected: List[str]
     recommendations: List[str]
     timestamp: datetime
+    raw_total_score: float = 0.0
+    calibration_meta: Dict[str, Any] = field(default_factory=dict)
+    shap_explanation: Dict[str, Any] = field(default_factory=dict)
 
 
 class RiskScoringEngine:
@@ -93,6 +100,8 @@ class RiskScoringEngine:
             ))
             patterns.extend(property_patterns)
         except Exception as e:
+            if isinstance(e, ValueError) and "não encontrada" in str(e).lower():
+                raise
             logger.error(f"Erro ao calcular risk score para investigação {investigation_id}: {e}")
             # Retornar score básico de fallback
             return RiskScore(
@@ -110,7 +119,10 @@ class RiskScoringEngine:
                 ],
                 patterns_detected=['Análise completa em desenvolvimento'],
                 recommendations=['Sistema de ML ainda está sendo calibrado'],
-                timestamp=datetime.utcnow()
+                timestamp=datetime.utcnow(),
+                raw_total_score=50.0,
+                calibration_meta={"calibration_enabled": False},
+                shap_explanation={},
             )
         
         # 2. Valor de Contratos
@@ -188,12 +200,21 @@ class RiskScoringEngine:
             severity=cls._get_severity(data_score)
         ))
         
-        # Calcular score total ponderado
-        total_score = sum(
-            ind.value * ind.weight 
-            for ind in indicators
+        # Score bruto (linear nos indicadores)
+        total_raw = sum(ind.value * ind.weight for ind in indicators)
+        total_raw = round(total_raw, 2)
+
+        cal_cfg = load_calibration_config(settings.RISK_CALIBRATION_PATH)
+        total_score, cal_meta = apply_risk_calibration(total_raw, cal_cfg)
+
+        shap_explanation = additive_shap_for_indicators(
+            indicators,
+            cls.WEIGHTS,
+            neutral_baseline=float(settings.RISK_SHAP_NEUTRAL_BASELINE),
         )
-        
+        shap_explanation["prediction_calibrated"] = round(total_score, 2)
+        shap_explanation["calibration_adjustment"] = round(total_score - total_raw, 4)
+
         # Calcular confiança baseada na qualidade dos dados
         confidence = 1.0 - (data_score / 100.0)
         
@@ -206,7 +227,7 @@ class RiskScoringEngine:
         )
         
         logger.info(
-            f"✅ Risk score calculado: {total_score:.2f} "
+            f"✅ Risk score calculado: raw={total_raw:.2f} calibrado={total_score:.2f} "
             f"({risk_level}) para investigação {investigation_id}"
         )
         
@@ -217,7 +238,10 @@ class RiskScoringEngine:
             indicators=indicators,
             patterns_detected=patterns,
             recommendations=recommendations,
-            timestamp=datetime.utcnow()
+            timestamp=datetime.utcnow(),
+            raw_total_score=total_raw,
+            calibration_meta=cal_meta,
+            shap_explanation=shap_explanation,
         )
     
     @classmethod

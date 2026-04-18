@@ -3,6 +3,7 @@ import { MessageSquare, Send, Edit3, Trash2, Lock, CheckCheck } from 'lucide-rea
 import ReactMarkdown from 'react-markdown';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { isSafeHttpUrl } from '@/lib/safeUrl';
 
 interface Comment {
   id: number;
@@ -328,16 +329,26 @@ export default function CommentThread({ investigationId, currentUserId }: Commen
                         <ReactMarkdown
                           components={{
                             p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
-                            a: ({ href, children }) => (
-                              <a
-                                href={href}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className={isOwn && !comment.is_internal ? 'text-indigo-200 hover:text-white underline' : 'text-indigo-600 hover:text-indigo-800 underline'}
-                              >
-                                {children}
-                              </a>
-                            ),
+                            a: ({ href, children }) => {
+                              const safe = isSafeHttpUrl(href)
+                              const cls =
+                                isOwn && !comment.is_internal
+                                  ? 'text-indigo-200 hover:text-white underline'
+                                  : 'text-indigo-600 hover:text-indigo-800 underline'
+                              if (!safe) {
+                                return <span className={cls}>{children}</span>
+                              }
+                              return (
+                                <a
+                                  href={href}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className={cls}
+                                >
+                                  {children}
+                                </a>
+                              )
+                            },
                             strong: ({ children }) => <strong className="font-bold">{children}</strong>,
                             em: ({ children }) => <em className="italic">{children}</em>,
                           }}

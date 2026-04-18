@@ -15,7 +15,7 @@ env:
 
 jobs:
   backend:
-    name: Backend (lint + smoke)
+    name: Backend (lint + testes)
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -55,20 +55,29 @@ jobs:
           PIP_INDEX_URL: https://pypi.org/simple
         run: pip install -r backend/requirements.txt
 
+      - name: pip-audit (dependências Python)
+        env:
+          PIP_INDEX_URL: https://pypi.org/simple
+        run: |
+          pip install "pip-audit>=2.7,<3"
+          pip-audit -r backend/requirements.txt --desc on
+
       - name: Flake8 (erros sintáticos e nomes indefinidos)
         run: |
           cd backend
           flake8 app --count --select=E9,F63,F7,F82 --show-source --statistics
 
-      - name: Pytest (smoke + segurança + cobertura)
+      # Política: CI verde = barra mínima (subconjunto). Suíte completa: pytest tests/ quando estável.
+      - name: Pytest (subconjunto — smoke, segurança, auth, ML, contrato, integrações helpers, observabilidade)
         env:
           DATABASE_URL: postgresql+asyncpg://agroadb:test_password@localhost:5432/agroadb_test
           REDIS_URL: redis://localhost:6379/0
           SECRET_KEY: ci-test-secret-key-at-least-32-chars-long
-          ENCRYPTION_KEY: dGVzdC1lbmNyeXB0aW9uLWtleS0zMi1ieXRlcw==
+          ENCRYPTION_KEY: MDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDA=
         run: |
           cd backend
-          pytest tests/test_ci_smoke.py tests/test_security.py -v \
+          pytest tests/test_ci_smoke.py tests/test_observability.py tests/test_security.py tests/test_auth.py tests/test_ml.py \
+            tests/contract/test_public_api_contract.py tests/test_integrations_helpers.py -v \
             --cov=app --cov-report=xml --cov-report=term-missing
 
       - name: Upload cobertura (opcional)
@@ -95,6 +104,10 @@ jobs:
         run: npm ci
         working-directory: frontend
 
+      - name: npm audit (produção, severidade alta+)
+        run: npm audit --omit=dev --audit-level=high --registry=https://registry.npmjs.org
+        working-directory: frontend
+
       - run: npm run lint
         working-directory: frontend
 
@@ -105,4 +118,28 @@ jobs:
         working-directory: frontend
 
       - run: npm run test:ci
+        working-directory: frontend
+
+  e2e:
+    name: Frontend (Playwright E2E)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: npm ci
+        run: npm ci
+        working-directory: frontend
+
+      - name: Instalar browsers Playwright
+        run: npx playwright install chromium --with-deps
+        working-directory: frontend
+
+      - name: E2E (fluxos críticos com API mockada)
+        run: npm run test:e2e:ci
         working-directory: frontend

@@ -64,6 +64,13 @@ pdf2image==1.17.0
 
 # Monitoring & Logging
 python-json-logger==2.0.7
+opentelemetry-api==1.25.0
+opentelemetry-sdk==1.25.0
+opentelemetry-exporter-otlp-proto-http==1.25.0
+opentelemetry-instrumentation-fastapi==0.46b0
+opentelemetry-instrumentation-celery==0.46b0
+prometheus-client==0.20.0
+prometheus-fastapi-instrumentator==6.1.0
 
 # Testing
 pytest==7.4.4

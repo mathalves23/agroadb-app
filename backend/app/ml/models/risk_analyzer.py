@@ -25,6 +25,17 @@ from app.domain.lease_contract import LeaseContract
 logger = logging.getLogger(__name__)
 
 
+def _obj_json(obj) -> dict:
+    """JSON auxiliar (modelos actuais usam raw_data)."""
+    if obj is None:
+        return {}
+    return getattr(obj, "raw_data", None) or {}
+
+
+def _company_display_name(company: Company) -> str:
+    return (company.corporate_name or company.trade_name or company.cnpj or "").strip()
+
+
 class RiskFactor:
     """Representa um fator de risco individual"""
     
@@ -229,13 +240,12 @@ class RiskAnalyzer:
         offshore_names = []
         
         for company in companies:
-            # Verificar se empresa está em paraíso fiscal
-            company_data = company.additional_data or {}
+            company_data = _obj_json(company)
             country = company_data.get("country", "Brasil")
-            
+
             if any(haven.lower() in country.lower() for haven in tax_havens):
                 offshore_count += 1
-                offshore_names.append(company.name)
+                offshore_names.append(_company_display_name(company))
         
         if offshore_count == 0:
             score = 0.0
@@ -268,23 +278,23 @@ class RiskAnalyzer:
             # Verificar irregularidades
             
             # 1. Contrato vencido há muito tempo
-            if lease.end_date and lease.end_date < datetime.utcnow() - timedelta(days=365):
+            if lease.end_date and lease.end_date < datetime.utcnow().date() - timedelta(days=365):
                 irregular_count += 1
-                issues.append(f"Contrato vencido há mais de 1 ano")
-            
-            # 2. Valor muito baixo ou muito alto (suspeito)
-            if lease.monthly_value:
-                if lease.monthly_value < 100:
+                issues.append("Contrato vencido há mais de 1 ano")
+
+            val = lease.value
+            if val is not None:
+                if val < 100:
                     irregular_count += 1
-                    issues.append(f"Valor mensal muito baixo (R$ {lease.monthly_value})")
-                elif lease.monthly_value > 1000000:
+                    issues.append(f"Valor muito baixo (R$ {val})")
+                elif val > 1_000_000:
                     irregular_count += 1
-                    issues.append(f"Valor mensal muito alto (R$ {lease.monthly_value:,.2f})")
-            
-            # 3. Sem documento
-            if not lease.document_number:
+                    issues.append(f"Valor muito alto (R$ {val:,.2f})")
+
+            extra = _obj_json(lease)
+            if not extra.get("document_number") and not lease.source_url:
                 irregular_count += 1
-                issues.append("Contrato sem número de documento")
+                issues.append("Contrato sem referência de documento")
         
         if irregular_count == 0:
             score = 0.0
@@ -314,14 +324,16 @@ class RiskAnalyzer:
         cnpjs = set()
         
         # CPF/CNPJ do alvo
-        if investigation.target_cpf:
-            cpfs.add(investigation.target_cpf)
-        if investigation.target_cnpj:
-            cnpjs.add(investigation.target_cnpj)
-        
+        doc = (investigation.target_cpf_cnpj or "").replace(".", "").replace("-", "").replace("/", "")
+        if doc:
+            if len(doc) <= 11:
+                cpfs.add(doc)
+            else:
+                cnpjs.add(doc)
+
         # Propriedades
         for prop in (investigation.properties or []):
-            prop_data = prop.additional_data or {}
+            prop_data = _obj_json(prop)
             if prop_data.get("owner_cpf"):
                 cpfs.add(prop_data["owner_cpf"])
             if prop_data.get("owner_cnpj"):
@@ -332,8 +344,9 @@ class RiskAnalyzer:
             cnpjs.add(company.cnpj)
             
             # Sócios
-            company_data = company.additional_data or {}
-            partners = company_data.get("partners", [])
+            company_data = _obj_json(company)
+            raw_partners = company.partners or company_data.get("partners") or []
+            partners = raw_partners if isinstance(raw_partners, list) else []
             for partner in partners:
                 if partner.get("cpf"):
                     cpfs.add(partner["cpf"])
@@ -367,7 +380,7 @@ class RiskAnalyzer:
     
     def _analyze_legal_issues(self, investigation: Investigation) -> RiskFactor:
         """Analisa problemas jurídicos"""
-        legal_data = investigation.legal_integration_data or {}
+        legal_data = getattr(investigation, "legal_integration_data", None) or {}
         
         # Contar processos
         processos = legal_data.get("processos", [])
@@ -412,7 +425,7 @@ class RiskAnalyzer:
         """Analisa área total muito grande"""
         properties = investigation.properties or []
         total_area = sum(
-            float(p.additional_data.get("area_hectares", 0) or 0)
+            float(p.area_hectares or 0) + float(_obj_json(p).get("area_hectares", 0) or 0)
             for p in properties
         )
         
@@ -452,7 +465,7 @@ class RiskAnalyzer:
         protected_count = 0
         
         for prop in properties:
-            prop_data = prop.additional_data or {}
+            prop_data = _obj_json(prop)
             
             # Verificar se está em área protegida
             if prop_data.get("in_protected_area") or prop_data.get("em_area_protegida"):
@@ -495,9 +508,9 @@ class RiskAnalyzer:
         
         # Verificar CARs duplicados
         cars = [
-            p.additional_data.get("car_code")
+            (p.car_number or _obj_json(p).get("car_code"))
             for p in properties
-            if p.additional_data and p.additional_data.get("car_code")
+            if (p.car_number or _obj_json(p).get("car_code"))
         ]
         
         duplicates = len(cars) - len(set(cars))

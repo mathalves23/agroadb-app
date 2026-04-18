@@ -11,13 +11,29 @@ class Settings(BaseSettings):
     
     # Project Info
     PROJECT_NAME: str = "AgroADB"
-    PROJECT_DESCRIPTION: str = "Sistema de Inteligência Patrimonial para o Agronegócio"
+    PROJECT_DESCRIPTION: str = (
+        "AgroADB — inteligência patrimonial B2B para escritórios de agronegócio e crédito rural. "
+        "Integra 27+ fontes públicas, com trilhos de auditoria, exportações (PDF/Excel/GraphML) e "
+        "módulos alinhados à LGPD."
+    )
     VERSION: str = "1.0.0"
     
     # Environment
     ENVIRONMENT: str = "development"
     ENABLE_WORKERS: bool = False
-    
+    ENABLE_HEAVY_INVESTIGATION_QUEUE: bool = False
+    DASHBOARD_STATS_CACHE_ENABLED: bool = True
+    DASHBOARD_STATS_CACHE_TTL_SECONDS: int = 120
+
+    # Faturação (Stripe / Pagar.me) — opcional
+    STRIPE_SECRET_KEY: str = ""
+    STRIPE_WEBHOOK_SECRET: str = ""
+    PAGARME_SECRET_KEY: str = ""
+    PAGARME_WEBHOOK_SECRET: str = ""
+
+    # Webhooks de integração (HMAC genérico)
+    INTEGRATION_WEBHOOK_SECRET: str = ""
+
     # Database
     DATABASE_URL: str
     
@@ -200,6 +216,30 @@ class Settings(BaseSettings):
     # Logging
     LOG_LEVEL: str = "INFO"
     LOG_FORMAT: str = "json"
+
+    # Observabilidade (OpenTelemetry + Prometheus)
+    OTEL_ENABLED: bool = False
+    OTEL_SERVICE_NAME: str = "agroadb-api"
+    OTEL_EXPORTER_OTLP_ENDPOINT: str = ""
+    PROMETHEUS_ENABLED: bool = True
+    PROMETHEUS_METRICS_PATH: str = "/metrics"
+    CELERY_METRICS_PORT: int = 0
+
+    # Content-Security-Policy (API + documentação OpenAPI)
+    CSP_MODE: str = "report-only"
+    CSP_POLICY_API: str = (
+        "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; "
+        "form-action 'none'"
+    )
+    CSP_POLICY_SWAGGER: str = (
+        "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; "
+        "style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; "
+        "font-src 'self' data:; frame-ancestors 'self'; connect-src 'self'"
+    )
+
+    # ML — score de risco (calibração / explicabilidade)
+    RISK_CALIBRATION_PATH: str = ""
+    RISK_SHAP_NEUTRAL_BASELINE: float = 50.0
 
     model_config = SettingsConfigDict(
         env_file=".env",

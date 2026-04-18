@@ -37,6 +37,13 @@ class User(Base):
     investigations = relationship("Investigation", back_populates="user", cascade="all, delete-orphan")
     settings = relationship("UserSetting", back_populates="user", cascade="all, delete-orphan")
     notifications = relationship("Notification", back_populates="user", cascade="all, delete-orphan")
+    organization_memberships = relationship(
+        "OrganizationMember", back_populates="user", cascade="all, delete-orphan"
+    )
+    legal_integration_configs = relationship(
+        "LegalIntegrationConfig", back_populates="user", cascade="all, delete-orphan"
+    )
+    api_keys = relationship("ApiKey", back_populates="user", cascade="all, delete-orphan")
     
     def __repr__(self) -> str:
         return f"<User {self.username}>"

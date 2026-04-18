@@ -11,14 +11,39 @@ export type LoadingType = 'spinner' | 'skeleton' | 'dots' | 'progress' | 'pulse'
 interface LoadingProps {
   type?: LoadingType;
   message?: string;
+  /** Texto secundário (ex.: tempo estimado ou fonte) */
+  subMessage?: string;
   progress?: number; // 0-100
   size?: 'sm' | 'md' | 'lg';
   fullScreen?: boolean;
 }
 
+/** Loader compacto para painéis, listas e cartões (emerald, acessível). */
+export function PanelListLoader({
+  message = 'Carregando...',
+  subMessage,
+}: {
+  message?: string
+  subMessage?: string
+}) {
+  return (
+    <div
+      className="py-12 flex flex-col items-center justify-center gap-2"
+      role="status"
+      aria-live="polite"
+      aria-busy="true"
+    >
+      <div className="w-8 h-8 border-2 border-gray-200 border-t-emerald-600 rounded-full animate-spin" />
+      <p className="text-sm text-gray-600">{message}</p>
+      {subMessage && <p className="text-xs text-gray-400 text-center max-w-sm px-4">{subMessage}</p>}
+    </div>
+  )
+}
+
 export function Loading({
   type = 'spinner',
   message,
+  subMessage,
   progress,
   size = 'md',
   fullScreen = false
@@ -39,7 +64,7 @@ export function Loading({
         {/* Loading Visual */}
         {type === 'spinner' && (
           <motion.div
-            className={`${sizeClasses[size]} border-4 border-gray-200 dark:border-gray-700 border-t-green-600 rounded-full`}
+            className={`${sizeClasses[size]} border-4 border-gray-200 dark:border-gray-700 border-t-emerald-600 rounded-full`}
             animate={{ rotate: 360 }}
             transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
           />
@@ -50,7 +75,7 @@ export function Loading({
             {[0, 1, 2].map((i) => (
               <motion.div
                 key={i}
-                className={`${size === 'sm' ? 'w-2 h-2' : size === 'md' ? 'w-3 h-3' : 'w-4 h-4'} bg-green-600 rounded-full`}
+                className={`${size === 'sm' ? 'w-2 h-2' : size === 'md' ? 'w-3 h-3' : 'w-4 h-4'} bg-emerald-600 rounded-full`}
                 animate={{ scale: [1, 1.5, 1], opacity: [1, 0.5, 1] }}
                 transition={{
                   duration: 1,
@@ -64,7 +89,7 @@ export function Loading({
 
         {type === 'pulse' && (
           <motion.div
-            className={`${sizeClasses[size]} bg-green-600 rounded-full`}
+            className={`${sizeClasses[size]} bg-emerald-600 rounded-full`}
             animate={{ scale: [1, 1.2, 1], opacity: [1, 0.7, 1] }}
             transition={{ duration: 1.5, repeat: Infinity }}
           />
@@ -74,7 +99,7 @@ export function Loading({
           <div className="w-64">
             <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
               <motion.div
-                className="h-full bg-green-600"
+                className="h-full bg-emerald-600"
                 initial={{ width: 0 }}
                 animate={{ width: `${progress}%` }}
                 transition={{ duration: 0.3 }}
@@ -95,6 +120,11 @@ export function Loading({
           >
             {message}
           </motion.p>
+        )}
+        {subMessage && (
+          <p className="text-xs text-gray-500 dark:text-gray-400 text-center max-w-md -mt-2">
+            {subMessage}
+          </p>
         )}
       </div>
     </div>
@@ -181,7 +211,7 @@ export function InvestigationLoading({ stage }: { stage?: string }) {
             key={s.name}
             className={`p-4 rounded-lg border-2 ${
               s.name === stage
-                ? 'border-green-600 bg-green-50 dark:bg-green-900/20'
+                ? 'border-emerald-600 bg-emerald-50 dark:bg-emerald-900/20'
                 : 'border-gray-200 dark:border-gray-700'
             }`}
             animate={s.name === stage ? { scale: [1, 1.05, 1] } : {}}

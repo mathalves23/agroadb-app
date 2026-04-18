@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type ReactNode } from 'react';
 import { History, FileText, Share2, Edit3, Plus, Trash2, MessageSquare, UserPlus, UserMinus, Eye, AlertTriangle, CheckCircle, XCircle, Activity } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -10,8 +11,8 @@ interface ChangeLogEntry {
   user_email?: string;
   action: string;
   field_changed?: string;
-  old_value?: any;
-  new_value?: any;
+  old_value?: unknown;
+  new_value?: unknown;
   description?: string;
   timestamp: string;
 }
@@ -53,7 +54,7 @@ export default function ChangeLog({ investigationId }: ChangeLogProps) {
 
   const getActionIcon = (action: string) => {
     const actionLower = action.toLowerCase();
-    const icons: Record<string, any> = {
+    const icons: Record<string, LucideIcon> = {
       created: Plus,
       create: Plus,
       updated: Edit3,
@@ -153,7 +154,7 @@ export default function ChangeLog({ investigationId }: ChangeLogProps) {
     return name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase();
   };
 
-  const renderDiff = (oldValue: any, newValue: any, field: string) => {
+  const renderDiff = (oldValue: unknown, newValue: unknown, field: string): ReactNode => {
     if (oldValue === null || oldValue === undefined) return null;
     if (newValue === null || newValue === undefined) return null;
 
@@ -287,12 +288,16 @@ export default function ChangeLog({ investigationId }: ChangeLogProps) {
                       )}
 
                       {/* Diff Display */}
-                      {entry.old_value && entry.new_value && entry.field_changed && 
-                        renderDiff(entry.old_value, entry.new_value, entry.field_changed)
-                      }
+                      {(() => {
+                        const field = entry.field_changed
+                        const oldV = entry.old_value
+                        const newV = entry.new_value
+                        if (field == null || oldV == null || newV == null) return null
+                        return renderDiff(oldV, newV, field)
+                      })()}
 
                       {/* New Value Only */}
-                      {!entry.old_value && entry.new_value && (
+                      {entry.old_value == null && entry.new_value != null && (
                         <div className="mt-2 p-3 bg-green-50 rounded border border-green-200">
                           <p className="text-xs font-semibold text-green-700 mb-1">Novo valor:</p>
                           <p className="text-xs text-green-800">

@@ -31,3 +31,11 @@ def test_root_ok(client: TestClient) -> None:
     assert response.status_code == 200
     data = response.json()
     assert "AgroADB" in (data.get("message") or "")
+
+
+def test_platform_proposition_public(client: TestClient) -> None:
+    r = client.get("/api/v1/platform/proposition")
+    assert r.status_code == 200
+    body = r.json()
+    assert body.get("product")
+    assert any("LGPD" in str(x) for x in body.get("differentiators", []))

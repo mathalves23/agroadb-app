@@ -87,6 +87,8 @@ tmp/
 coverage/
 .nyc_output/
 coverage.xml
+frontend/test-results/
+frontend/playwright-report/
 
 # Build
 build/

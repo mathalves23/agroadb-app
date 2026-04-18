@@ -1,12 +1,17 @@
 import { useEffect, useRef, useState } from 'react'
-import ForceGraph2D from 'react-force-graph-2d'
+import ForceGraph2D, {
+  type ForceGraphMethods,
+  type GraphData,
+  type LinkObject,
+  type NodeObject,
+} from 'react-force-graph-2d'
 import { Network, TrendingUp, Users, Building } from 'lucide-react'
 
 interface NetworkNode {
   id: string
   label: string
   type: 'company' | 'property' | 'person'
-  attributes: Record<string, any>
+  attributes: Record<string, unknown>
   x?: number
   y?: number
   fx?: number
@@ -18,7 +23,17 @@ interface NetworkEdge {
   target: string
   type: string
   weight: number
-  attributes: Record<string, any>
+  attributes: Record<string, unknown>
+}
+
+type FGNode = NodeObject<NetworkNode>
+type FGLinkExtra = { type: string; weight: number; attributes: Record<string, unknown> }
+type FGLink = LinkObject<FGNode, FGLinkExtra>
+
+function isFgNode(value: unknown): value is FGNode {
+  if (typeof value !== 'object' || value === null) return false
+  const o = value as { id?: unknown; label?: unknown; type?: unknown }
+  return typeof o.id === 'string' && typeof o.label === 'string' && typeof o.type === 'string'
 }
 
 interface NetworkGraphProps {
@@ -33,7 +48,7 @@ interface NetworkGraphProps {
 }
 
 export function NetworkGraph({ nodes, edges, metadata }: NetworkGraphProps) {
-  const graphRef = useRef<any>()
+  const graphRef = useRef<ForceGraphMethods<FGNode, FGLink> | undefined>(undefined)
   const [selectedNode, setSelectedNode] = useState<NetworkNode | null>(null)
   const [highlightNodes, setHighlightNodes] = useState(new Set<string>())
   const [highlightLinks, setHighlightLinks] = useState(new Set<string>())
@@ -76,18 +91,20 @@ export function NetworkGraph({ nodes, edges, metadata }: NetworkGraphProps) {
   }
 
   // Pintar nó customizado
-  const paintNode = (node: any, ctx: CanvasRenderingContext2D, globalScale: number) => {
+  const paintNode = (node: FGNode, ctx: CanvasRenderingContext2D, globalScale: number) => {
     const label = node.label
     const fontSize = 12 / globalScale
     const size = getNodeSize(node)
 
     // Desenhar círculo
     ctx.beginPath()
-    ctx.arc(node.x, node.y, size, 0, 2 * Math.PI, false)
+    const nx = node.x ?? 0
+    const ny = node.y ?? 0
+    ctx.arc(nx, ny, size, 0, 2 * Math.PI, false)
     ctx.fillStyle = getNodeColor(node)
     
     // Highlight se selecionado ou hover
-    if (highlightNodes.has(node.id) || hoverNode?.id === node.id) {
+    if (highlightNodes.has(String(node.id)) || hoverNode?.id === String(node.id)) {
       ctx.shadowBlur = 10
       ctx.shadowColor = getNodeColor(node)
     } else {
@@ -103,20 +120,26 @@ export function NetworkGraph({ nodes, edges, metadata }: NetworkGraphProps) {
     ctx.font = `${fontSize}px Sans-Serif`
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
-    ctx.fillText(getNodeIcon(node.type), node.x, node.y)
+    ctx.fillText(getNodeIcon(node.type), nx, ny)
 
     // Desenhar label
-    if (highlightNodes.has(node.id) || hoverNode?.id === node.id || globalScale > 1.5) {
+    if (highlightNodes.has(String(node.id)) || hoverNode?.id === String(node.id) || globalScale > 1.5) {
       ctx.font = `${fontSize}px Sans-Serif`
       ctx.fillStyle = '#1f2937'
-      ctx.fillText(label, node.x, node.y + size + fontSize)
+      ctx.fillText(label, nx, ny + size + fontSize)
     }
   }
 
   // Pintar aresta customizada
-  const paintLink = (link: any, ctx: CanvasRenderingContext2D) => {
-    const start = link.source
-    const end = link.target
+  const paintLink = (link: FGLink, ctx: CanvasRenderingContext2D) => {
+    const resolveEndpoint = (p: typeof link.source): FGNode | null => {
+      if (p == null) return null
+      if (typeof p === 'object' && isFgNode(p)) return p
+      return null
+    }
+    const start = resolveEndpoint(link.source)
+    const end = resolveEndpoint(link.target)
+    if (!start || !end) return
 
     // Cor baseada no tipo de relação
     let color = '#d1d5db' // gray-300
@@ -125,10 +148,11 @@ export function NetworkGraph({ nodes, edges, metadata }: NetworkGraphProps) {
     if (link.type === 'partner_in') color = '#8b5cf6' // purple-500
 
     // Espessura baseada no peso
-    const width = Math.max(1, Math.min(5, link.weight))
+    const width = Math.max(1, Math.min(5, link.weight ?? 1))
 
     // Highlight
-    if (highlightLinks.has(`${link.source.id}-${link.target.id}`)) {
+    const pair = `${String(start.id)}-${String(end.id)}`
+    if (highlightLinks.has(pair)) {
       ctx.strokeStyle = color
       ctx.lineWidth = width + 1
       ctx.globalAlpha = 1
@@ -140,8 +164,8 @@ export function NetworkGraph({ nodes, edges, metadata }: NetworkGraphProps) {
 
     // Desenhar linha
     ctx.beginPath()
-    ctx.moveTo(start.x, start.y)
-    ctx.lineTo(end.x, end.y)
+    ctx.moveTo(start.x ?? 0, start.y ?? 0)
+    ctx.lineTo(end.x ?? 0, end.y ?? 0)
     ctx.stroke()
     ctx.globalAlpha = 1
   }
@@ -178,7 +202,7 @@ export function NetworkGraph({ nodes, edges, metadata }: NetworkGraphProps) {
       weight: e.weight,
       attributes: e.attributes,
     })),
-  }
+  } as GraphData<FGNode, FGLink>
 
   return (
     <div className="space-y-4">
@@ -269,8 +293,12 @@ export function NetworkGraph({ nodes, edges, metadata }: NetworkGraphProps) {
           height={600}
           nodeCanvasObject={paintNode}
           linkCanvasObject={paintLink}
-          onNodeClick={(node: any) => setSelectedNode(node as NetworkNode)}
-          onNodeHover={(node: any) => setHoverNode(node as NetworkNode)}
+          onNodeClick={(node) => {
+            if (node && isFgNode(node)) setSelectedNode(node as NetworkNode)
+          }}
+          onNodeHover={(node) => {
+            if (node && isFgNode(node)) setHoverNode(node as NetworkNode)
+          }}
           enableNodeDrag={true}
           enableZoomInteraction={true}
           enablePanInteraction={true}

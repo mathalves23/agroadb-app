@@ -1,5 +1,5 @@
 import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import {
   Plus,
   Search,
@@ -19,8 +19,11 @@ import {
 import { useState } from 'react'
 import { investigationService } from '@/services/investigationService'
 import { formatDate, formatCPFCNPJ } from '@/lib/utils'
+import { EmptyState } from '@/components/EmptyState'
+import { PanelListLoader } from '@/components/Loading'
 
 export default function InvestigationsPage() {
+  const navigate = useNavigate()
   const [page, setPage] = useState(1)
   const pageSize = 20
   const [search, setSearch] = useState('')
@@ -60,6 +63,8 @@ export default function InvestigationsPage() {
   const items = infiniteMode
     ? (infiniteQuery.data?.pages.flatMap(p => p.items) ?? [])
     : (data?.items ?? [])
+  const hasActiveFilters = Boolean(search.trim()) || statusFilter !== 'all'
+
   const filteredItems = items.filter((item) => {
     const q = search.toLowerCase()
     const matchesSearch =
@@ -177,13 +182,25 @@ export default function InvestigationsPage() {
         </div>
 
         {(infiniteMode ? infiniteQuery.isLoading : isLoading) ? (
-          <div className="p-12 text-center text-gray-400 text-sm">Carregando...</div>
+          <PanelListLoader
+            message="Carregando..."
+            subMessage="Sincronizando com a API; pedidos lentos podem ser repetidos automaticamente com espera visível."
+          />
         ) : filteredItems.length === 0 ? (
-          <div className="p-12 text-center">
-            <Search className="mx-auto h-8 w-8 text-gray-300" />
-            <h3 className="mt-2 text-sm font-medium text-gray-900">Nenhum resultado</h3>
-            <p className="mt-1 text-xs text-gray-500">{search ? 'Tente outro termo.' : 'Comece criando uma nova investigação.'}</p>
-          </div>
+          <EmptyState
+            variant="embedded"
+            illustration="search"
+            title={hasActiveFilters ? 'Nenhum resultado' : 'Nenhuma investigação'}
+            description={
+              hasActiveFilters
+                ? 'Tente outro termo ou ajuste os filtros de estado.'
+                : 'Comece criando uma nova investigação.'
+            }
+            action={{
+              label: 'Nova investigação',
+              onClick: () => navigate('/investigations/new'),
+            }}
+          />
         ) : viewMode === 'list' ? (
           <div className="divide-y divide-gray-50">
             {filteredItems.map((inv) => (

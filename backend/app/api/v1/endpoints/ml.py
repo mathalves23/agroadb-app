@@ -2,18 +2,33 @@
 Endpoints de Machine Learning e IA
 Score de risco, detecção de padrões, análise de rede
 """
-from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
-from typing import Optional
+import shutil
+
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Query
+from fastapi.responses import Response
+from typing import Literal, Optional
 from pydantic import BaseModel
 
 from app.api.v1.deps import get_current_user
 from app.core.database import get_db
 from app.domain.user import User
+from app.repositories.investigation import InvestigationRepository
 from app.services.ml.risk_scoring import RiskScoringEngine
 from app.services.ml.pattern_detection import PatternDetectionEngine
 from app.services.ml.network_analysis import NetworkAnalysisEngine
+from app.services.ml.network_export import export_investigation_graph
 
 router = APIRouter()
+
+
+@router.get("/ml/health")
+async def ml_health_check():
+    """Estado dos componentes ML expostos pela API (sem autenticação)."""
+    return {
+        "status": "healthy",
+        "tesseract_available": shutil.which("tesseract") is not None,
+        "components": {"risk": True, "patterns": True, "network": True, "graph_export": True},
+    }
 
 
 # ==================== SCHEMAS ====================
@@ -81,8 +96,11 @@ async def calculate_risk_score(
         
         return {
             "total_score": risk_score.total_score,
+            "raw_total_score": risk_score.raw_total_score,
             "risk_level": risk_score.risk_level,
             "confidence": risk_score.confidence,
+            "calibration": risk_score.calibration_meta,
+            "shap": risk_score.shap_explanation,
             "indicators": [
                 {
                     "name": ind.name,
@@ -97,7 +115,13 @@ async def calculate_risk_score(
             "recommendations": risk_score.recommendations,
             "timestamp": risk_score.timestamp.isoformat()
         }
-    
+
+    except ValueError as e:
+        detail = str(e)
+        if "não encontrada" in detail.lower():
+            raise HTTPException(status_code=404, detail=detail)
+        raise HTTPException(status_code=400, detail=detail)
+
     except Exception as e:
         raise HTTPException(
             status_code=500,
@@ -149,7 +173,13 @@ async def detect_patterns(
             "total_patterns": len(patterns),
             "critical_patterns": len(critical_patterns)
         }
-    
+
+    except ValueError as e:
+        detail = str(e)
+        if "não encontrada" in detail.lower():
+            raise HTTPException(status_code=404, detail=detail)
+        raise HTTPException(status_code=400, detail=detail)
+
     except Exception as e:
         raise HTTPException(
             status_code=500,
@@ -203,12 +233,47 @@ async def analyze_network(
             "suspicious_patterns": analysis.suspicious_patterns,
             "graph_data": analysis.graph_data
         }
-    
+
+    except ValueError as e:
+        detail = str(e)
+        if "não encontrada" in detail.lower():
+            raise HTTPException(status_code=404, detail=detail)
+        raise HTTPException(status_code=400, detail=detail)
+
     except Exception as e:
         raise HTTPException(
             status_code=500,
             detail=f"Erro na análise de rede: {str(e)}"
         )
+
+
+@router.get("/investigations/{investigation_id}/network/export")
+async def export_network(
+    investigation_id: int,
+    export_format: Literal["json", "graphml"] = Query(
+        "json",
+        description="Formato: json (node-link NetworkX) ou graphml",
+    ),
+    current_user: User = Depends(get_current_user),
+    db=Depends(get_db),
+):
+    """
+    Exporta o grafo da investigação para **JSON** (node-link, NetworkX) ou **GraphML**
+    (interoperável com Gephi, yEd, etc.).
+    """
+    repo = InvestigationRepository(db)
+    inv = await repo.get_with_relations(investigation_id)
+    if not inv:
+        raise HTTPException(status_code=404, detail=f"Investigação {investigation_id} não encontrada")
+
+    body, media = export_investigation_graph(inv, export_format)
+    ext = "graphml" if export_format == "graphml" else "json"
+    filename = f"investigation_{investigation_id}_graph.{ext}"
+    return Response(
+        content=body.encode("utf-8"),
+        media_type=media,
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 
 @router.get("/investigations/{investigation_id}/network/shortest-path")
@@ -323,9 +388,16 @@ async def comprehensive_analysis(
             "investigation_id": investigation_id,
             "risk": {
                 "score": risk_score.total_score,
+                "raw_score": risk_score.raw_total_score,
                 "level": risk_score.risk_level,
                 "confidence": risk_score.confidence,
-                "recommendations": risk_score.recommendations
+                "recommendations": risk_score.recommendations,
+                "calibration": risk_score.calibration_meta,
+                "shap": {
+                    "shap_values": risk_score.shap_explanation.get("shap_values"),
+                    "base_value": risk_score.shap_explanation.get("base_value"),
+                    "explainer": risk_score.shap_explanation.get("explainer"),
+                },
             },
             "patterns": {
                 "total": len(patterns),
@@ -345,7 +417,13 @@ async def comprehensive_analysis(
                 network
             )
         }
-    
+
+    except ValueError as e:
+        detail = str(e)
+        if "não encontrada" in detail.lower():
+            raise HTTPException(status_code=404, detail=detail)
+        raise HTTPException(status_code=400, detail=detail)
+
     except Exception as e:
         raise HTTPException(
             status_code=500,

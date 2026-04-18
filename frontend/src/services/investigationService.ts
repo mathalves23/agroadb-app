@@ -95,24 +95,24 @@ export const investigationService = {
     return response.data
   },
 
-  // Machine Learning
-  async getRiskScore(id: number): Promise<any> {
-    const response = await api.get(`/investigations/${id}/risk-score`)
+  // Machine Learning (payload dinâmico conforme modelo)
+  async getRiskScore(id: number): Promise<Record<string, unknown>> {
+    const response = await api.get<Record<string, unknown>>(`/investigations/${id}/risk-score`)
     return response.data
   },
 
-  async getPatterns(id: number): Promise<any> {
-    const response = await api.get(`/investigations/${id}/patterns`)
+  async getPatterns(id: number): Promise<Record<string, unknown>> {
+    const response = await api.get<Record<string, unknown>>(`/investigations/${id}/patterns`)
     return response.data
   },
 
-  async getNetworkAnalysis(id: number): Promise<any> {
-    const response = await api.get(`/investigations/${id}/network`)
+  async getNetworkAnalysis(id: number): Promise<Record<string, unknown>> {
+    const response = await api.get<Record<string, unknown>>(`/investigations/${id}/network`)
     return response.data
   },
 
-  async getComprehensiveAnalysis(id: number): Promise<any> {
-    const response = await api.get(`/investigations/${id}/comprehensive-analysis`)
+  async getComprehensiveAnalysis(id: number): Promise<Record<string, unknown>> {
+    const response = await api.get<Record<string, unknown>>(`/investigations/${id}/comprehensive-analysis`)
     return response.data
   },
 }

@@ -252,7 +252,7 @@ export default function SettingsPage() {
     }
     const key = statusMap[name]
     if (!key) return 'active' // APIs gratuitas sem mapeamento estão sempre ativas
-    const entry = (integrationStatus as Record<string, any>)?.[key]
+    const entry = (integrationStatus as Record<string, { configured?: boolean; auth_required?: boolean } | undefined> | null)?.[key]
     if (!entry) return 'active' // Não listada no status = funciona sem config
     if (entry.configured === true) return 'active'
     if (entry.configured === false && entry.auth_required === false) return 'active'

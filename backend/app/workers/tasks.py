@@ -24,6 +24,29 @@ def start_investigation_task(investigation_id: int) -> dict:
     return asyncio.run(_start_investigation(investigation_id))
 
 
+@celery_app.task(name="heavy_investigation")
+def heavy_investigation_task(investigation_id: int) -> dict:
+    """
+    Pipeline pós-investigação (agregações pesadas, refresh de MV no PostgreSQL, etc.).
+    Executado em fila separada quando ENABLE_HEAVY_INVESTIGATION_QUEUE está activo.
+    """
+    return asyncio.run(_heavy_investigation_pipeline(investigation_id))
+
+
+async def _heavy_investigation_pipeline(investigation_id: int) -> dict:
+    from app.services.materialized_views import try_refresh_investigation_summary
+
+    async with AsyncSessionLocal() as db:
+        refreshed = await try_refresh_investigation_summary(db)
+        await db.commit()
+        logger.info(
+            "heavy_investigation_task concluída id=%s mv_refresh=%s",
+            investigation_id,
+            refreshed,
+        )
+        return {"investigation_id": investigation_id, "mv_refreshed": refreshed}
+
+
 async def _start_investigation(investigation_id: int) -> dict:
     """Async function to run investigation"""
     async with AsyncSessionLocal() as db:

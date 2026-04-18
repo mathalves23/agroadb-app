@@ -13,8 +13,11 @@ import {
   CheckCircle,
   AlertTriangle,
 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { PanelListLoader } from '@/components/Loading';
+import { NoNotificationsEmpty } from '@/components/EmptyState';
 
 interface Notification {
   id: number;
@@ -32,7 +35,7 @@ interface Notification {
   created_at: string;
 }
 
-const iconMap: Record<string, any> = {
+const iconMap: Record<string, LucideIcon> = {
   FileText: FileText,
   Share2: Share2,
   MessageSquare: MessageSquare,
@@ -238,15 +241,12 @@ export default function NotificationDropdown() {
           {/* Notifications List */}
           <div className="overflow-y-auto flex-1">
             {loading ? (
-              <div className="p-8 text-center text-gray-500">
-                <RefreshCw className="h-6 w-6 animate-spin mx-auto mb-2" />
-                <p className="text-sm">Carregando...</p>
+              <div className="p-6">
+                <PanelListLoader message="Carregando..." />
               </div>
             ) : notifications.length === 0 ? (
-              <div className="p-8 text-center text-gray-500">
-                <Bell className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-                <p className="text-sm font-medium">Nenhuma notificação</p>
-                <p className="text-xs text-gray-400 mt-1">Você está em dia!</p>
+              <div className="p-2">
+                <NoNotificationsEmpty embedded />
               </div>
             ) : (
               <div className="divide-y divide-gray-100">

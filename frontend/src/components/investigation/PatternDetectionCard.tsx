@@ -6,7 +6,7 @@ interface Pattern {
   description: string
   severity: 'low' | 'medium' | 'high' | 'critical'
   entities: number[]
-  evidence: Record<string, any>
+  evidence: Record<string, unknown>
 }
 
 interface PatternDetectionCardProps {

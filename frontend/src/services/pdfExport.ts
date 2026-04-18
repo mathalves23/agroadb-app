@@ -3,6 +3,13 @@ import autoTable from 'jspdf-autotable';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
+type JsPDFWithAutoTable = jsPDF & { lastAutoTable?: { finalY: number } }
+
+function afterAutoTableY(doc: jsPDF): number {
+  const y = (doc as JsPDFWithAutoTable).lastAutoTable?.finalY
+  return (typeof y === 'number' ? y : 0) + 10
+}
+
 interface Investigation {
   id: number;
   target_name: string;
@@ -254,7 +261,7 @@ export class PDFExportService {
       }
     });
 
-    return (doc as any).lastAutoTable.finalY + 10;
+    return afterAutoTableY(doc);
   }
 
   private static addPropertiesTable(doc: jsPDF, y: number, properties: Property[]): number {
@@ -287,7 +294,7 @@ export class PDFExportService {
       }
     });
 
-    return (doc as any).lastAutoTable.finalY + 10;
+    return afterAutoTableY(doc);
   }
 
   private static addCompaniesTable(doc: jsPDF, y: number, companies: Company[]): number {
@@ -313,7 +320,7 @@ export class PDFExportService {
       styles: { fontSize: 9, cellPadding: 3 }
     });
 
-    return (doc as any).lastAutoTable.finalY + 10;
+    return afterAutoTableY(doc);
   }
 
   private static addLeaseContractsTable(doc: jsPDF, y: number, contracts: LeaseContract[]): number {
@@ -340,7 +347,7 @@ export class PDFExportService {
       styles: { fontSize: 9, cellPadding: 3 }
     });
 
-    return (doc as any).lastAutoTable.finalY + 10;
+    return afterAutoTableY(doc);
   }
 
   private static addFooter(doc: jsPDF, pageNumber: number, totalPages: number): void {

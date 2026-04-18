@@ -3,6 +3,8 @@ Agregações para dashboards a partir da base real (por utilizador).
 """
 from __future__ import annotations
 
+import json
+import logging
 from calendar import month_abbr
 from collections import Counter, defaultdict
 from datetime import date, datetime
@@ -15,7 +17,9 @@ from app.domain.investigation import Investigation, InvestigationStatus
 from app.domain.legal_query import LegalQuery
 from app.domain.property import Property
 from app.repositories.legal_query import LegalQueryRepository
+from app.core.config import settings
 
+logger = logging.getLogger(__name__)
 
 STATUS_COLORS = {
     "completed": "#16a34a",
@@ -156,3 +160,57 @@ async def _legal_summary_global(db: AsyncSession) -> dict:
         row.provider: {"total": int(row.total or 0), "queries": int(row.queries or 0)}
         for row in result.all()
     }
+
+
+async def get_dashboard_statistics_cached(
+    db: AsyncSession,
+    user_id: int,
+    *,
+    is_superuser: bool = False,
+    months_back: int = 6,
+) -> dict:
+    """
+    Cache Redis opcional para reduzir carga nas agregações do dashboard.
+    """
+    if not settings.DASHBOARD_STATS_CACHE_ENABLED:
+        return await get_dashboard_statistics(
+            db, user_id, is_superuser=is_superuser, months_back=months_back
+        )
+
+    cache_key = (
+        f"dashboard:stats:v1:{user_id}:{'1' if is_superuser else '0'}:{months_back}"
+    )
+
+    try:
+        import redis.asyncio as redis
+
+        client = redis.from_url(settings.REDIS_URL, encoding="utf-8", decode_responses=True)
+        try:
+            cached = await client.get(cache_key)
+            if cached:
+                return json.loads(cached)
+        finally:
+            await client.aclose()
+    except Exception as exc:
+        logger.debug("Cache dashboard (leitura) ignorado: %s", exc)
+
+    data = await get_dashboard_statistics(
+        db, user_id, is_superuser=is_superuser, months_back=months_back
+    )
+
+    try:
+        import redis.asyncio as redis
+
+        client = redis.from_url(settings.REDIS_URL, encoding="utf-8", decode_responses=True)
+        try:
+            await client.set(
+                cache_key,
+                json.dumps(data),
+                ex=settings.DASHBOARD_STATS_CACHE_TTL_SECONDS,
+            )
+        finally:
+            await client.aclose()
+    except Exception as exc:
+        logger.debug("Cache dashboard (escrita) ignorado: %s", exc)
+
+    return data

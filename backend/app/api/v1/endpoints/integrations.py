@@ -51,6 +51,12 @@ from app.services.receita_cpf import ReceitaCPFService
 from app.services.receita_cnpj import ReceitaCNPJService
 from app.repositories.legal_query import LegalQueryRepository
 from app.core.audit import AuditLogger
+from app.api.v1.endpoints.integrations_helpers import (
+    result_count as _result_count,
+    is_credentials_missing as _is_credentials_missing,
+    conecta_items as _conecta_items,
+    conecta_standard_response as _conecta_standard_response,
+)
 
 logger = logging.getLogger(__name__)
 audit_logger = AuditLogger()
@@ -306,50 +312,6 @@ class SncciCreditosAtivosRequest(BaseModel):
 class SncciBoletoRequest(BaseModel):
     cd_plano_pagamento_parcela: str
     investigation_id: Optional[int] = None
-
-
-def _result_count(result: Any) -> int:
-    if isinstance(result, list):
-        return len(result)
-    if isinstance(result, dict):
-        for key in ("parcelas", "resultados", "itens", "items", "processos", "hits"):
-            value = result.get(key)
-            if isinstance(value, list):
-                return len(value)
-    return 0
-
-
-def _is_credentials_missing(exc: Exception) -> bool:
-    msg = str(exc).lower()
-    return "não configuradas" in msg or "credenciais conecta" in msg or "credenciais ausentes" in msg
-
-
-def _conecta_items(result: Any) -> list:
-    """Extrai lista de itens do resultado para resposta padronizada."""
-    if isinstance(result, list):
-        return result
-    if isinstance(result, dict):
-        for key in ("items", "itens", "resultados", "parcelas", "hits", "data"):
-            value = result.get(key)
-            if isinstance(value, list):
-                return value
-        return [result]
-    return [result] if result is not None else []
-
-
-def _conecta_standard_response(
-    result: Any,
-    pagination: Optional[Dict[str, Any]] = None,
-    warnings: Optional[List[str]] = None,
-) -> Dict[str, Any]:
-    """Resposta padronizada para endpoints Conecta: success, items, pagination, warnings."""
-    return {
-        "success": True,
-        "items": _conecta_items(result),
-        "data": result,
-        "pagination": pagination or {},
-        "warnings": warnings or [],
-    }
 
 
 @router.post("/sigef/parcelas", summary="Consultar parcelas SIGEF (WS externo)")

@@ -25,6 +25,10 @@ class InvestigationService:
         self, user_id: int, investigation_data: InvestigationCreate
     ) -> Investigation:
         """Create a new investigation and start processing"""
+        from app.services.saas_enforcement import assert_can_create_investigation
+
+        await assert_can_create_investigation(self.investigation_repo.db, user_id)
+
         # Create investigation
         investigation_dict = investigation_data.model_dump()
         investigation_dict["user_id"] = user_id
@@ -42,6 +46,10 @@ class InvestigationService:
         # Start async investigation task (somente se habilitado)
         if settings.ENABLE_WORKERS:
             start_investigation_task.delay(investigation.id)
+            if settings.ENABLE_HEAVY_INVESTIGATION_QUEUE:
+                from app.workers.tasks import heavy_investigation_task
+
+                heavy_investigation_task.delay(investigation.id)
         else:
             # Fallback síncrono: executa scrapers diretamente sem Celery/Redis
             logger.info(

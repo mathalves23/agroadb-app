@@ -10,18 +10,17 @@ Testa:
 """
 
 import pytest
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from sqlalchemy.orm import Session
 from fastapi.testclient import TestClient
 from PIL import Image
 import io
-import base64
-
 from app.ml.models.risk_analyzer import RiskAnalyzer, RiskFactor
 from app.ml.models.pattern_detector import PatternDetector, Pattern
 from app.ml.models.network_analyzer import NetworkAnalyzer, Node, Edge
 from app.ml.models.ocr_processor import OCRProcessor, DocumentType
-from app.domain.investigation import Investigation
+from app.core.security import get_password_hash
+from app.domain.investigation import Investigation, InvestigationStatus
 from app.domain.property import Property
 from app.domain.company import Company
 from app.domain.lease_contract import LeaseContract
@@ -32,77 +31,91 @@ from app.domain.user import User
 
 @pytest.fixture
 def sample_investigation(db: Session):
-    """Cria uma investigação de teste com dados completos"""
+    """Cria uma investigação de teste com dados alinhados ao modelo ORM actual."""
     user = User(
-        email="test@test.com",
-        username="testuser",
-        hashed_password="fake_hash",
-        is_active=True
+        email="mltest@test.com",
+        username="mltestuser",
+        full_name="ML Test User",
+        hashed_password=get_password_hash("fakehash1"),
+        is_active=True,
+        is_superuser=False,
     )
     db.add(user)
     db.commit()
-    
+    db.refresh(user)
+
     investigation = Investigation(
-        title="Investigação Teste ML",
-        target_cpf="12345678900",
+        user_id=user.id,
         target_name="João Silva",
-        status="completed",
-        user_id=user.id
+        target_cpf_cnpj="12345678900",
+        status=InvestigationStatus.COMPLETED,
+        priority=1,
     )
     db.add(investigation)
     db.commit()
-    
-    # Adicionar propriedades
+    db.refresh(investigation)
+
     for i in range(5):
         prop = Property(
-            name=f"Propriedade {i+1}",
-            address=f"Endereço {i+1}",
             investigation_id=investigation.id,
-            additional_data={
-                "area_hectares": 500 + (i * 100),
-                "car_code": f"CAR{i+1}",
-                "owner_cpf": f"1234567890{i}",
-                "owner_name": f"Proprietário {i+1}"
-            }
+            property_name=f"Propriedade {i + 1}",
+            area_hectares=float(500 + (i * 100)),
+            car_number=f"CAR{i + 1}",
+            state="MG",
+            city="Uberlândia",
+            owner_cpf_cnpj=f"1234567890{i}",
+            owner_name=f"Proprietário {i + 1}",
+            data_source="TEST_ML",
+            raw_data={"area_hectares": 500 + (i * 100), "car_code": f"CAR{i + 1}"},
         )
         db.add(prop)
-    
-    # Adicionar empresas
+
     for i in range(3):
         company = Company(
-            cnpj=f"1234567800012{i}",
-            name=f"Empresa {i+1}",
             investigation_id=investigation.id,
-            additional_data={
-                "status": "ativa" if i < 2 else "inativa",
-                "partners": [
-                    {
-                        "name": f"Sócio {i+1}",
-                        "cpf": f"9876543210{i}",
-                        "share": 50.0
-                    }
-                ]
-            }
+            cnpj=f"12.345.678/0001-{10 + i}",
+            corporate_name=f"Empresa {i + 1} Ltda",
+            status="ativa" if i < 2 else "inativa",
+            data_source="TEST_ML",
+            raw_data={"country": "Brasil"},
+            partners=[{"name": f"Sócio {i + 1}", "cpf": f"9876543210{i}", "share": 50.0}],
         )
         db.add(company)
-    
-    # Adicionar contratos
+
+    today = date.today()
     for i in range(2):
         lease = LeaseContract(
-            lessor_name=f"Arrendador {i+1}",
-            lessee_name=f"Arrendatário {i+1}",
-            monthly_value=5000.0 + (i * 1000),
-            start_date=datetime.utcnow() - timedelta(days=365),
-            end_date=datetime.utcnow() + timedelta(days=365),
-            document_number=f"DOC{i+1}",
-            investigation_id=investigation.id
+            investigation_id=investigation.id,
+            lessor_name=f"Arrendador {i + 1}",
+            lessee_name=f"Arrendatário {i + 1}",
+            value=5000.0 + (i * 1000),
+            start_date=today - timedelta(days=365),
+            end_date=today + timedelta(days=365),
+            data_source="TEST_ML",
+            raw_data={"document_number": f"DOC{i + 1}"},
         )
         db.add(lease)
-    
+
     db.commit()
     db.refresh(investigation)
-    
     return investigation
+
+
+@pytest.fixture
+def api_investigation_id(client: TestClient, auth_headers: dict) -> int:
+    """Investigação na BD async da app (para endpoints ML)."""
+    r = client.post(
+        "/api/v1/investigations",
+        headers=auth_headers,
+        json={
+            "target_name": "Alvo ML Endpoints",
+            "target_cpf_cnpj": "52998224725",
+            "target_description": "Investigação criada para testes de API ML",
+            "priority": 2,
+        },
+    )
+    assert r.status_code == 201, r.text
+    return r.json()["id"]
 
 
 @pytest.fixture
@@ -196,10 +209,11 @@ def test_pattern_detector_ghost_properties(db: Session, sample_investigation):
     """Teste de detecção de propriedades fantasma"""
     # Adicionar propriedade sem dados completos
     prop = Property(
-        name="Propriedade Fantasma",
+        property_name="Propriedade Fantasma",
         address="",  # Endereço vazio (suspeito)
         investigation_id=sample_investigation.id,
-        additional_data={}  # Sem dados (suspeito)
+        data_source="TEST_ML",
+        raw_data={},
     )
     db.add(prop)
     db.commit()
@@ -416,6 +430,15 @@ def test_ocr_processor_preprocess_image(sample_image):
 
 # ========== Testes dos Endpoints ==========
 
+def test_risk_calibration_piecewise_linear():
+    from app.services.ml.risk_calibration import apply_risk_calibration
+
+    cfg = {"enabled": True, "method": "piecewise_linear", "points": [[0, 0], [100, 100]]}
+    out, meta = apply_risk_calibration(40.0, cfg)
+    assert out == 40.0
+    assert meta.get("calibration_enabled") is True
+
+
 def test_ml_health_endpoint(client: TestClient):
     """Teste do endpoint de health check"""
     response = client.get("/api/v1/ml/health")
@@ -430,29 +453,31 @@ def test_ml_health_endpoint(client: TestClient):
 
 def test_risk_analysis_endpoint(
     client: TestClient,
-    db: Session,
-    sample_investigation,
-    auth_headers
+    api_investigation_id: int,
+    auth_headers: dict,
 ):
     """Teste do endpoint de análise de risco"""
-    response = client.post(
-        f"/api/v1/ml/risk-analysis/{sample_investigation.id}",
-        headers=auth_headers
+    response = client.get(
+        f"/api/v1/investigations/{api_investigation_id}/risk-score",
+        headers=auth_headers,
     )
     
     assert response.status_code == 200
     data = response.json()
     
-    assert "investigation_id" in data
-    assert "overall_score" in data
+    assert "total_score" in data
+    assert "raw_total_score" in data
     assert "risk_level" in data
-    assert "factors" in data
+    assert "indicators" in data
+    assert "shap" in data
+    assert data["shap"].get("explainer") == "exact_additive_shapley"
+    assert "calibration" in data
 
 
 def test_risk_analysis_endpoint_not_found(client: TestClient, auth_headers):
     """Teste com investigação inexistente"""
-    response = client.post(
-        "/api/v1/ml/risk-analysis/99999",
+    response = client.get(
+        "/api/v1/investigations/99999/risk-score",
         headers=auth_headers
     )
     
@@ -461,67 +486,74 @@ def test_risk_analysis_endpoint_not_found(client: TestClient, auth_headers):
 
 def test_pattern_detection_endpoint(
     client: TestClient,
-    db: Session,
-    sample_investigation,
-    auth_headers
+    api_investigation_id: int,
+    auth_headers: dict,
 ):
     """Teste do endpoint de detecção de padrões"""
-    response = client.post(
-        f"/api/v1/ml/pattern-detection/{sample_investigation.id}",
-        headers=auth_headers
+    response = client.get(
+        f"/api/v1/investigations/{api_investigation_id}/patterns",
+        headers=auth_headers,
     )
     
     assert response.status_code == 200
     data = response.json()
     
-    assert "investigation_id" in data
-    assert "patterns_detected" in data
+    assert "total_patterns" in data
     assert "patterns" in data
+
+
+def test_network_export_json_endpoint(
+    client: TestClient,
+    api_investigation_id: int,
+    auth_headers: dict,
+):
+    r = client.get(
+        f"/api/v1/investigations/{api_investigation_id}/network/export?export_format=json",
+        headers=auth_headers,
+    )
+    assert r.status_code == 200
+    assert "application/json" in r.headers.get("content-type", "")
+    data = r.json()
+    assert "nodes" in data
+    assert "edges" in data
 
 
 def test_network_analysis_endpoint(
     client: TestClient,
-    db: Session,
-    sample_investigation,
-    auth_headers
+    api_investigation_id: int,
+    auth_headers: dict,
 ):
     """Teste do endpoint de análise de rede"""
-    response = client.post(
-        f"/api/v1/ml/network-analysis/{sample_investigation.id}",
-        headers=auth_headers
+    response = client.get(
+        f"/api/v1/investigations/{api_investigation_id}/network",
+        headers=auth_headers,
     )
     
     assert response.status_code == 200
     data = response.json()
     
-    assert "investigation_id" in data
-    assert "graph" in data
-    assert "central_actors" in data
+    assert "num_nodes" in data
+    assert "graph_data" in data
+    assert "central_nodes" in data
     assert "communities" in data
 
 
-def test_ocr_base64_endpoint(client: TestClient, auth_headers, sample_image):
-    """Teste do endpoint de OCR base64"""
-    # Converter imagem para base64
+def test_ocr_extract_from_image_endpoint(client: TestClient, auth_headers, sample_image):
+    """Teste do endpoint OCR que recebe upload de imagem"""
     buffer = io.BytesIO()
     sample_image.save(buffer, format="PNG")
-    img_base64 = base64.b64encode(buffer.getvalue()).decode()
+    buffer.seek(0)
     
     response = client.post(
-        "/api/v1/ml/ocr/base64",
+        "/api/v1/ocr/extract-from-image",
         headers=auth_headers,
-        json={
-            "base64_image": img_base64,
-            "language": "por"
-        }
+        files={"file": ("test.png", buffer.getvalue(), "image/png")},
     )
     
-    # Pode falhar se Tesseract não estiver instalado
     if response.status_code == 200:
         data = response.json()
-        assert "success" in data
+        assert "text" in data
     else:
-        # Aceitar erro se Tesseract não disponível
         assert response.status_code in [200, 500]
 
 

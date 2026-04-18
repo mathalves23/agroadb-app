@@ -16,6 +16,8 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from app.core.config import settings
 from app.api.v1.router import api_router
 from app.core.database import engine, Base
+
+import app.domain  # noqa: F401 — regista novos modelos no Base.metadata
 from app.core.rate_limiting import RateLimitMiddleware
 from app.core.circuit_breaker import CircuitBreakerRegistry
 from app.core.indexes import create_optimized_indexes
@@ -45,7 +47,11 @@ async def lifespan(app: FastAPI) -> AsyncGenerator:
         logger.info("⚠️  Workers desabilitados (ENABLE_WORKERS=false)")
     
     yield
-    
+
+    from app.core.telemetry import shutdown_trace_provider
+
+    shutdown_trace_provider()
+
     # Shutdown
     logger.info("🛑 Encerrando aplicação...")
     if settings.ENVIRONMENT == "production":
@@ -63,7 +69,20 @@ app = FastAPI(
     redoc_url="/api/redoc",
     openapi_url="/api/openapi.json",
     lifespan=lifespan,
+    openapi_tags=[
+        {"name": "Platform — B2B & compliance", "description": "Proposta de valor, LGPD e exportações para RFPs e integradores."},
+        {"name": "Machine Learning", "description": "Risco, padrões, rede e exportação de grafos."},
+        {"name": "Investigations", "description": "Ciclo de vida das investigações patrimoniais."},
+        {"name": "integrations", "description": "Integrações externas (Conecta, tribunais, birôs, dados abertos)."},
+        {"name": "Legal Integration", "description": "Consultas legais e proxies a tribunais/dados judiciais."},
+    ],
 )
+
+from app.core.prometheus_metrics import mount_prometheus_instrumentator
+from app.core.telemetry import instrument_fastapi
+
+mount_prometheus_instrumentator(app)
+instrument_fastapi(app)
 
 
 # ============================================================================
@@ -96,6 +115,16 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
         if settings.FORCE_HTTPS:
             response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+        if settings.CSP_MODE and settings.CSP_MODE != "off":
+            path = request.url.path
+            if path.startswith("/api/docs") or path.startswith("/api/redoc") or path.endswith("/openapi.json"):
+                policy = settings.CSP_POLICY_SWAGGER
+            else:
+                policy = settings.CSP_POLICY_API
+            if settings.CSP_MODE == "report-only":
+                response.headers["Content-Security-Policy-Report-Only"] = policy
+            elif settings.CSP_MODE == "enforce":
+                response.headers["Content-Security-Policy"] = policy
         return response
 
 app.add_middleware(SecurityHeadersMiddleware)
@@ -150,6 +179,7 @@ async def root() -> dict:
         "message": "AgroADB API",
         "version": settings.VERSION,
         "docs": "/api/docs",
+        "value_proposition": "/api/v1/platform/proposition",
     }
 
 

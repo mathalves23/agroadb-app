@@ -107,6 +107,12 @@ print(f"Densidade: {analysis.density}")
 print(f"Jogadores-Chave: {analysis.key_players}")
 ```
 
+### Calibração, SHAP e export do grafo
+
+- **Calibração:** `RISK_CALIBRATION_PATH` → JSON (`risk_calibration.py`). Omissão: score bruto. Treino: `scripts/train_risk_calibration.py` (rótulos só com base legal).
+- **SHAP:** resposta da API inclui `shap` com atribuições aditivas exactas para o modelo linear; baseline `RISK_SHAP_NEUTRAL_BASELINE`.
+- **Export:** `GET /api/v1/investigations/{id}/network/export?export_format=json|graphml` (`network_export.py`).
+
 ## 🔧 Tecnologias
 
 | Biblioteca | Versão | Uso |
@@ -122,9 +128,12 @@ print(f"Jogadores-Chave: {analysis.key_players}")
 ```python
 @dataclass
 class RiskScore:
-    total_score: float       # 0-100
-    risk_level: str          # very_low, low, medium, high, critical
-    confidence: float        # 0-1
+    total_score: float       # 0-100 (pós-calibração se activa)
+    raw_total_score: float   # soma ponderada antes da calibração
+    calibration_meta: dict # metadata da calibração
+    shap_explanation: dict   # valores SHAP aditivos por indicador
+    risk_level: str
+    confidence: float
     indicators: List[RiskIndicator]
     patterns_detected: List[str]
     recommendations: List[str]
@@ -259,10 +268,11 @@ python test_ml_setup.py
 ## 🛣️ Roadmap
 
 - [ ] Cache Redis para análises pesadas
-- [ ] Treinamento supervisionado
+- [ ] Treinamento supervisionado adicional (além da calibração isotónica)
 - [ ] Análise temporal (evolução)
 - [ ] Comparação entre investigações
-- [ ] Exportação de relatórios ML
+- [x] Exportação GraphML/JSON do grafo
+- [ ] Exportação de relatórios ML (PDF agregados)
 
 ## 🤝 Contribuir
 

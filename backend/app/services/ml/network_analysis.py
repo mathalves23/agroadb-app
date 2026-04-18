@@ -11,6 +11,7 @@ import networkx as nx
 from networkx.algorithms.community import greedy_modularity_communities
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.domain.investigation import Investigation
 from app.repositories.investigation import InvestigationRepository
 
 
@@ -54,14 +55,8 @@ class NetworkAnalysis:
 
 class NetworkAnalysisEngine:
     @staticmethod
-    async def analyze_network(db: AsyncSession, investigation_id: int) -> NetworkAnalysis:
-        repo = InvestigationRepository(db)
-        inv = await repo.get_with_relations(investigation_id)
-        if not inv:
-            return NetworkAnalysis(
-                suspicious_patterns=["Investigação não encontrada"],
-            )
-
+    def _build_graph(inv: Investigation) -> nx.Graph:
+        """Constrói o grafo NetworkX a partir da investigação (dados reais da BD)."""
         G = nx.Graph()
         root = f"inv:{inv.id}"
         G.add_node(
@@ -109,6 +104,12 @@ class NetworkAnalysisEngine:
                     for j in range(i + 1, len(props)):
                         if not G.has_edge(props[i], props[j]):
                             G.add_edge(props[i], props[j], relation="mesmo_titular", weight=0.5)
+
+        return G
+
+    @staticmethod
+    def _analyze_investigation(inv: Investigation) -> NetworkAnalysis:
+        G = NetworkAnalysisEngine._build_graph(inv)
 
         if G.number_of_nodes() == 0:
             return NetworkAnalysis(suspicious_patterns=["Sem dados para grafo"])
@@ -165,13 +166,25 @@ class NetworkAnalysisEngine:
         )
 
     @staticmethod
+    async def analyze_network(db: AsyncSession, investigation_id: int) -> NetworkAnalysis:
+        repo = InvestigationRepository(db)
+        inv = await repo.get_with_relations(investigation_id)
+        if not inv:
+            raise ValueError(f"Investigação {investigation_id} não encontrada")
+        return NetworkAnalysisEngine._analyze_investigation(inv)
+
+    @staticmethod
     async def find_shortest_path(
         db: AsyncSession,
         investigation_id: int,
         source: str,
         target: str,
     ) -> Optional[List[str]]:
-        analysis = await NetworkAnalysisEngine.analyze_network(db, investigation_id)
+        repo = InvestigationRepository(db)
+        inv = await repo.get_with_relations(investigation_id)
+        if not inv:
+            return None
+        analysis = NetworkAnalysisEngine._analyze_investigation(inv)
         links = analysis.graph_data.get("links", [])
         nodes = {n["id"] for n in analysis.graph_data.get("nodes", [])}
         if source not in nodes or target not in nodes:
@@ -193,7 +206,11 @@ class NetworkAnalysisEngine:
         entity_id: str,
         max_depth: int = 2,
     ) -> List[Dict[str, Any]]:
-        analysis = await NetworkAnalysisEngine.analyze_network(db, investigation_id)
+        repo = InvestigationRepository(db)
+        inv = await repo.get_with_relations(investigation_id)
+        if not inv:
+            return []
+        analysis = NetworkAnalysisEngine._analyze_investigation(inv)
         G = nx.Graph()
         for n in analysis.graph_data.get("nodes", []):
             G.add_node(n["id"], **{k: v for k, v in n.items() if k != "id"})

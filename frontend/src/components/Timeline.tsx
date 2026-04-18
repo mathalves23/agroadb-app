@@ -17,7 +17,7 @@ interface TimelineEvent {
   description: string;
   timestamp: Date;
   status: 'success' | 'error' | 'warning' | 'info';
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   icon?: string;
 }
 
