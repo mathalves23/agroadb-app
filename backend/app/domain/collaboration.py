@@ -2,9 +2,19 @@
 Collaboration Domain Models
 InvestigationShare, InvestigationComment, InvestigationChangeLog
 """
+
 from datetime import datetime
 from enum import Enum
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Text, Boolean, UniqueConstraint
+from sqlalchemy import (
+    Column,
+    Integer,
+    String,
+    DateTime,
+    ForeignKey,
+    Text,
+    Boolean,
+    UniqueConstraint,
+)
 from sqlalchemy import JSON
 from sqlalchemy.orm import relationship
 
@@ -13,6 +23,7 @@ from app.core.database import Base
 
 class PermissionLevel(str, Enum):
     """Níveis de permissão para compartilhamento"""
+
     VIEW = "view"
     COMMENT = "comment"
     EDIT = "edit"
@@ -21,12 +32,17 @@ class PermissionLevel(str, Enum):
 
 class InvestigationShare(Base):
     """Modelo de Compartilhamento de Investigação"""
+
     __tablename__ = "investigation_shares"
 
     id = Column(Integer, primary_key=True, index=True)
-    investigation_id = Column(Integer, ForeignKey("investigations.id", ondelete="CASCADE"), nullable=False, index=True)
+    investigation_id = Column(
+        Integer, ForeignKey("investigations.id", ondelete="CASCADE"), nullable=False, index=True
+    )
     owner_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    shared_with_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    shared_with_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
     permission = Column(String(20), nullable=False, default=PermissionLevel.VIEW.value)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     expires_at = Column(DateTime, nullable=True)
@@ -37,7 +53,7 @@ class InvestigationShare(Base):
     shared_with = relationship("User", foreign_keys=[shared_with_id])
 
     __table_args__ = (
-        UniqueConstraint('investigation_id', 'shared_with_id', name='uq_investigation_share'),
+        UniqueConstraint("investigation_id", "shared_with_id", name="uq_investigation_share"),
     )
 
     def to_dict(self) -> dict:
@@ -57,12 +73,17 @@ class InvestigationShare(Base):
 
 class InvestigationComment(Base):
     """Modelo de Comentário em Investigação"""
+
     __tablename__ = "investigation_comments"
 
     id = Column(Integer, primary_key=True, index=True)
-    investigation_id = Column(Integer, ForeignKey("investigations.id", ondelete="CASCADE"), nullable=False, index=True)
+    investigation_id = Column(
+        Integer, ForeignKey("investigations.id", ondelete="CASCADE"), nullable=False, index=True
+    )
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    parent_id = Column(Integer, ForeignKey("investigation_comments.id", ondelete="CASCADE"), nullable=True)
+    parent_id = Column(
+        Integer, ForeignKey("investigation_comments.id", ondelete="CASCADE"), nullable=True
+    )
     content = Column(Text, nullable=False)
     is_internal = Column(Boolean, default=False, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
@@ -94,10 +115,13 @@ class InvestigationComment(Base):
 
 class InvestigationChangeLog(Base):
     """Modelo de Histórico de Alterações"""
+
     __tablename__ = "investigation_change_logs"
 
     id = Column(Integer, primary_key=True, index=True)
-    investigation_id = Column(Integer, ForeignKey("investigations.id", ondelete="CASCADE"), nullable=False, index=True)
+    investigation_id = Column(
+        Integer, ForeignKey("investigations.id", ondelete="CASCADE"), nullable=False, index=True
+    )
     user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     action = Column(String(50), nullable=False)
     field_changed = Column(String(100), nullable=True)
@@ -125,4 +149,43 @@ class InvestigationChangeLog(Base):
             "description": self.description,
             "timestamp": self.timestamp.isoformat() if self.timestamp else None,
             "ip_address": self.ip_address,
+        }
+
+
+class InvestigationGuestLink(Base):
+    """
+    Link mágico só de leitura para convidados sem conta (data room leve).
+    O token em texto claro é mostrado apenas na criação; persiste-se apenas o hash.
+    """
+
+    __tablename__ = "investigation_guest_links"
+
+    id = Column(Integer, primary_key=True, index=True)
+    investigation_id = Column(
+        Integer, ForeignKey("investigations.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    created_by_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    token_hash = Column(String(64), nullable=False, unique=True, index=True)
+    label = Column(String(255), nullable=True)
+    expires_at = Column(DateTime, nullable=True)
+    revoked_at = Column(DateTime, nullable=True)
+    allow_downloads = Column(Boolean, default=False, nullable=False)
+    access_count = Column(Integer, default=0, nullable=False)
+    last_access_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    investigation = relationship("Investigation", back_populates="guest_links")
+    created_by = relationship("User", foreign_keys=[created_by_id])
+
+    def to_public_dict(self) -> dict:
+        return {
+            "id": self.id,
+            "investigation_id": self.investigation_id,
+            "label": self.label,
+            "expires_at": self.expires_at.isoformat() if self.expires_at else None,
+            "revoked_at": self.revoked_at.isoformat() if self.revoked_at else None,
+            "allow_downloads": self.allow_downloads,
+            "access_count": self.access_count,
+            "last_access_at": self.last_access_at.isoformat() if self.last_access_at else None,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
         }

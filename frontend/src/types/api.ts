@@ -48,6 +48,11 @@ export interface Investigation {
   created_at: string
   updated_at: string
   completed_at?: string
+  /** Governança IA — revisão humana do score automatizado */
+  risk_score_reviewed_at?: string | null
+  risk_score_reviewed_by_id?: number | null
+  risk_score_reviewer_name?: string | null
+  can_acknowledge_risk_score_review?: boolean
 }
 
 export interface InvestigationCreate {

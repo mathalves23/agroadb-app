@@ -1,4 +1,5 @@
 """Testes unitários para regras de acesso a investigações (sem base de dados)."""
+
 from __future__ import annotations
 
 from types import SimpleNamespace
@@ -83,3 +84,39 @@ async def test_require_investigation_for_user_raises_404_when_missing(monkeypatc
         )
     assert exc.value.status_code == 404
     assert exc.value.detail == "não existe"
+
+
+@pytest.mark.asyncio
+async def test_require_investigation_for_user_allows_collaborator(monkeypatch) -> None:
+    inv = SimpleNamespace(id=7, user_id=99)
+
+    class FakeRepo:
+        def __init__(self, _db):
+            pass
+
+        async def get(self, _id):
+            return inv
+
+        async def get_with_relations(self, _id):
+            return inv
+
+    async def fake_check_permission(_db, investigation_id, user_id, required_perm):
+        return investigation_id == 7 and user_id == 2
+
+    monkeypatch.setattr("app.services.investigation_access.InvestigationRepository", FakeRepo)
+    monkeypatch.setattr(
+        "app.services.investigation_access.collaboration_service.check_permission",
+        fake_check_permission,
+    )
+
+    class FakeSession:
+        pass
+
+    got = await require_investigation_for_user(
+        FakeSession(),  # type: ignore[arg-type]
+        7,
+        2,
+        is_superuser=False,
+        with_relations=False,
+    )
+    assert got.id == 7

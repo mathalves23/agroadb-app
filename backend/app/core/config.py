@@ -1,6 +1,7 @@
 """
 Application Configuration
 """
+
 from typing import List
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import PostgresDsn, RedisDsn
@@ -8,7 +9,7 @@ from pydantic import PostgresDsn, RedisDsn
 
 class Settings(BaseSettings):
     """Application settings"""
-    
+
     # Project Info
     PROJECT_NAME: str = "AgroADB"
     PROJECT_DESCRIPTION: str = (
@@ -17,7 +18,16 @@ class Settings(BaseSettings):
         "módulos alinhados à LGPD."
     )
     VERSION: str = "1.0.0"
-    
+
+    # Pacote de evidência (ZIP: PDF + manifest.json) — due diligence / RFPs
+    TRUST_BUNDLE_MANIFEST_SCHEMA_VERSION: str = "1.0"
+    TRUST_BUNDLE_RETENTION_REFERENCE: str = (
+        "Prazos de conservação e bases legais são definidos pelo responsável pelo tratamento (cliente B2B), "
+        "RoPA e contrato. Referência interna: docs/compliance/retencao-e-backups.md e "
+        "docs/compliance/dpa-e-registo-tratamentos.md no repositório AgroADB."
+    )
+    TRUST_BUNDLE_AUDIT_LOG_CAP: int = 1000
+
     # Environment
     ENVIRONMENT: str = "development"
     # Só em não-produção: após /enrich, criar propriedades/empresas fictícias (MOCK_DEMO) se não existirem dados.
@@ -39,60 +49,60 @@ class Settings(BaseSettings):
 
     # Database
     DATABASE_URL: str
-    
+
     # Redis
     REDIS_URL: str
-    
+
     # Security
     SECRET_KEY: str
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
     ENCRYPTION_KEY: str = ""  # Para criptografia de dados sensíveis
-    
+
     # HTTPS
     FORCE_HTTPS: bool = False  # True em produção
     HTTPS_REDIRECT: bool = False  # True em produção
-    
+
     # CORS
     CORS_ORIGINS: List[str] = ["http://localhost:5173", "http://localhost:3000"]
     CORS_ALLOW_CREDENTIALS: bool = True
     CORS_ALLOW_METHODS: List[str] = ["GET", "POST", "PUT", "DELETE", "PATCH"]
     CORS_ALLOW_HEADERS: List[str] = ["*"]
     CORS_MAX_AGE: int = 600  # 10 minutos
-    
+
     # Pagination
     DEFAULT_PAGE_SIZE: int = 20
     MAX_PAGE_SIZE: int = 100
-    
+
     # Rate Limiting
     RATE_LIMIT_PER_MINUTE: int = 60
-    
+
     # Scraping
     SCRAPING_TIMEOUT: int = 30
     SCRAPING_MAX_RETRIES: int = 3
     SCRAPING_DELAY: float = 1.0
-    
+
     # External APIs (opcional - adicionar conforme necessário)
     INCRA_API_KEY: str = ""
     CAR_API_KEY: str = ""
     SERPAPI_KEY: str = ""
     OPENAI_API_KEY: str = ""
-    
+
     # Legal Integration APIs
     PJE_API_URL: str = ""
     PJE_API_KEY: str = ""
-    
+
     # Tribunais Estaduais - e-SAJ e Projudi (não requer API key - web scraping)
     ESAJ_ENABLED: bool = True
     PROJUDI_ENABLED: bool = True
-    
+
     # Birôs de Crédito
     # SERASA EXPERIAN
     SERASA_API_KEY: str = ""
     SERASA_CLIENT_ID: str = ""
     SERASA_CLIENT_SECRET: str = ""
-    
+
     # BOA VISTA SCPC
     BOAVISTA_API_KEY: str = ""
     BOAVISTA_CLIENT_ID: str = ""
@@ -104,7 +114,9 @@ class Settings(BaseSettings):
 
     # Conecta gov.br - SNCR
     CONECTA_SNCR_API_URL: str = "https://apigateway.conectagov.estaleiro.serpro.gov.br"
-    CONECTA_SNCR_TOKEN_URL: str = "https://apigateway.conectagov.estaleiro.serpro.gov.br/oauth2/jwt-token"
+    CONECTA_SNCR_TOKEN_URL: str = (
+        "https://apigateway.conectagov.estaleiro.serpro.gov.br/oauth2/jwt-token"
+    )
     CONECTA_SNCR_CLIENT_ID: str = ""
     CONECTA_SNCR_CLIENT_SECRET: str = ""
     CONECTA_SNCR_API_KEY: str = ""
@@ -125,7 +137,9 @@ class Settings(BaseSettings):
 
     # Conecta gov.br - SICAR
     CONECTA_SICAR_API_URL: str = "https://apigateway.conectagov.estaleiro.serpro.gov.br"
-    CONECTA_SICAR_TOKEN_URL: str = "https://apigateway.conectagov.estaleiro.serpro.gov.br/oauth2/jwt-token"
+    CONECTA_SICAR_TOKEN_URL: str = (
+        "https://apigateway.conectagov.estaleiro.serpro.gov.br/oauth2/jwt-token"
+    )
     CONECTA_SICAR_CLIENT_ID: str = ""
     CONECTA_SICAR_CLIENT_SECRET: str = ""
     CONECTA_SICAR_API_KEY: str = ""
@@ -134,7 +148,9 @@ class Settings(BaseSettings):
 
     # Conecta gov.br - SNCCI
     CONECTA_SNCCI_API_URL: str = "https://apigateway.conectagov.estaleiro.serpro.gov.br"
-    CONECTA_SNCCI_TOKEN_URL: str = "https://apigateway.conectagov.estaleiro.serpro.gov.br/oauth2/jwt-token"
+    CONECTA_SNCCI_TOKEN_URL: str = (
+        "https://apigateway.conectagov.estaleiro.serpro.gov.br/oauth2/jwt-token"
+    )
     CONECTA_SNCCI_CLIENT_ID: str = ""
     CONECTA_SNCCI_CLIENT_SECRET: str = ""
     CONECTA_SNCCI_API_KEY: str = ""
@@ -145,7 +161,9 @@ class Settings(BaseSettings):
 
     # Conecta gov.br - SIGEF GEO
     CONECTA_SIGEF_GEO_API_URL: str = "https://apigateway.conectagov.estaleiro.serpro.gov.br"
-    CONECTA_SIGEF_GEO_TOKEN_URL: str = "https://apigateway.conectagov.estaleiro.serpro.gov.br/oauth2/jwt-token"
+    CONECTA_SIGEF_GEO_TOKEN_URL: str = (
+        "https://apigateway.conectagov.estaleiro.serpro.gov.br/oauth2/jwt-token"
+    )
     CONECTA_SIGEF_GEO_CLIENT_ID: str = ""
     CONECTA_SIGEF_GEO_CLIENT_SECRET: str = ""
     CONECTA_SIGEF_GEO_API_KEY: str = ""
@@ -154,7 +172,9 @@ class Settings(BaseSettings):
 
     # Conecta gov.br - Consulta CNPJ (RFB)
     CONECTA_CNPJ_API_URL: str = "https://apigateway.conectagov.estaleiro.serpro.gov.br"
-    CONECTA_CNPJ_TOKEN_URL: str = "https://apigateway.conectagov.estaleiro.serpro.gov.br/oauth2/jwt-token"
+    CONECTA_CNPJ_TOKEN_URL: str = (
+        "https://apigateway.conectagov.estaleiro.serpro.gov.br/oauth2/jwt-token"
+    )
     CONECTA_CNPJ_CLIENT_ID: str = ""
     CONECTA_CNPJ_CLIENT_SECRET: str = ""
     CONECTA_CNPJ_API_KEY: str = ""
@@ -164,7 +184,9 @@ class Settings(BaseSettings):
 
     # Conecta gov.br - Consulta CND (RFB/PGFN)
     CONECTA_CND_API_URL: str = "https://apigateway.conectagov.estaleiro.serpro.gov.br"
-    CONECTA_CND_TOKEN_URL: str = "https://apigateway.conectagov.estaleiro.serpro.gov.br/oauth2/jwt-token"
+    CONECTA_CND_TOKEN_URL: str = (
+        "https://apigateway.conectagov.estaleiro.serpro.gov.br/oauth2/jwt-token"
+    )
     CONECTA_CND_CLIENT_ID: str = ""
     CONECTA_CND_CLIENT_SECRET: str = ""
     CONECTA_CND_API_KEY: str = ""
@@ -172,7 +194,9 @@ class Settings(BaseSettings):
 
     # Conecta gov.br - CADIN Consulta/Contratante
     CONECTA_CADIN_API_URL: str = "https://apigateway.conectagov.estaleiro.serpro.gov.br"
-    CONECTA_CADIN_TOKEN_URL: str = "https://apigateway.conectagov.estaleiro.serpro.gov.br/oauth2/jwt-token"
+    CONECTA_CADIN_TOKEN_URL: str = (
+        "https://apigateway.conectagov.estaleiro.serpro.gov.br/oauth2/jwt-token"
+    )
     CONECTA_CADIN_CLIENT_ID: str = ""
     CONECTA_CADIN_CLIENT_SECRET: str = ""
     CONECTA_CADIN_API_KEY: str = ""
@@ -200,7 +224,7 @@ class Settings(BaseSettings):
 
     # Portal da Transparência (CGU) — API Key gratuita
     PORTAL_TRANSPARENCIA_API_KEY: str = ""
-    
+
     # SMTP / Email
     SMTP_HOST: str = "smtp.gmail.com"
     SMTP_PORT: int = 587
@@ -208,14 +232,14 @@ class Settings(BaseSettings):
     SMTP_PASSWORD: str = ""
     SMTP_FROM: str = "noreply@agroadb.com"
     SMTP_FROM_NAME: str = "AgroADB Platform"
-    
+
     # Frontend URL (para links em emails)
     FRONTEND_URL: str = "http://localhost:5173"
-    
+
     # Celery / Background Tasks
     CELERY_BROKER_URL: str = "redis://localhost:6379/0"
     CELERY_RESULT_BACKEND: str = "redis://localhost:6379/0"
-    
+
     # Logging
     LOG_LEVEL: str = "INFO"
     LOG_FORMAT: str = "json"
@@ -231,8 +255,7 @@ class Settings(BaseSettings):
     # Content-Security-Policy (API + documentação OpenAPI)
     CSP_MODE: str = "report-only"
     CSP_POLICY_API: str = (
-        "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; "
-        "form-action 'none'"
+        "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; " "form-action 'none'"
     )
     CSP_POLICY_SWAGGER: str = (
         "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; "
@@ -240,9 +263,12 @@ class Settings(BaseSettings):
         "font-src 'self' data:; frame-ancestors 'self'; connect-src 'self'"
     )
 
-    # ML — score de risco (calibração / explicabilidade)
+    # ML — score de risco (calibração / explicabilidade / governança)
     RISK_CALIBRATION_PATH: str = ""
     RISK_SHAP_NEUTRAL_BASELINE: float = 50.0
+    # Versão semântica do motor de scoring (auditoria / RIPD — registada em cada cálculo)
+    RISK_ENGINE_VERSION: str = "2026.1.0"
+    RISK_WEIGHTS_VERSION: str = "2026.1"
 
     model_config = SettingsConfigDict(
         env_file=".env",

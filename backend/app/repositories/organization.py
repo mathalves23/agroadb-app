@@ -1,9 +1,10 @@
 """Repositório de organizações e membros."""
+
 from __future__ import annotations
 
 import re
 from datetime import datetime, timedelta
-from typing import List, Optional, Sequence
+from typing import Any, List, Optional, Sequence
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -102,3 +103,18 @@ class OrganizationRepository:
             )
         )
         return [row[0] for row in r.all()]
+
+    async def update_ai_governance(
+        self, organization_id: int, patch: dict[str, Any]
+    ) -> Optional[Organization]:
+        org = await self.get(organization_id)
+        if not org:
+            return None
+        if "risk_ai_human_review_required" in patch:
+            org.risk_ai_human_review_required = bool(patch["risk_ai_human_review_required"])
+        if "risk_ai_governance_reference_url" in patch:
+            v = patch["risk_ai_governance_reference_url"]
+            org.risk_ai_governance_reference_url = None if v is None else (str(v).strip() or None)
+        await self.db.flush()
+        await self.db.refresh(org)
+        return org

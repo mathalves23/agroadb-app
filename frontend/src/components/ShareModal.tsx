@@ -1,11 +1,50 @@
 import { useState, useEffect, useCallback } from 'react';
-import { X, Share2, UserPlus, Mail, Check, Trash2, Shield, Eye, Edit3, Crown, Search, AlertCircle, MessageCircle } from 'lucide-react';
+import {
+  X,
+  Share2,
+  UserPlus,
+  Mail,
+  Check,
+  Trash2,
+  Shield,
+  Eye,
+  Edit3,
+  Crown,
+  Search,
+  AlertCircle,
+  MessageCircle,
+  Link2,
+  Copy,
+  Clock,
+  Download,
+} from 'lucide-react';
+import { useAuthStore } from '@/stores/authStore';
+import { investigationService, type GuestLinkPublic } from '@/services/investigationService';
 
 interface ShareModalProps {
   investigationId: number;
   investigationName: string;
   isOpen: boolean;
   onClose: () => void;
+  /** Dono da investigação: criar/listar/revogar links de convidado sem conta. */
+  canManageGuestLinks?: boolean;
+}
+
+function authHeaders(): HeadersInit {
+  const token = useAuthStore.getState().accessToken;
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+function appBasePrefix(): string {
+  const base = (import.meta.env.BASE_URL || '/').replace(/\/+/g, '/');
+  if (base === '/' || base === '') return '';
+  return base.endsWith('/') ? base.slice(0, -1) : base;
+}
+
+function absoluteGuestUrl(guestViewPath: string): string {
+  const prefix = appBasePrefix();
+  const path = guestViewPath.startsWith('/') ? guestViewPath : `/${guestViewPath}`;
+  return `${window.location.origin}${prefix}${path}`;
 }
 
 interface SharedUser {
@@ -17,7 +56,13 @@ interface SharedUser {
   created_at: string;
 }
 
-export default function ShareModal({ investigationId, investigationName, isOpen, onClose }: ShareModalProps) {
+export default function ShareModal({
+  investigationId,
+  investigationName,
+  isOpen,
+  onClose,
+  canManageGuestLinks = false,
+}: ShareModalProps) {
   const [email, setEmail] = useState('');
   const [permission, setPermission] = useState<'view' | 'comment' | 'edit' | 'admin'>('view');
   const [sharedUsers, setSharedUsers] = useState<SharedUser[]>([]);
@@ -26,12 +71,21 @@ export default function ShareModal({ investigationId, investigationName, isOpen,
   const [success, setSuccess] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
 
+  const [guestLinks, setGuestLinks] = useState<GuestLinkPublic[]>([]);
+  const [guestLabel, setGuestLabel] = useState('');
+  const [guestExpiryPreset, setGuestExpiryPreset] = useState<'none' | '7d' | '30d' | 'custom'>('30d');
+  const [guestCustomExpires, setGuestCustomExpires] = useState('');
+  const [guestAllowDownloads, setGuestAllowDownloads] = useState(false);
+  const [guestLoading, setGuestLoading] = useState(false);
+  const [guestCreatedUrl, setGuestCreatedUrl] = useState<string | null>(null);
+  const [guestCreatedToken, setGuestCreatedToken] = useState<string | null>(null);
+
   const loadSharedUsers = useCallback(async () => {
     try {
       const response = await fetch(`/api/v1/collaboration/investigations/${investigationId}/shares`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
+          ...authHeaders(),
+        },
       });
       if (response.ok) {
         const data = await response.json();
@@ -42,11 +96,33 @@ export default function ShareModal({ investigationId, investigationName, isOpen,
     }
   }, [investigationId]);
 
+  const loadGuestLinks = useCallback(async () => {
+    if (!canManageGuestLinks) return;
+    try {
+      const data = await investigationService.listGuestLinks(investigationId);
+      setGuestLinks(data.items || []);
+    } catch {
+      setGuestLinks([]);
+    }
+  }, [canManageGuestLinks, investigationId]);
+
   useEffect(() => {
     if (isOpen) {
       void loadSharedUsers();
+      void loadGuestLinks();
     }
-  }, [isOpen, loadSharedUsers]);
+  }, [isOpen, loadSharedUsers, loadGuestLinks]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setGuestCreatedUrl(null);
+      setGuestCreatedToken(null);
+      setGuestLabel('');
+      setGuestAllowDownloads(false);
+      setGuestExpiryPreset('30d');
+      setGuestCustomExpires('');
+    }
+  }, [isOpen]);
 
   const handleShare = async () => {
     if (!email.trim()) {
@@ -63,7 +139,7 @@ export default function ShareModal({ investigationId, investigationName, isOpen,
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          ...authHeaders(),
         },
         body: JSON.stringify({ email, permission })
       });
@@ -92,8 +168,8 @@ export default function ShareModal({ investigationId, investigationName, isOpen,
       const response = await fetch(`/api/v1/collaboration/investigations/${investigationId}/shares/${sharedWithId}`, {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
+          ...authHeaders(),
+        },
       });
 
       if (response.ok) {
@@ -165,6 +241,63 @@ export default function ShareModal({ investigationId, investigationName, isOpen,
     user.shared_with_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     user.shared_with_email.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const computeGuestExpiresIso = (): string | undefined => {
+    if (guestExpiryPreset === 'none') return undefined;
+    if (guestExpiryPreset === '7d') return new Date(Date.now() + 7 * 864e5).toISOString();
+    if (guestExpiryPreset === '30d') return new Date(Date.now() + 30 * 864e5).toISOString();
+    if (guestExpiryPreset === 'custom' && guestCustomExpires) {
+      const d = new Date(guestCustomExpires);
+      if (!Number.isNaN(d.getTime())) return d.toISOString();
+    }
+    return undefined;
+  };
+
+  const handleCreateGuestLink = async () => {
+    setGuestLoading(true);
+    setError('');
+    setSuccess('');
+    try {
+      const expiresAt = computeGuestExpiresIso();
+      const res = await investigationService.createGuestLink(investigationId, {
+        label: guestLabel.trim() ? guestLabel.trim() : null,
+        expires_at: expiresAt ?? null,
+        allow_downloads: guestAllowDownloads,
+      });
+      setGuestCreatedUrl(absoluteGuestUrl(res.guest_view_path));
+      setGuestCreatedToken(res.token);
+      setSuccess('Link de convidado criado. Copie o URL agora — o token secreto não volta a ser mostrado.');
+      await loadGuestLinks();
+    } catch (err: unknown) {
+      const ax = err as { response?: { data?: { detail?: string } } };
+      const detail = ax.response?.data?.detail;
+      setError(typeof detail === 'string' ? detail : 'Erro ao criar link de convidado');
+    } finally {
+      setGuestLoading(false);
+    }
+  };
+
+  const handleRevokeGuestLink = async (linkId: number) => {
+    if (!confirm('Revogar este link? Quem tiver o URL deixará de conseguir aceder.')) return;
+    setError('');
+    try {
+      await investigationService.revokeGuestLink(investigationId, linkId);
+      setSuccess('Link revogado.');
+      await loadGuestLinks();
+    } catch {
+      setError('Erro ao revogar link');
+    }
+  };
+
+  const copyText = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setSuccess('Copiado para a área de transferência.');
+      setTimeout(() => setSuccess(''), 2500);
+    } catch {
+      setError('Não foi possível copiar para a área de transferência.');
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -268,6 +401,154 @@ export default function ShareModal({ investigationId, investigationName, isOpen,
               </ul>
             </div>
           </div>
+
+          {canManageGuestLinks && (
+            <div className="mb-8 rounded-xl border border-indigo-100 bg-indigo-50/40 p-4">
+              <h3 className="text-sm font-semibold text-gray-900 mb-1 flex items-center gap-2">
+                <Link2 className="h-4 w-4 text-indigo-600" />
+                Link para convidado (data room leve)
+              </h3>
+              <p className="text-xs text-gray-600 mb-4">
+                Partilha só de leitura sem conta AgroADB: URL revogável, prazo opcional, registo de
+                acessos no servidor. Por defeito não permite exportar PDF; active abaixo se o
+                diligente precisar de download.
+              </p>
+
+              {guestCreatedUrl && guestCreatedToken && (
+                <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-3 space-y-2">
+                  <p className="text-xs font-medium text-amber-900">
+                    Guarde este link — o token completo só é mostrado uma vez.
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => void copyText(guestCreatedUrl)}
+                      className="inline-flex items-center gap-1 rounded-md bg-white px-2 py-1 text-xs font-medium text-amber-900 border border-amber-200 hover:bg-amber-100"
+                    >
+                      <Copy className="h-3 w-3" />
+                      Copiar URL
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void copyText(guestCreatedToken)}
+                      className="inline-flex items-center gap-1 rounded-md bg-white px-2 py-1 text-xs font-medium text-amber-900 border border-amber-200 hover:bg-amber-100"
+                    >
+                      <Copy className="h-3 w-3" />
+                      Copiar token
+                    </button>
+                  </div>
+                  <p className="text-[11px] text-amber-800 break-all font-mono">{guestCreatedUrl}</p>
+                </div>
+              )}
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Etiqueta (opcional)</label>
+                  <input
+                    type="text"
+                    value={guestLabel}
+                    onChange={(e) => setGuestLabel(e.target.value)}
+                    placeholder="Ex.: Cliente — Due diligence Q2"
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1 flex items-center gap-1">
+                    <Clock className="h-3 w-3" />
+                    Expiração
+                  </label>
+                  <select
+                    value={guestExpiryPreset}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      if (v === 'none' || v === '7d' || v === '30d' || v === 'custom') setGuestExpiryPreset(v);
+                    }}
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                  >
+                    <option value="none">Sem expiração</option>
+                    <option value="7d">7 dias</option>
+                    <option value="30d">30 dias</option>
+                    <option value="custom">Data e hora…</option>
+                  </select>
+                </div>
+              </div>
+              {guestExpiryPreset === 'custom' && (
+                <div className="mt-3">
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Expira em</label>
+                  <input
+                    type="datetime-local"
+                    value={guestCustomExpires}
+                    onChange={(e) => setGuestCustomExpires(e.target.value)}
+                    className="w-full max-w-xs px-3 py-2 text-sm border border-gray-300 rounded-lg"
+                  />
+                </div>
+              )}
+              <label className="mt-3 flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={guestAllowDownloads}
+                  onChange={(e) => setGuestAllowDownloads(e.target.checked)}
+                  className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                />
+                <Download className="h-4 w-4 text-gray-500" />
+                Permitir exportação PDF por este link
+              </label>
+              <button
+                type="button"
+                onClick={() => void handleCreateGuestLink()}
+                disabled={guestLoading}
+                className="mt-3 px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700 disabled:opacity-50"
+              >
+                {guestLoading ? 'A criar…' : 'Gerar link de convidado'}
+              </button>
+
+              <div className="mt-6 border-t border-indigo-100 pt-4">
+                <h4 className="text-xs font-semibold text-gray-800 mb-2">Links existentes</h4>
+                {guestLinks.length === 0 ? (
+                  <p className="text-xs text-gray-500">Ainda não há links criados.</p>
+                ) : (
+                  <ul className="space-y-2 max-h-48 overflow-y-auto">
+                    {guestLinks.map((gl) => {
+                      const revoked = Boolean(gl.revoked_at);
+                      return (
+                        <li
+                          key={gl.id}
+                          className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs"
+                        >
+                          <div className="min-w-0">
+                            <p className="font-medium text-gray-900 truncate">
+                              {gl.label || `Link #${gl.id}`}
+                              {revoked && (
+                                <span className="ml-2 text-red-600 font-normal">Revogado</span>
+                              )}
+                            </p>
+                            <p className="text-gray-500">
+                              Acessos: {gl.access_count}
+                              {gl.last_access_at
+                                ? ` · Último: ${new Date(gl.last_access_at).toLocaleString()}`
+                                : ''}
+                              {gl.expires_at ? ` · Expira: ${new Date(gl.expires_at).toLocaleString()}` : ''}
+                              {gl.allow_downloads ? ' · PDF permitido' : ' · Só leitura'}
+                            </p>
+                          </div>
+                          {!revoked && (
+                            <button
+                              type="button"
+                              onClick={() => void handleRevokeGuestLink(gl.id)}
+                              className="shrink-0 p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded"
+                              title="Revogar link"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          )}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Shared Users List */}
           <div>

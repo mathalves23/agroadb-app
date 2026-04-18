@@ -4,6 +4,7 @@ Agregador da API v1: monta todos os routers em /api/v1.
 O router de notificações é o mesmo módulo montado duas vezes: prefixo legacy
 e montagem canónica (compatibilidade de URLs antigas).
 """
+
 from fastapi import APIRouter
 
 from app.api.v1.endpoints import (
@@ -22,6 +23,7 @@ from app.api.v1.endpoints import (
     ocr,
     organizations,
     platform,
+    public_guest,
     queue,
     security,
     settings,
@@ -32,6 +34,7 @@ from app.api.v1.endpoints import (
 api_router = APIRouter()
 
 api_router.include_router(platform.router)
+api_router.include_router(public_guest.router, prefix="/public", tags=["Public Guest"])
 api_router.include_router(analytics.router)
 api_router.include_router(auth.router, prefix="/auth", tags=["Authentication"])
 api_router.include_router(users.router, prefix="/users", tags=["Users"])

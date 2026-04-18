@@ -1,9 +1,13 @@
 """
 Investigations Endpoints
 """
-from typing import List
+
+from datetime import datetime
+from typing import List, Optional
+
 from fastapi import APIRouter, HTTPException, Request, status, Query
-from fastapi.responses import StreamingResponse
+from pydantic import BaseModel, Field
+from fastapi.responses import Response, StreamingResponse
 from io import BytesIO
 
 from app.api.v1.deps import DatabaseSession, CurrentUser
@@ -23,10 +27,50 @@ from app.core.config import settings
 from app.core.audit import audit_logger, AuditAction
 from app.schemas.dashboard_statistics import DashboardStatisticsResponse
 from app.services.dashboard_statistics import get_dashboard_statistics_cached
-from app.services.investigation_access import require_investigation_for_user
+from app.services.investigation_access import (
+    require_investigation_for_user,
+    require_investigation_owner_or_superuser,
+)
 from app.services.investigation_enrich_demo import maybe_seed_demo_properties_and_companies
+from app.services.trust_export import build_trust_bundle_zip
+from app.services import investigation_guest_link as guest_link_service
 
 router = APIRouter()
+
+
+async def investigation_to_response(
+    db: DatabaseSession,
+    investigation,
+    current_user: CurrentUser,
+) -> InvestigationResponse:
+    """Enriquece resposta com nome do revisor e permissão para registar revisão do score."""
+    from app.services.collaboration import collaboration_service
+    from app.domain.collaboration import PermissionLevel
+
+    resp = InvestigationResponse.model_validate(investigation)
+    reviewer_name = None
+    rev = getattr(investigation, "risk_score_reviewer", None)
+    if rev is not None:
+        reviewer_name = rev.full_name
+    can_ack = False
+    if current_user.is_superuser or investigation.user_id == current_user.id:
+        can_ack = True
+    elif await collaboration_service.check_permission(
+        db, investigation.id, current_user.id, PermissionLevel.EDIT
+    ):
+        can_ack = True
+    return resp.model_copy(
+        update={
+            "risk_score_reviewer_name": reviewer_name,
+            "can_acknowledge_risk_score_review": can_ack,
+        }
+    )
+
+
+class GuestLinkCreateRequest(BaseModel):
+    expires_at: Optional[datetime] = None
+    label: Optional[str] = Field(None, max_length=255)
+    allow_downloads: bool = False
 
 
 @router.post("", response_model=InvestigationResponse, status_code=status.HTTP_201_CREATED)
@@ -39,7 +83,7 @@ async def create_investigation(
     """Create a new investigation"""
     investigation_repo = InvestigationRepository(db)
     investigation_service = InvestigationService(investigation_repo)
-    
+
     investigation = await investigation_service.create_investigation(
         current_user.id, investigation_data
     )
@@ -80,19 +124,19 @@ async def list_investigations(
 ) -> InvestigationListResponse:
     """List investigations for current user"""
     skip = (page - 1) * page_size
-    
+
     investigation_repo = InvestigationRepository(db)
     investigation_service = InvestigationService(investigation_repo)
-    
+
     investigations, total = await investigation_service.list_investigations(
         current_user.id,
         skip=skip,
         limit=page_size,
         is_superuser=current_user.is_superuser,
     )
-    
+
     total_pages = (total + page_size - 1) // page_size
-    
+
     return InvestigationListResponse(
         items=[InvestigationResponse.model_validate(inv) for inv in investigations],
         total=total,
@@ -133,9 +177,11 @@ async def list_investigations_cursor(
 
     # Convert items to response format
     result.items = [
-        InvestigationResponse.model_validate(item).model_dump()
-        if hasattr(item, '__dict__') and not isinstance(item, dict)
-        else item
+        (
+            InvestigationResponse.model_validate(item).model_dump()
+            if hasattr(item, "__dict__") and not isinstance(item, dict)
+            else item
+        )
         for item in result.items
     ]
 
@@ -169,12 +215,50 @@ async def get_investigation(
     """Get investigation by ID"""
     investigation_repo = InvestigationRepository(db)
     investigation_service = InvestigationService(investigation_repo)
-    
+
     investigation = await investigation_service.get_investigation(
         investigation_id, current_user.id, current_user.is_superuser
     )
-    
-    return InvestigationResponse.model_validate(investigation)
+
+    return await investigation_to_response(db, investigation, current_user)
+
+
+@router.post(
+    "/{investigation_id}/risk-score-review",
+    response_model=InvestigationResponse,
+    summary="Registar revisão humana do score de risco (governança IA)",
+)
+async def acknowledge_risk_score_review(
+    investigation_id: int,
+    current_user: CurrentUser,
+    db: DatabaseSession,
+    request: Request,
+) -> InvestigationResponse:
+    investigation_repo = InvestigationRepository(db)
+    investigation_service = InvestigationService(investigation_repo)
+    investigation = await investigation_service.acknowledge_risk_score_review(
+        investigation_id, current_user.id, current_user.is_superuser
+    )
+    await audit_logger.log(
+        db=db,
+        action=AuditAction.INVESTIGATION_RISK_SCORE_REVIEWED,
+        user_id=current_user.id,
+        username=current_user.username,
+        resource_type="investigation",
+        resource_id=str(investigation_id),
+        details={
+            "reviewed_at": (
+                investigation.risk_score_reviewed_at.isoformat()
+                if investigation.risk_score_reviewed_at
+                else None
+            )
+        },
+        ip_address=request.client.host if request.client else None,
+        user_agent=request.headers.get("user-agent"),
+        method=request.method,
+        endpoint=str(request.url.path),
+    )
+    return await investigation_to_response(db, investigation, current_user)
 
 
 @router.patch("/{investigation_id}", response_model=InvestigationResponse)
@@ -188,7 +272,7 @@ async def update_investigation(
     """Update investigation"""
     investigation_repo = InvestigationRepository(db)
     investigation_service = InvestigationService(investigation_repo)
-    
+
     investigation = await investigation_service.update_investigation(
         investigation_id,
         current_user.id,
@@ -224,7 +308,7 @@ async def delete_investigation(
     """Delete investigation"""
     investigation_repo = InvestigationRepository(db)
     investigation_service = InvestigationService(investigation_repo)
-    
+
     await investigation_service.delete_investigation(
         investigation_id, current_user.id, current_user.is_superuser
     )
@@ -267,9 +351,17 @@ async def enrich_investigation(
         investigation_id, current_user.id, current_user.is_superuser
     )
 
-    doc = (investigation.target_cpf_cnpj or "").replace(".", "").replace("-", "").replace("/", "").strip()
+    doc = (
+        (investigation.target_cpf_cnpj or "")
+        .replace(".", "")
+        .replace("-", "")
+        .replace("/", "")
+        .strip()
+    )
     if not doc:
-        raise HTTPException(status_code=400, detail="Investigação não possui CPF/CNPJ para enriquecer")
+        raise HTTPException(
+            status_code=400, detail="Investigação não possui CPF/CNPJ para enriquecer"
+        )
 
     enriched: dict = {}
     description_parts: list[str] = []
@@ -278,6 +370,7 @@ async def enrich_investigation(
         # --- CPF ---
         # 1) Receita Federal CPF (situação cadastral + nome)
         from app.services.receita_cpf import ReceitaCPFService
+
         try:
             cpf_svc = ReceitaCPFService()
             cpf_data = await cpf_svc.consultar(doc)
@@ -299,9 +392,12 @@ async def enrich_investigation(
 
         # 2) BrasilAPI CNPJ lookup não se aplica a CPF, mas podemos buscar nome no IBGE
         from app.services.ibge_api import IBGEService
+
         try:
             ibge_svc = IBGEService()
-            primeiro_nome = (enriched.get("target_name") or investigation.target_name or "").split()[0]
+            primeiro_nome = (
+                enriched.get("target_name") or investigation.target_name or ""
+            ).split()[0]
             if primeiro_nome and len(primeiro_nome) >= 2:
                 nome_data = await ibge_svc.nomes(primeiro_nome)
                 if nome_data and isinstance(nome_data, list) and len(nome_data) > 0:
@@ -309,13 +405,16 @@ async def enrich_investigation(
                     if freq:
                         total = sum(r.get("frequencia", 0) for r in freq if isinstance(r, dict))
                         if total > 0:
-                            description_parts.append(f"IBGE: Nome '{primeiro_nome}' — {total:,} registros no Brasil")
+                            description_parts.append(
+                                f"IBGE: Nome '{primeiro_nome}' — {total:,} registros no Brasil"
+                            )
         except Exception:
             pass
 
     elif len(doc) == 14:
         # --- CNPJ ---
         from app.services.receita_cnpj import ReceitaCNPJService
+
         try:
             cnpj_svc = ReceitaCNPJService()
             cnpj_data = await cnpj_svc.consultar(doc)
@@ -343,9 +442,13 @@ async def enrich_investigation(
                 parts.append(f"CNAE: {atividade['descricao']}")
             endereco = cnpj_data.get("endereco")
             if isinstance(endereco, dict):
-                end_parts = [endereco.get("logradouro"), endereco.get("numero"),
-                             endereco.get("bairro"), endereco.get("municipio"),
-                             endereco.get("uf")]
+                end_parts = [
+                    endereco.get("logradouro"),
+                    endereco.get("numero"),
+                    endereco.get("bairro"),
+                    endereco.get("municipio"),
+                    endereco.get("uf"),
+                ]
                 end_str = ", ".join(p for p in end_parts if p)
                 if end_str:
                     parts.append(f"Endereço: {end_str}")
@@ -370,7 +473,9 @@ async def enrich_investigation(
         existing_desc = investigation.target_description or ""
         new_desc = "\n".join(description_parts)
         if existing_desc:
-            enriched["target_description"] = existing_desc + "\n\n--- Dados Enriquecidos ---\n" + new_desc
+            enriched["target_description"] = (
+                existing_desc + "\n\n--- Dados Enriquecidos ---\n" + new_desc
+            )
         else:
             enriched["target_description"] = new_desc
 
@@ -380,7 +485,9 @@ async def enrich_investigation(
 
     # Não sobrescrever nome se já tem um nome real (não auto-gerado)
     current_name = investigation.target_name or ""
-    is_auto_name = current_name.startswith("Investigação ") and any(c.isdigit() for c in current_name)
+    is_auto_name = current_name.startswith("Investigação ") and any(
+        c.isdigit() for c in current_name
+    )
     if enriched.get("target_name") and (is_auto_name or not current_name.strip()):
         pass  # Manter o nome enriquecido
     else:
@@ -411,11 +518,11 @@ async def get_investigation_properties(
     """Get properties found in investigation"""
     investigation_repo = InvestigationRepository(db)
     investigation_service = InvestigationService(investigation_repo)
-    
+
     investigation = await investigation_service.get_investigation(
         investigation_id, current_user.id, current_user.is_superuser
     )
-    
+
     return [PropertyResponse.model_validate(prop) for prop in investigation.properties]
 
 
@@ -428,11 +535,11 @@ async def get_investigation_lease_contracts(
     """Get lease contracts found in investigation"""
     investigation_repo = InvestigationRepository(db)
     investigation_service = InvestigationService(investigation_repo)
-    
+
     investigation = await investigation_service.get_investigation(
         investigation_id, current_user.id, current_user.is_superuser
     )
-    
+
     return [LeaseContractResponse.model_validate(lc) for lc in investigation.lease_contracts]
 
 
@@ -445,11 +552,11 @@ async def get_investigation_companies(
     """Get companies found in investigation"""
     investigation_repo = InvestigationRepository(db)
     investigation_service = InvestigationService(investigation_repo)
-    
+
     investigation = await investigation_service.get_investigation(
         investigation_id, current_user.id, current_user.is_superuser
     )
-    
+
     return [CompanyResponse.model_validate(company) for company in investigation.companies]
 
 
@@ -461,7 +568,7 @@ async def export_investigation_excel(
 ) -> StreamingResponse:
     """
     Export investigation data to Excel file (.xlsx)
-    
+
     Generates a multi-sheet Excel workbook with:
     - Resumo: Investigation summary and overview
     - Propriedades: Properties found
@@ -470,7 +577,7 @@ async def export_investigation_excel(
     """
     legal_query_repo = LegalQueryRepository(db)
 
-    investigation = await require_investigation_for_user(
+    investigation = await require_investigation_owner_or_superuser(
         db,
         investigation_id,
         current_user.id,
@@ -479,15 +586,15 @@ async def export_investigation_excel(
     )
 
     legal_queries = await legal_query_repo.list_by_investigation(investigation_id)
-    
+
     # Generate Excel file
     excel_file = ExcelExportService.generate_investigation_excel(
         investigation, investigation.properties, investigation.companies, legal_queries
     )
-    
+
     # Prepare filename
     filename = f"investigacao_{investigation.id}_{investigation.target_name.replace(' ', '_')}_{investigation.created_at.strftime('%Y%m%d')}.xlsx"
-    
+
     # Return as streaming response
     return StreamingResponse(
         excel_file,
@@ -506,7 +613,7 @@ async def export_investigation_csv(
 ) -> StreamingResponse:
     """
     Export investigation summary data to CSV file
-    
+
     Generates a CSV file with main investigation data including:
     - Investigation details (name, CPF/CNPJ, status)
     - Summary counts (properties, companies, legal queries)
@@ -514,7 +621,7 @@ async def export_investigation_csv(
     """
     legal_query_repo = LegalQueryRepository(db)
 
-    investigation = await require_investigation_for_user(
+    investigation = await require_investigation_owner_or_superuser(
         db,
         investigation_id,
         current_user.id,
@@ -528,10 +635,10 @@ async def export_investigation_csv(
     csv_file = ExcelExportService.generate_investigation_csv(
         investigation, investigation.properties, investigation.companies, legal_queries
     )
-    
+
     # Prepare filename
     filename = f"investigacao_{investigation.id}_{investigation.target_name.replace(' ', '_')}_{investigation.created_at.strftime('%Y%m%d')}.csv"
-    
+
     # Return as streaming response
     return StreamingResponse(
         csv_file,
@@ -550,7 +657,7 @@ async def export_investigation_pdf(
 ) -> StreamingResponse:
     """
     Export investigation to professional PDF report
-    
+
     Generates a comprehensive PDF report with:
     - Professional cover page with logo
     - Table of contents
@@ -563,7 +670,7 @@ async def export_investigation_pdf(
     """
     legal_query_repo = LegalQueryRepository(db)
 
-    investigation = await require_investigation_for_user(
+    investigation = await require_investigation_owner_or_superuser(
         db,
         investigation_id,
         current_user.id,
@@ -574,10 +681,10 @@ async def export_investigation_pdf(
     # Get related data (already loaded from get_with_relations)
     properties = investigation.properties or []
     companies = investigation.companies or []
-    
+
     # Get legal queries for this investigation
     legal_queries = await legal_query_repo.list_by_investigation(investigation_id)
-    
+
     # Convert to dictionaries for PDF generation
     investigation_dict = {
         "id": investigation.id,
@@ -591,7 +698,7 @@ async def export_investigation_pdf(
         "companies_found": len(companies),
         "lease_contracts_found": investigation.lease_contracts_found or 0,
     }
-    
+
     properties_list = [
         {
             "name": p.property_name or "N/A",
@@ -602,7 +709,7 @@ async def export_investigation_pdf(
         }
         for p in properties
     ]
-    
+
     companies_list = [
         {
             "name": c.trade_name or c.corporate_name or "N/A",
@@ -613,7 +720,7 @@ async def export_investigation_pdf(
         }
         for c in companies
     ]
-    
+
     legal_queries_list = [
         {
             "id": q.id,
@@ -624,18 +731,22 @@ async def export_investigation_pdf(
         }
         for q in legal_queries
     ]
-    
+
     # Generate PDF
     pdf_service = PDFExportService()
     pdf_buffer = pdf_service.generate_investigation_pdf(
         investigation_dict, properties_list, companies_list, legal_queries_list
     )
-    
+
     # Prepare filename
-    target_name = investigation.target_name.replace(" ", "_") if investigation.target_name else "investigacao"
-    created_date = investigation.created_at.strftime("%Y%m%d") if investigation.created_at else "sem_data"
+    target_name = (
+        investigation.target_name.replace(" ", "_") if investigation.target_name else "investigacao"
+    )
+    created_date = (
+        investigation.created_at.strftime("%Y%m%d") if investigation.created_at else "sem_data"
+    )
     filename = f"relatorio_{investigation.id}_{target_name}_{created_date}.pdf"
-    
+
     # Audit log
     await audit_logger.log(
         db=db,
@@ -650,7 +761,7 @@ async def export_investigation_pdf(
         method="GET",
         endpoint=f"/investigations/{investigation_id}/export/pdf",
     )
-    
+
     # Return as streaming response
     return StreamingResponse(
         pdf_buffer,
@@ -660,3 +771,160 @@ async def export_investigation_pdf(
         },
     )
 
+
+@router.get("/{investigation_id}/export/trust-bundle")
+async def export_investigation_trust_bundle(
+    investigation_id: int,
+    request: Request,
+    current_user: CurrentUser,
+    db: DatabaseSession,
+) -> Response:
+    """
+    Pacote de evidência (ZIP) para auditorias / RFPs: `relatorio.pdf`, `manifest.json`, `README_PACOTE.txt`.
+
+    O manifesto inclui SHA-256 do PDF, fingerprints das consultas legais (`legal_queries`),
+    linha temporal de `audit_logs` com recurso `investigation`, e referência configurável à retenção/LGPD.
+    """
+    investigation = await require_investigation_owner_or_superuser(
+        db,
+        investigation_id,
+        current_user.id,
+        is_superuser=current_user.is_superuser,
+        with_relations=True,
+    )
+
+    zip_buf, filename = await build_trust_bundle_zip(
+        db,
+        investigation_id=investigation_id,
+        investigation=investigation,
+        current_user_id=current_user.id,
+        current_username=current_user.username,
+    )
+    payload = zip_buf.getvalue()
+
+    await audit_logger.log(
+        db=db,
+        action=AuditAction.INVESTIGATION_TRUST_EXPORTED,
+        user_id=current_user.id,
+        username=current_user.username,
+        resource_type="investigation",
+        resource_id=str(investigation_id),
+        details={
+            "export_format": "trust_bundle_zip",
+            "filename": filename,
+            "zip_bytes": len(payload),
+        },
+        ip_address=request.client.host if request.client else None,
+        user_agent=request.headers.get("user-agent"),
+        method=request.method,
+        endpoint=str(request.url.path),
+    )
+
+    return Response(
+        content=payload,
+        media_type="application/zip",
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"',
+        },
+    )
+
+
+@router.post(
+    "/{investigation_id}/guest-links", summary="Criar link de convidado (token mostrado uma vez)"
+)
+async def create_investigation_guest_link(
+    investigation_id: int,
+    body: GuestLinkCreateRequest,
+    request: Request,
+    current_user: CurrentUser,
+    db: DatabaseSession,
+):
+    await require_investigation_owner_or_superuser(
+        db,
+        investigation_id,
+        current_user.id,
+        is_superuser=current_user.is_superuser,
+        with_relations=False,
+    )
+    row, raw_token = await guest_link_service.create_guest_link(
+        db,
+        investigation_id=investigation_id,
+        created_by_id=current_user.id,
+        expires_at=body.expires_at,
+        label=body.label,
+        allow_downloads=body.allow_downloads,
+    )
+    await audit_logger.log(
+        db=db,
+        action=AuditAction.INVESTIGATION_GUEST_LINK_CREATED,
+        user_id=current_user.id,
+        username=current_user.username,
+        resource_type="investigation",
+        resource_id=str(investigation_id),
+        details={
+            "guest_link_id": row.id,
+            "allow_downloads": row.allow_downloads,
+            "expires_at": row.expires_at.isoformat() if row.expires_at else None,
+        },
+        ip_address=request.client.host if request.client else None,
+        user_agent=request.headers.get("user-agent"),
+        method=request.method,
+        endpoint=str(request.url.path),
+    )
+    return {
+        "token": raw_token,
+        "link": row.to_public_dict(),
+        "guest_view_path": f"/guest/investigation?t={raw_token}",
+    }
+
+
+@router.get("/{investigation_id}/guest-links", summary="Listar links de convidado")
+async def list_investigation_guest_links(
+    investigation_id: int,
+    current_user: CurrentUser,
+    db: DatabaseSession,
+):
+    await require_investigation_owner_or_superuser(
+        db,
+        investigation_id,
+        current_user.id,
+        is_superuser=current_user.is_superuser,
+        with_relations=False,
+    )
+    rows = await guest_link_service.list_guest_links(db, investigation_id)
+    return {"items": [r.to_public_dict() for r in rows]}
+
+
+@router.delete("/{investigation_id}/guest-links/{link_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def revoke_investigation_guest_link(
+    investigation_id: int,
+    link_id: int,
+    request: Request,
+    current_user: CurrentUser,
+    db: DatabaseSession,
+):
+    await require_investigation_owner_or_superuser(
+        db,
+        investigation_id,
+        current_user.id,
+        is_superuser=current_user.is_superuser,
+        with_relations=False,
+    )
+    link = await guest_link_service.get_guest_link_by_id(db, investigation_id, link_id)
+    if not link:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Link não encontrado")
+    await guest_link_service.revoke_guest_link(db, link)
+    await audit_logger.log(
+        db=db,
+        action=AuditAction.INVESTIGATION_GUEST_LINK_REVOKED,
+        user_id=current_user.id,
+        username=current_user.username,
+        resource_type="investigation",
+        resource_id=str(investigation_id),
+        details={"guest_link_id": link_id},
+        ip_address=request.client.host if request.client else None,
+        user_agent=request.headers.get("user-agent"),
+        method=request.method,
+        endpoint=str(request.url.path),
+    )
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

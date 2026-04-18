@@ -1,4 +1,4 @@
-import { Zap, Loader2, Download, FileSpreadsheet, FileText } from 'lucide-react'
+import { Zap, Loader2, Download, FileSpreadsheet, FileText, Archive } from 'lucide-react'
 
 interface QuickScanPanelProps {
   running: boolean
@@ -10,6 +10,7 @@ interface QuickScanPanelProps {
   onExportPDF: () => void
   onExportExcel?: () => void
   onExportCSV?: () => void
+  onExportTrustBundle?: () => void
   exportLoading?: boolean
 }
 
@@ -23,6 +24,7 @@ export function QuickScanPanel({
   onExportPDF,
   onExportExcel,
   onExportCSV,
+  onExportTrustBundle,
   exportLoading = false,
 }: QuickScanPanelProps) {
   return (
@@ -81,6 +83,22 @@ export function QuickScanPanel({
               <FileText className="h-4 w-4" />
             )}
             Exportar CSV
+          </button>
+        )}
+        {onExportTrustBundle && (
+          <button
+            type="button"
+            onClick={onExportTrustBundle}
+            disabled={exportLoading}
+            title="PDF + manifesto JSON + README para auditorias e RFPs"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium border border-violet-200 text-violet-800 hover:bg-violet-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {exportLoading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Archive className="h-4 w-4" />
+            )}
+            Pacote de evidência
           </button>
         )}
       </div>

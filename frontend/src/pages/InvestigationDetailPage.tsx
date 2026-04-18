@@ -15,6 +15,7 @@ import {
   Share2,
 } from 'lucide-react'
 import { investigationService } from '@/services/investigationService'
+import { useAuthStore } from '@/stores/authStore'
 import { legalService } from '@/services/legalService'
 import { LegalQueriesTab } from '@/components/legal/LegalQueriesTab'
 import {
@@ -29,6 +30,7 @@ import {
   NetworkGraph,
   RiskScoreCard,
   PatternDetectionCard,
+  type RiskGovernanceInfo,
 } from '@/components/investigation'
 import ShareModal from '@/components/ShareModal'
 import CommentThread from '@/components/CommentThread'
@@ -126,20 +128,8 @@ export default function InvestigationDetailPage() {
 
   // Collaboration states
   const [shareModalOpen, setShareModalOpen] = useState(false);
-  const [currentUserId, setCurrentUserId] = useState<number | null>(null);
-
-  // Get current user ID from localStorage or auth context
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      try {
-        const payload = JSON.parse(atob(token.split('.')[1]));
-        setCurrentUserId(payload.user_id || payload.sub || null);
-      } catch (e) {
-        console.error('Failed to parse token', e);
-      }
-    }
-  }, []);
+  const user = useAuthStore((s) => s.user);
+  const currentUserId = user?.id ?? null;
 
   const formatSummaryValue = (value: unknown): string => {
     if (value === null || value === undefined) {
@@ -249,6 +239,14 @@ export default function InvestigationDetailPage() {
     queryKey: ['network-analysis', id],
     queryFn: () => investigationService.getNetworkAnalysis(Number(id)),
     enabled: !!id && activeTab === 'network',
+  })
+
+  const riskReviewMutation = useMutation({
+    mutationFn: () => investigationService.acknowledgeRiskScoreReview(Number(id)),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['investigation', id] })
+      void queryClient.invalidateQueries({ queryKey: ['risk-score', id] })
+    },
   })
 
   const dataJudConfigured = integrationStatus?.datajud?.configured ?? true
@@ -786,6 +784,27 @@ export default function InvestigationDetailPage() {
     }
   }, [id, investigation])
 
+  const exportTrustBundle = useCallback(async () => {
+    if (!id) return
+    setExportLoading(true)
+    try {
+      const blob = await investigationService.exportTrustBundle(Number(id))
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `agroadb_evidencia_inv_${id}_${(investigation?.target_name || 'investigacao').replace(/\s/g, '_').slice(0, 60)}_${new Date().toISOString().slice(0, 10)}.zip`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      window.URL.revokeObjectURL(url)
+    } catch (err) {
+      const axiosErr = err as AxiosLikeError
+      setErrorMessage(axiosErr?.response?.data?.detail || 'Erro ao gerar pacote de evidência')
+    } finally {
+      setExportLoading(false)
+    }
+  }, [id, investigation])
+
   const sncrSituacaoMutation = useMutation({
     mutationFn: (codigo: string) => legalService.conectaSncrSituacao(codigo, Number(id)),
     onSuccess: (data) => {
@@ -1256,6 +1275,7 @@ export default function InvestigationDetailPage() {
             onExportPDF={exportPDF}
             onExportExcel={handleExportExcel}
             onExportCSV={handleExportCSV}
+            onExportTrustBundle={exportTrustBundle}
             exportLoading={exportLoading}
           />
           <p className="text-xs text-gray-500 max-w-3xl leading-relaxed">
@@ -2455,6 +2475,14 @@ export default function InvestigationDetailPage() {
                       : []) as string[]
                   }
                   timestamp={(riskScore as Record<string, unknown>).timestamp as string | undefined}
+                  governance={
+                    (riskScore as Record<string, unknown>).governance as RiskGovernanceInfo | undefined
+                  }
+                  riskReviewRecordedAt={investigation.risk_score_reviewed_at ?? null}
+                  riskReviewerName={investigation.risk_score_reviewer_name ?? null}
+                  canAcknowledgeRiskReview={investigation.can_acknowledge_risk_score_review === true}
+                  riskReviewSubmitting={riskReviewMutation.isPending}
+                  onAcknowledgeRiskReview={() => riskReviewMutation.mutate()}
                 />
               )}
               {(() => {
@@ -2620,6 +2648,10 @@ export default function InvestigationDetailPage() {
           investigationName={investigation.target_name}
           isOpen={shareModalOpen}
           onClose={() => setShareModalOpen(false)}
+          canManageGuestLinks={
+            !!user &&
+            (investigation.user_id === user.id || user.is_superuser === true)
+          }
         />
       )}
     </div>

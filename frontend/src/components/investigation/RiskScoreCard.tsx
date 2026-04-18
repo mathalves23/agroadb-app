@@ -1,4 +1,17 @@
-import { AlertTriangle, CheckCircle, TrendingUp, Shield, Clock } from 'lucide-react'
+import { useState } from 'react'
+import {
+  AlertTriangle,
+  CheckCircle,
+  TrendingUp,
+  Shield,
+  Clock,
+  Scale,
+  ChevronDown,
+  ChevronUp,
+  ExternalLink,
+  UserCheck,
+  Loader2,
+} from 'lucide-react'
 
 interface RiskIndicator {
   name: string
@@ -6,6 +19,20 @@ interface RiskIndicator {
   weight: number
   description: string
   severity: 'low' | 'medium' | 'high' | 'critical'
+}
+
+export type RiskGovernanceInfo = {
+  engine_version?: string
+  weights_version?: string
+  methodology_summary_pt?: string
+  human_review_required?: boolean
+  human_review_basis?: string | null
+  governance_reference_url?: string | null
+  legal_notice_pt?: string
+  organization_id?: number | null
+  calibration?: Record<string, unknown>
+  indicator_weights?: Record<string, number>
+  app_release_version?: string
 }
 
 interface RiskScoreCardProps {
@@ -16,6 +43,12 @@ interface RiskScoreCardProps {
   patternsDetected: string[]
   recommendations: string[]
   timestamp?: string
+  governance?: RiskGovernanceInfo | null
+  riskReviewRecordedAt?: string | null
+  riskReviewerName?: string | null
+  canAcknowledgeRiskReview?: boolean
+  riskReviewSubmitting?: boolean
+  onAcknowledgeRiskReview?: () => void
 }
 
 export function RiskScoreCard({
@@ -26,7 +59,14 @@ export function RiskScoreCard({
   patternsDetected,
   recommendations,
   timestamp,
+  governance,
+  riskReviewRecordedAt,
+  riskReviewerName,
+  canAcknowledgeRiskReview = false,
+  riskReviewSubmitting = false,
+  onAcknowledgeRiskReview,
 }: RiskScoreCardProps) {
+  const [govOpen, setGovOpen] = useState(false)
   // Cores e ícones por nível de risco
   const getRiskColor = (level: string) => {
     switch (level) {
@@ -92,6 +132,101 @@ export function RiskScoreCard({
 
   return (
     <div className="space-y-6">
+      {riskReviewRecordedAt ? (
+        <div
+          className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-emerald-950"
+          role="status"
+        >
+          <div className="flex items-start gap-3">
+            <UserCheck className="h-5 w-5 shrink-0 text-emerald-700 mt-0.5" aria-hidden />
+            <div>
+              <p className="text-sm font-semibold">Revisão humana do score registada</p>
+              <p className="text-xs mt-1 text-emerald-900/90">
+                {riskReviewerName ? <span>{riskReviewerName} · </span> : null}
+                <time dateTime={riskReviewRecordedAt}>
+                  {new Date(riskReviewRecordedAt).toLocaleString('pt-BR')}
+                </time>
+              </p>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {governance?.human_review_required && !riskReviewRecordedAt ? (
+        <div
+          className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-amber-950"
+          role="status"
+        >
+          <div className="flex items-start gap-3">
+            <Scale className="h-5 w-5 shrink-0 text-amber-700 mt-0.5" aria-hidden />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold">Revisão humana obrigatória (política da organização)</p>
+              <p className="text-xs mt-1 text-amber-900/90 leading-relaxed">
+                {governance.human_review_basis ||
+                  'Valide este output automatizado antes de decisões de crédito, diligência final ou efeitos jurídicos, em linha com boas práticas da ANPD e documentação interna (RIPD/DPIA).'}
+              </p>
+              {governance.governance_reference_url ? (
+                <a
+                  href={governance.governance_reference_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-xs font-medium text-amber-900 underline mt-2"
+                >
+                  Referência de governança / RIPD
+                  <ExternalLink className="h-3 w-3" />
+                </a>
+              ) : null}
+              {!riskReviewRecordedAt && canAcknowledgeRiskReview && onAcknowledgeRiskReview ? (
+                <button
+                  type="button"
+                  onClick={onAcknowledgeRiskReview}
+                  disabled={riskReviewSubmitting}
+                  className="mt-3 inline-flex items-center gap-2 rounded-lg bg-amber-800 px-3 py-2 text-xs font-semibold text-white hover:bg-amber-900 disabled:opacity-60"
+                >
+                  {riskReviewSubmitting ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
+                  ) : (
+                    <UserCheck className="h-3.5 w-3.5" aria-hidden />
+                  )}
+                  Registar revisão do score
+                </button>
+              ) : null}
+              {!riskReviewRecordedAt && governance.human_review_required && !canAcknowledgeRiskReview ? (
+                <p className="text-xs mt-2 text-amber-800/90">
+                  Apenas o dono da investigação ou utilizadores com permissão de edição podem registar a
+                  revisão na plataforma.
+                </p>
+              ) : null}
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {!riskReviewRecordedAt &&
+      canAcknowledgeRiskReview &&
+      onAcknowledgeRiskReview &&
+      !governance?.human_review_required ? (
+        <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-slate-800">
+          <p className="text-xs text-slate-600 mb-2">
+            Registo opcional: confirme na plataforma que reviu o score automatizado (trilho de auditoria
+            interna).
+          </p>
+          <button
+            type="button"
+            onClick={onAcknowledgeRiskReview}
+            disabled={riskReviewSubmitting}
+            className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-800 hover:bg-slate-100 disabled:opacity-60"
+          >
+            {riskReviewSubmitting ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
+            ) : (
+              <UserCheck className="h-3.5 w-3.5" aria-hidden />
+            )}
+            Registar revisão do score
+          </button>
+        </div>
+      ) : null}
+
       {/* Score Principal */}
       <div className="bg-white rounded-xl border border-gray-200 p-6">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
@@ -149,6 +284,52 @@ export function RiskScoreCard({
           </div>
         </div>
       </div>
+
+      {governance && (
+        <div className="bg-slate-50 rounded-xl border border-slate-200 overflow-hidden">
+          <button
+            type="button"
+            onClick={() => setGovOpen(!govOpen)}
+            className="w-full flex items-center justify-between px-4 py-3 text-left text-sm font-semibold text-slate-800 hover:bg-slate-100/80 transition"
+          >
+            <span className="flex items-center gap-2">
+              <Scale className="h-4 w-4 text-slate-600" />
+              Transparência e governança do modelo
+            </span>
+            {govOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+          </button>
+          {govOpen && (
+            <div className="px-4 pb-4 space-y-3 text-xs text-slate-700 border-t border-slate-200 pt-3">
+              <dl className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div>
+                  <dt className="text-slate-500">Versão do motor de risco</dt>
+                  <dd className="font-mono font-medium">{governance.engine_version ?? '—'}</dd>
+                </div>
+                <div>
+                  <dt className="text-slate-500">Versão dos pesos</dt>
+                  <dd className="font-mono font-medium">{governance.weights_version ?? '—'}</dd>
+                </div>
+                <div>
+                  <dt className="text-slate-500">Versão da aplicação</dt>
+                  <dd className="font-mono font-medium">{governance.app_release_version ?? '—'}</dd>
+                </div>
+                <div>
+                  <dt className="text-slate-500">Impressão digital da calibração</dt>
+                  <dd className="font-mono font-medium">
+                    {String((governance.calibration as Record<string, unknown> | undefined)?.config_fingerprint_sha256_16 ?? '—')}
+                  </dd>
+                </div>
+              </dl>
+              {governance.methodology_summary_pt ? (
+                <p className="leading-relaxed text-slate-600">{governance.methodology_summary_pt}</p>
+              ) : null}
+              {governance.legal_notice_pt ? (
+                <p className="text-slate-500 italic leading-relaxed">{governance.legal_notice_pt}</p>
+              ) : null}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Indicadores de Risco */}
       <div className="bg-white rounded-xl border border-gray-200 p-6">

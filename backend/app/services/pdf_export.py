@@ -2,11 +2,12 @@
 PDF Export Service for Investigations
 Generates professional PDF reports using ReportLab
 """
+
 import io
 import logging
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional, Any, Type
 
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
@@ -55,20 +56,43 @@ class NumberedCanvas(canvas.Canvas):
         """Draw page number and footer"""
         self.setFont("Helvetica", 9)
         self.setFillColor(colors.grey)
-        
+
         # Page number
         page_num = f"Página {self._pageNumber} de {page_count}"
         self.drawRightString(A4[0] - 2 * cm, 1.5 * cm, page_num)
-        
+
         # Footer
         footer_text = f"AgroADB - Relatório de Investigação - Gerado em {datetime.now().strftime('%d/%m/%Y %H:%M')}"
         self.drawString(2 * cm, 1.5 * cm, footer_text)
-        
+
         # Header line (except first page)
         if self._pageNumber > 1:
             self.setStrokeColor(colors.HexColor("#10b981"))
             self.setLineWidth(1)
             self.line(2 * cm, A4[1] - 2.5 * cm, A4[0] - 2 * cm, A4[1] - 2.5 * cm)
+
+
+def _watermarked_canvas_class(watermark_lines: List[str]) -> Type[NumberedCanvas]:
+    """Canvas que desenha marca d'água diagonal (ex.: PDF de convidado / data room)."""
+
+    class WatermarkedNumberedCanvas(NumberedCanvas):
+        def draw_page_number(self, page_count):
+            super().draw_page_number(page_count)
+            if not watermark_lines:
+                return
+            self.saveState()
+            self.setFont("Helvetica-Bold", 28)
+            self.setFillGray(0.82)
+            text = "  |  ".join(watermark_lines)
+            if len(text) > 100:
+                text = text[:97] + "…"
+            cx, cy = A4[0] / 2, A4[1] / 2
+            self.translate(cx, cy)
+            self.rotate(30)
+            self.drawCentredString(0, 0, text)
+            self.restoreState()
+
+    return WatermarkedNumberedCanvas
 
 
 class PDFExportService:
@@ -146,21 +170,23 @@ class PDFExportService:
         properties: List[Dict[str, Any]],
         companies: List[Dict[str, Any]],
         legal_queries: List[Dict[str, Any]],
+        *,
+        watermark_lines: Optional[List[str]] = None,
     ) -> io.BytesIO:
         """
         Generate a comprehensive PDF report for an investigation
-        
+
         Args:
             investigation: Investigation data
             properties: List of properties found
             companies: List of companies found
             legal_queries: List of legal queries performed
-            
+
         Returns:
             BytesIO object containing the PDF
         """
         buffer = io.BytesIO()
-        
+
         # Create document with margins
         doc = SimpleDocTemplate(
             buffer,
@@ -181,15 +207,21 @@ class PDFExportService:
         # Table of contents
         toc = TableOfContents()
         toc.levelStyles = [
-            ParagraphStyle(name='TOCHeading1', fontSize=14, leftIndent=0, spaceBefore=10, spaceAfter=2),
-            ParagraphStyle(name='TOCHeading2', fontSize=12, leftIndent=20, spaceBefore=5, spaceAfter=2),
+            ParagraphStyle(
+                name="TOCHeading1", fontSize=14, leftIndent=0, spaceBefore=10, spaceAfter=2
+            ),
+            ParagraphStyle(
+                name="TOCHeading2", fontSize=12, leftIndent=20, spaceBefore=5, spaceAfter=2
+            ),
         ]
         story.append(Paragraph("Índice", self.styles["CustomSubtitle"]))
         story.append(toc)
         story.append(PageBreak())
 
         # Executive summary
-        story.extend(self._create_executive_summary(investigation, properties, companies, legal_queries))
+        story.extend(
+            self._create_executive_summary(investigation, properties, companies, legal_queries)
+        )
         story.append(PageBreak())
 
         # Investigation details
@@ -217,8 +249,11 @@ class PDFExportService:
             story.extend(self._create_charts_section(legal_queries))
 
         # Build PDF
-        doc.multiBuild(story, canvasmaker=NumberedCanvas)
-        
+        canvas_cls: Type[NumberedCanvas] = (
+            _watermarked_canvas_class(watermark_lines) if watermark_lines else NumberedCanvas
+        )
+        doc.multiBuild(story, canvasmaker=canvas_cls)
+
         buffer.seek(0)
         return buffer
 
@@ -239,9 +274,7 @@ class PDFExportService:
 
         # Title
         elements.append(Spacer(1, 3 * cm))
-        elements.append(
-            Paragraph("RELATÓRIO DE INVESTIGAÇÃO", self.styles["CustomTitle"])
-        )
+        elements.append(Paragraph("RELATÓRIO DE INVESTIGAÇÃO", self.styles["CustomTitle"]))
         elements.append(Spacer(1, 0.5 * cm))
 
         # Investigation name
@@ -283,7 +316,12 @@ class PDFExportService:
                     ("ALIGN", (0, 0), (-1, -1), "LEFT"),
                     ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
                     ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#d1d5db")),
-                    ("ROWBACKGROUNDS", (0, 0), (-1, -1), [colors.white, colors.HexColor("#f9fafb")]),
+                    (
+                        "ROWBACKGROUNDS",
+                        (0, 0),
+                        (-1, -1),
+                        [colors.white, colors.HexColor("#f9fafb")],
+                    ),
                     ("LEFTPADDING", (0, 0), (-1, -1), 10),
                     ("RIGHTPADDING", (0, 0), (-1, -1), 10),
                     ("TOPPADDING", (0, 0), (-1, -1), 8),
@@ -349,7 +387,12 @@ class PDFExportService:
                     ("ALIGN", (0, 0), (-1, -1), "LEFT"),
                     ("ALIGN", (1, 1), (1, -1), "CENTER"),
                     ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#d1d5db")),
-                    ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#f0fdf4")]),
+                    (
+                        "ROWBACKGROUNDS",
+                        (0, 1),
+                        (-1, -1),
+                        [colors.white, colors.HexColor("#f0fdf4")],
+                    ),
                     ("LEFTPADDING", (0, 0), (-1, -1), 10),
                     ("RIGHTPADDING", (0, 0), (-1, -1), 10),
                     ("TOPPADDING", (0, 0), (-1, -1), 8),
@@ -364,9 +407,7 @@ class PDFExportService:
         if investigation.get("target_description"):
             elements.append(Paragraph("Descrição:", self.styles["Section"]))
             desc_text = investigation["target_description"].replace("\n", "<br/>")
-            elements.append(
-                Paragraph(desc_text, self.styles["InfoValue"])
-            )
+            elements.append(Paragraph(desc_text, self.styles["InfoValue"]))
 
         return elements
 
@@ -400,7 +441,12 @@ class PDFExportService:
                     ("ALIGN", (0, 0), (-1, -1), "LEFT"),
                     ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
                     ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#d1d5db")),
-                    ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#f9fafb")]),
+                    (
+                        "ROWBACKGROUNDS",
+                        (0, 1),
+                        (-1, -1),
+                        [colors.white, colors.HexColor("#f9fafb")],
+                    ),
                     ("LEFTPADDING", (0, 0), (-1, -1), 10),
                     ("RIGHTPADDING", (0, 0), (-1, -1), 10),
                     ("TOPPADDING", (0, 0), (-1, -1), 8),
@@ -416,7 +462,11 @@ class PDFExportService:
         """Create properties section"""
         elements = []
 
-        elements.append(Paragraph(f"Propriedades Encontradas ({len(properties)})", self.styles["CustomSubtitle"]))
+        elements.append(
+            Paragraph(
+                f"Propriedades Encontradas ({len(properties)})", self.styles["CustomSubtitle"]
+            )
+        )
         elements.append(Spacer(1, 0.3 * cm))
 
         for idx, prop in enumerate(properties[:20], 1):  # Limit to first 20
@@ -470,7 +520,9 @@ class PDFExportService:
         """Create companies section"""
         elements = []
 
-        elements.append(Paragraph(f"Empresas Encontradas ({len(companies)})", self.styles["CustomSubtitle"]))
+        elements.append(
+            Paragraph(f"Empresas Encontradas ({len(companies)})", self.styles["CustomSubtitle"])
+        )
         elements.append(Spacer(1, 0.3 * cm))
 
         for idx, company in enumerate(companies[:20], 1):  # Limit to first 20
@@ -524,7 +576,11 @@ class PDFExportService:
         """Create legal queries section"""
         elements = []
 
-        elements.append(Paragraph(f"Consultas Legais Realizadas ({len(legal_queries)})", self.styles["CustomSubtitle"]))
+        elements.append(
+            Paragraph(
+                f"Consultas Legais Realizadas ({len(legal_queries)})", self.styles["CustomSubtitle"]
+            )
+        )
         elements.append(Spacer(1, 0.3 * cm))
 
         # Group by provider
@@ -560,7 +616,12 @@ class PDFExportService:
                         ("ALIGN", (0, 0), (-1, -1), "LEFT"),
                         ("ALIGN", (1, 1), (1, -1), "CENTER"),
                         ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#d1d5db")),
-                        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#f9fafb")]),
+                        (
+                            "ROWBACKGROUNDS",
+                            (0, 1),
+                            (-1, -1),
+                            [colors.white, colors.HexColor("#f9fafb")],
+                        ),
                         ("LEFTPADDING", (0, 0), (-1, -1), 8),
                         ("RIGHTPADDING", (0, 0), (-1, -1), 8),
                         ("TOPPADDING", (0, 0), (-1, -1), 6),
@@ -599,7 +660,7 @@ class PDFExportService:
             pie.data = list(provider_counts.values())
             pie.labels = list(provider_counts.keys())
             pie.slices.strokeWidth = 0.5
-            
+
             # Colors
             colors_list = [
                 colors.HexColor("#10b981"),
@@ -623,7 +684,9 @@ class PDFExportService:
         provider_results: Dict[str, int] = {}
         for query in legal_queries:
             provider = query.get("provider", "Desconhecido")
-            provider_results[provider] = provider_results.get(provider, 0) + query.get("result_count", 0)
+            provider_results[provider] = provider_results.get(provider, 0) + query.get(
+                "result_count", 0
+            )
 
         if provider_results:
             drawing = Drawing(400, 200)
@@ -641,7 +704,7 @@ class PDFExportService:
             bc.categoryAxis.labels.fontSize = 8
             bc.valueAxis.valueMin = 0
             bc.bars[0].fillColor = colors.HexColor("#10b981")
-            
+
             drawing.add(bc)
             elements.append(drawing)
 

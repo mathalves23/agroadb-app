@@ -1,6 +1,7 @@
 """
 Investigation Service
 """
+
 import logging
 from datetime import datetime
 from typing import List, Optional
@@ -13,11 +14,13 @@ from app.repositories.investigation import InvestigationRepository
 from app.schemas.investigation import InvestigationCreate, InvestigationUpdate
 from app.workers.tasks import start_investigation_task
 from app.core.config import settings
+from app.domain.collaboration import PermissionLevel
+from app.services.collaboration import collaboration_service
 
 
 class InvestigationService:
     """Service for investigation operations"""
-    
+
     def __init__(self, investigation_repo: InvestigationRepository):
         self.investigation_repo = investigation_repo
 
@@ -34,7 +37,7 @@ class InvestigationService:
             return data_encryption.decrypt(stored)
         except Exception:
             return stored
-    
+
     async def create_investigation(
         self, user_id: int, investigation_data: InvestigationCreate
     ) -> Investigation:
@@ -51,12 +54,13 @@ class InvestigationService:
         # Encrypt CPF/CNPJ before storage if encryption key is configured
         if settings.ENCRYPTION_KEY and investigation_dict.get("target_cpf_cnpj"):
             from app.core.encryption import data_encryption
+
             investigation_dict["target_cpf_cnpj"] = data_encryption.encrypt(
                 investigation_dict["target_cpf_cnpj"]
             )
-        
+
         investigation = await self.investigation_repo.create(investigation_dict)
-        
+
         # Start async investigation task (somente se habilitado)
         if settings.ENABLE_WORKERS:
             start_investigation_task.delay(investigation.id)
@@ -70,9 +74,9 @@ class InvestigationService:
                 f"Workers desabilitados — executando fallback síncrono para investigação {investigation.id}"
             )
             await self._run_sync_fallback(investigation)
-        
+
         return investigation
-    
+
     async def _run_sync_fallback(self, investigation: Investigation) -> None:
         """
         Fallback síncrono: executa scrapers diretamente quando Celery/Redis
@@ -98,26 +102,36 @@ class InvestigationService:
                 car_res = await car.search(investigation.target_name, target_doc)
                 results["properties"].extend(car_res)
             except Exception as exc:
-                logger.warning(f"[sync-fallback] CAR falhou para investigação {investigation.id}: {exc}")
+                logger.warning(
+                    f"[sync-fallback] CAR falhou para investigação {investigation.id}: {exc}"
+                )
 
             # INCRA
             try:
-                logger.info(f"[sync-fallback] Executando INCRA para investigação {investigation.id}")
+                logger.info(
+                    f"[sync-fallback] Executando INCRA para investigação {investigation.id}"
+                )
                 incra = INCRAScraper()
                 incra_res = await incra.search(investigation.target_name, target_doc)
                 results["properties"].extend(incra_res)
             except Exception as exc:
-                logger.warning(f"[sync-fallback] INCRA falhou para investigação {investigation.id}: {exc}")
+                logger.warning(
+                    f"[sync-fallback] INCRA falhou para investigação {investigation.id}: {exc}"
+                )
 
             # Receita Federal
             if target_doc:
                 try:
-                    logger.info(f"[sync-fallback] Executando Receita para investigação {investigation.id}")
+                    logger.info(
+                        f"[sync-fallback] Executando Receita para investigação {investigation.id}"
+                    )
                     receita = ReceitaScraper()
                     company_res = await receita.search(target_doc)
                     results["companies"].extend(company_res)
                 except Exception as exc:
-                    logger.warning(f"[sync-fallback] Receita falhou para investigação {investigation.id}: {exc}")
+                    logger.warning(
+                        f"[sync-fallback] Receita falhou para investigação {investigation.id}: {exc}"
+                    )
 
             # Marca como concluída
             await self.investigation_repo.update(
@@ -142,38 +156,44 @@ class InvestigationService:
             await self.investigation_repo.update(
                 investigation.id, {"status": InvestigationStatus.FAILED}
             )
-    
+
     async def get_investigation(
         self, investigation_id: int, user_id: int, is_superuser: bool = False
     ) -> Investigation:
         """Get investigation by ID"""
         investigation = await self.investigation_repo.get_with_relations(investigation_id)
-        
+
         if not investigation:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Investigation not found",
             )
-        
-        # Check ownership
+
         if not is_superuser and investigation.user_id != user_id:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Not authorized to access this investigation",
-            )
+            if not await collaboration_service.check_permission(
+                self.investigation_repo.db,
+                investigation_id,
+                user_id,
+                PermissionLevel.VIEW,
+            ):
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Not authorized to access this investigation",
+                )
 
         # Decrypt CPF/CNPJ if encryption key is configured
         if settings.ENCRYPTION_KEY and investigation.target_cpf_cnpj:
             try:
                 from app.core.encryption import data_encryption
+
                 investigation.target_cpf_cnpj = data_encryption.decrypt(
                     investigation.target_cpf_cnpj
                 )
             except Exception:
                 pass  # Already decrypted or not encrypted
-        
+
         return investigation
-    
+
     async def list_investigations(
         self, user_id: int, skip: int = 0, limit: int = 20, is_superuser: bool = False
     ) -> tuple[List[Investigation], int]:
@@ -188,9 +208,9 @@ class InvestigationService:
                 user_id, skip=skip, limit=limit
             )
             total = await self.investigation_repo.count_by_user(user_id)
-        
+
         return investigations, total
-    
+
     async def update_investigation(
         self,
         investigation_id: int,
@@ -200,57 +220,113 @@ class InvestigationService:
     ) -> Investigation:
         """Update investigation"""
         investigation = await self.investigation_repo.get(investigation_id)
-        
+
         if not investigation:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Investigation not found",
             )
-        
+
         # Check ownership
         if not is_superuser and investigation.user_id != user_id:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Not authorized to update this investigation",
             )
-        
+
         # Update investigation
         update_dict = investigation_data.model_dump(exclude_unset=True)
-        updated_investigation = await self.investigation_repo.update(
-            investigation_id, update_dict
-        )
-        
+        updated_investigation = await self.investigation_repo.update(investigation_id, update_dict)
+
         return updated_investigation
-    
+
     async def delete_investigation(
         self, investigation_id: int, user_id: int, is_superuser: bool = False
     ) -> bool:
         """Delete investigation"""
         investigation = await self.investigation_repo.get(investigation_id)
-        
+
         if not investigation:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Investigation not found",
             )
-        
+
         # Check ownership
         if not is_superuser and investigation.user_id != user_id:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Not authorized to delete this investigation",
             )
-        
+
         return await self.investigation_repo.delete(investigation_id)
-    
+
     async def update_investigation_status(
         self, investigation_id: int, status: InvestigationStatus
     ) -> Investigation:
         """Update investigation status (internal use)"""
         update_data = {"status": status}
-        
+
         if status == InvestigationStatus.COMPLETED:
             update_data["completed_at"] = datetime.utcnow()
-        
+
         updated = await self.investigation_repo.update(investigation_id, update_data)
         return updated
+
+    async def _user_can_acknowledge_risk_score_review(
+        self, investigation: Investigation, user_id: int, is_superuser: bool
+    ) -> bool:
+        if is_superuser:
+            return True
+        if investigation.user_id == user_id:
+            return True
+        return await collaboration_service.check_permission(
+            self.investigation_repo.db,
+            investigation.id,
+            user_id,
+            PermissionLevel.EDIT,
+        )
+
+    async def acknowledge_risk_score_review(
+        self, investigation_id: int, user_id: int, is_superuser: bool = False
+    ) -> Investigation:
+        """Regista revisão humana do score automatizado (governança / RIPD)."""
+        investigation = await self.investigation_repo.get_with_relations(investigation_id)
+        if not investigation:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Investigation not found",
+            )
+        if not await self._user_can_acknowledge_risk_score_review(
+            investigation, user_id, is_superuser
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Sem permissão para registar revisão do score (dono, editor ou administrador).",
+            )
+        if investigation.risk_score_reviewed_at:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="A revisão humana deste score já foi registada.",
+            )
+        await self.investigation_repo.update(
+            investigation_id,
+            {
+                "risk_score_reviewed_at": datetime.utcnow(),
+                "risk_score_reviewed_by_id": user_id,
+            },
+        )
+        refreshed = await self.investigation_repo.get_with_relations(investigation_id)
+        if not refreshed:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Erro ao recarregar investigação",
+            )
+        if settings.ENCRYPTION_KEY and refreshed.target_cpf_cnpj:
+            try:
+                from app.core.encryption import data_encryption
+
+                refreshed.target_cpf_cnpj = data_encryption.decrypt(refreshed.target_cpf_cnpj)
+            except Exception:
+                pass
+        return refreshed

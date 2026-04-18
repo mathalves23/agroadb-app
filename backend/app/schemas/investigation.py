@@ -1,6 +1,7 @@
 """
 Investigation Schemas
 """
+
 from datetime import datetime
 from typing import Optional
 from pydantic import BaseModel, Field, field_validator
@@ -25,13 +26,12 @@ def _validar_cpf_cnpj(v: Optional[str]) -> Optional[str]:
             raise ValueError("CNPJ inválido — dígitos verificadores não conferem")
         return cleaned
     else:
-        raise ValueError(
-            "Documento deve conter 11 dígitos (CPF) ou 14 dígitos (CNPJ)"
-        )
+        raise ValueError("Documento deve conter 11 dígitos (CPF) ou 14 dígitos (CNPJ)")
 
 
 class InvestigationBase(BaseModel):
     """Base investigation schema"""
+
     target_name: str = Field(..., min_length=1, max_length=255)
     target_cpf_cnpj: Optional[str] = Field(None, max_length=20)
     target_description: Optional[str] = None
@@ -45,11 +45,13 @@ class InvestigationBase(BaseModel):
 
 class InvestigationCreate(InvestigationBase):
     """Schema for creating an investigation"""
+
     pass
 
 
 class InvestigationUpdate(BaseModel):
     """Schema for updating an investigation"""
+
     target_name: Optional[str] = Field(None, min_length=1, max_length=255)
     target_cpf_cnpj: Optional[str] = Field(None, max_length=20)
     target_description: Optional[str] = None
@@ -64,6 +66,7 @@ class InvestigationUpdate(BaseModel):
 
 class InvestigationResponse(BaseModel):
     """Schema for investigation response"""
+
     id: int
     user_id: int
     target_name: str
@@ -77,13 +80,19 @@ class InvestigationResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
     completed_at: Optional[datetime]
-    
+
+    risk_score_reviewed_at: Optional[datetime] = None
+    risk_score_reviewed_by_id: Optional[int] = None
+    risk_score_reviewer_name: Optional[str] = None
+    can_acknowledge_risk_score_review: bool = False
+
     class Config:
         from_attributes = True
 
 
 class InvestigationListResponse(BaseModel):
     """Schema for paginated investigation list"""
+
     items: list[InvestigationResponse]
     total: int
     page: int

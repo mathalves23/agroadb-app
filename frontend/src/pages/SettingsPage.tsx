@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   ArrowLeft,
   Settings,
@@ -16,6 +16,7 @@ import {
   Zap,
 } from 'lucide-react'
 import { legalService } from '@/services/legalService'
+import { organizationService } from '@/services/organizationService'
 import { PanelListLoader } from '@/components/Loading'
 import { EmptyState } from '@/components/EmptyState'
 
@@ -213,7 +214,40 @@ const categoryConfig = {
 
 export default function SettingsPage() {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const [selectedCategory, setSelectedCategory] = useState<'all' | 'free' | 'key' | 'conecta'>('all')
+  const [govOrgId, setGovOrgId] = useState<number | null>(null)
+  const [govHumanReview, setGovHumanReview] = useState(false)
+  const [govRefUrl, setGovRefUrl] = useState('')
+
+  const { data: orgs = [] } = useQuery({
+    queryKey: ['organizations-me'],
+    queryFn: () => organizationService.listMine(),
+  })
+
+  useEffect(() => {
+    if (!orgs.length) {
+      setGovOrgId(null)
+      return
+    }
+    const target = orgs.find((o) => o.id === govOrgId) ?? orgs[0]
+    if (target.id !== govOrgId) {
+      setGovOrgId(target.id)
+    }
+    setGovHumanReview(target.risk_ai_human_review_required)
+    setGovRefUrl(target.risk_ai_governance_reference_url ?? '')
+  }, [orgs, govOrgId])
+
+  const govMutation = useMutation({
+    mutationFn: () =>
+      organizationService.patchAiGovernance(govOrgId!, {
+        risk_ai_human_review_required: govHumanReview,
+        risk_ai_governance_reference_url: govRefUrl.trim() || null,
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['organizations-me'] })
+    },
+  })
 
   const { data: integrationStatus, isLoading, isError, error, refetch } = useQuery({
     queryKey: ['integration-status'],
@@ -461,6 +495,66 @@ export default function SettingsPage() {
         })}
       </div>
       </>
+      )}
+
+      {orgs.length > 0 && govOrgId !== null && (
+        <div className="bg-white rounded-xl border border-gray-200/60 p-6">
+          <h2 className="text-lg font-bold text-gray-900 mb-2 flex items-center gap-2">
+            <Shield className="h-5 w-5 text-indigo-600" />
+            Governança de IA — score de risco
+          </h2>
+          <p className="text-xs text-gray-500 mb-4 max-w-3xl leading-relaxed">
+            Para transparência e defesa regulatória (LGPD / maturidade ANPD): exija revisão humana antes
+            de decisões com base no score automatizado e associe a referência ao RIPD ou DPIA da
+            organização.
+          </p>
+          {orgs.length > 1 && (
+            <label className="block text-xs font-medium text-gray-700 mb-1">Organização</label>
+          )}
+          {orgs.length > 1 && (
+            <select
+              value={govOrgId}
+              onChange={(e) => setGovOrgId(Number(e.target.value))}
+              className="mb-4 w-full max-w-md text-sm border border-gray-300 rounded-lg px-3 py-2"
+            >
+              {orgs.map((o) => (
+                <option key={o.id} value={o.id}>
+                  {o.name}
+                </option>
+              ))}
+            </select>
+          )}
+          <label className="flex items-center gap-2 text-sm text-gray-800 cursor-pointer mb-3">
+            <input
+              type="checkbox"
+              checked={govHumanReview}
+              onChange={(e) => setGovHumanReview(e.target.checked)}
+              className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+            />
+            Revisão humana obrigatória para uso decisório do score
+          </label>
+          <label className="block text-xs font-medium text-gray-700 mb-1">
+            Referência (URL ou texto) — RIPD / DPIA / registo interno
+          </label>
+          <input
+            type="url"
+            value={govRefUrl}
+            onChange={(e) => setGovRefUrl(e.target.value)}
+            placeholder="https://…"
+            className="w-full max-w-2xl text-sm border border-gray-300 rounded-lg px-3 py-2 mb-3"
+          />
+          <button
+            type="button"
+            disabled={govMutation.isPending}
+            onClick={() => govMutation.mutate()}
+            className="px-4 py-2 text-sm font-medium rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50"
+          >
+            {govMutation.isPending ? 'A guardar…' : 'Guardar política'}
+          </button>
+          {govMutation.isError ? (
+            <p className="text-xs text-red-600 mt-2">Não foi possível guardar. Verifique se tem papel admin na organização.</p>
+          ) : null}
+        </div>
       )}
 
       {/* How to configure — visível mesmo com falha na API de estado */}
