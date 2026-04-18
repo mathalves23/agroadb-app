@@ -56,7 +56,7 @@ Este documento define **o que significa “arquitetura limpa” neste repositór
 
 ## Próximos passos recomendados (prioridade)
 
-1. Dividir `integrations.py` em sub-routers por família de integração (já referido em bounded contexts).
+1. Continuar a partir `integrations/remainder.py` em sub-routers por domínio (dados abertos, transparência, etc.).
 2. Extrair casos de uso repetidos de `investigations` / `legal_integration` para services dedicados.
 3. No frontend, alinhar páginas restantes aos padrões de loading/empty state já usados em Dashboard/Investigações.
 

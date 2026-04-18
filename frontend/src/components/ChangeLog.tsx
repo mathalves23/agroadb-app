@@ -1,8 +1,10 @@
-import { useState, useEffect, type ReactNode } from 'react';
+import { useState, useEffect, useCallback, type ReactNode } from 'react'
 import { History, FileText, Share2, Edit3, Plus, Trash2, MessageSquare, UserPlus, UserMinus, Eye, AlertTriangle, CheckCircle, XCircle, Activity } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import { format, formatDistanceToNow } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { format, formatDistanceToNow } from 'date-fns'
+import { ptBR } from 'date-fns/locale'
+import { PanelListLoader } from '@/components/Loading'
+import { EmptyState } from '@/components/EmptyState'
 
 interface ChangeLogEntry {
   id: number;
@@ -26,31 +28,31 @@ export default function ChangeLog({ investigationId }: ChangeLogProps) {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<string>('all');
 
-  useEffect(() => {
-    loadChangeLog();
-  }, [investigationId]);
-
-  const loadChangeLog = async () => {
-    setLoading(true);
+  const loadChangeLog = useCallback(async () => {
+    setLoading(true)
     try {
       const response = await fetch(
         `/api/v1/collaboration/investigations/${investigationId}/changelog`,
         {
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          }
+            Authorization: `Bearer ${localStorage.getItem('token')}`,
+          },
         }
-      );
+      )
       if (response.ok) {
-        const data = await response.json();
-        setEntries(data.changelog);
+        const data = await response.json()
+        setEntries(data.changelog)
       }
-    } catch (error) {
-      // silenced for production
+    } catch {
+      // silenciado
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }, [investigationId])
+
+  useEffect(() => {
+    void loadChangeLog()
+  }, [loadChangeLog])
 
   const getActionIcon = (action: string) => {
     const actionLower = action.toLowerCase();
@@ -203,18 +205,16 @@ export default function ChangeLog({ investigationId }: ChangeLogProps) {
       </div>
 
       {loading ? (
-        <div className="text-center py-12 text-gray-500">
-          <div className="animate-spin h-8 w-8 border-4 border-indigo-600 border-t-transparent rounded-full mx-auto mb-3"></div>
-          <p className="text-sm">Carregando histórico...</p>
-        </div>
+        <PanelListLoader message="Carregando..." subMessage="A carregar o histórico de colaboração desta investigação." />
       ) : filteredEntries.length === 0 ? (
-        <div className="text-center py-12 text-gray-500">
-          <History className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-          <p className="text-sm font-medium">Nenhuma alteração encontrada</p>
-          <p className="text-xs text-gray-400 mt-1">
-            {filter !== 'all' ? 'Tente outro filtro' : 'O histórico ficará registrado aqui'}
-          </p>
-        </div>
+        <EmptyState
+          variant="embedded"
+          illustration="data"
+          title="Nenhuma alteração encontrada"
+          description={
+            filter !== 'all' ? 'Tente outro filtro de ação.' : 'O histórico de alterações aparece aqui quando houver atividade.'
+          }
+        />
       ) : (
         <div className="relative">
           {/* Timeline Line */}

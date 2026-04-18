@@ -1,8 +1,10 @@
-import { useState, useEffect } from 'react';
-import { Bell, Check, CheckCheck, Trash2, Filter, RefreshCw } from 'lucide-react';
-import { Link } from 'react-router-dom';
-import { formatDistanceToNow } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { useState, useEffect, useCallback } from 'react'
+import { Bell, Check, CheckCheck, Trash2, Filter, RefreshCw } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { formatDistanceToNow } from 'date-fns'
+import { ptBR } from 'date-fns/locale'
+import { PanelListLoader } from '@/components/Loading'
+import { EmptyState } from '@/components/EmptyState'
 
 interface Notification {
   id: number;
@@ -22,38 +24,38 @@ export default function NotificationsPage() {
   const [filter, setFilter] = useState<'all' | 'unread' | 'read'>('all');
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadNotifications();
-  }, [filter]);
-
-  const loadNotifications = async () => {
-    setLoading(true);
+  const loadNotifications = useCallback(async () => {
+    setLoading(true)
     try {
-      const includeRead = filter !== 'unread';
+      const includeRead = filter !== 'unread'
       const response = await fetch(
         `/api/v1/notifications/?limit=100&include_read=${includeRead}`,
         {
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          }
+            Authorization: `Bearer ${localStorage.getItem('token')}`,
+          },
         }
-      );
+      )
       if (response.ok) {
-        const data = await response.json();
-        let filtered = data;
+        const data = await response.json()
+        let filtered = data
         if (filter === 'read') {
-          filtered = data.filter((n: Notification) => n.is_read);
+          filtered = data.filter((n: Notification) => n.is_read)
         } else if (filter === 'unread') {
-          filtered = data.filter((n: Notification) => !n.is_read);
+          filtered = data.filter((n: Notification) => !n.is_read)
         }
-        setNotifications(filtered);
+        setNotifications(filtered)
       }
-    } catch (error) {
-      // silenced for production
+    } catch {
+      // silenciado
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }, [filter])
+
+  useEffect(() => {
+    void loadNotifications()
+  }, [loadNotifications])
 
   const markAsRead = async (id: number) => {
     try {
@@ -193,21 +195,21 @@ export default function NotificationsPage() {
 
         {/* Notifications List */}
         {loading ? (
-          <div className="text-center py-12">
-            <RefreshCw className="h-8 w-8 animate-spin text-indigo-600 mx-auto mb-3" />
-            <p className="text-sm text-gray-600">Carregando notificações...</p>
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+            <PanelListLoader message="Carregando..." subMessage="A sincronizar com a API de notificações." />
           </div>
         ) : notifications.length === 0 ? (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
-            <Bell className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              {filter === 'unread' ? 'Nenhuma notificação não lida' : 'Nenhuma notificação'}
-            </h3>
-            <p className="text-sm text-gray-600">
-              {filter === 'unread'
-                ? 'Você está em dia! 🎉'
-                : 'Quando algo importante acontecer, você verá aqui.'}
-            </p>
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+            <EmptyState
+              variant="embedded"
+              illustration="notification"
+              title={filter === 'unread' ? 'Nenhuma notificação não lida' : 'Nenhuma notificação'}
+              description={
+                filter === 'unread'
+                  ? 'Está em dia com as notificações não lidas.'
+                  : 'Quando houver alertas importantes, aparecem aqui.'
+              }
+            />
           </div>
         ) : (
           <div className="space-y-2">

@@ -1,7 +1,7 @@
 """
 Funções partilhadas dos endpoints de integrações (bounded context: Integrações externas).
 
-Mantidas fora do ficheiro monolítico `integrations.py` para reduzir dívida técnica e
+Mantidas fora dos routers em `integrations/` para reduzir dívida técnica e
 permitir testes unitários isolados.
 """
 from __future__ import annotations
