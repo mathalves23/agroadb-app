@@ -23,6 +23,13 @@ module.exports = {
       { allowConstantExport: true },
     ],
     '@typescript-eslint/no-explicit-any': 'warn',
+    '@typescript-eslint/consistent-type-imports': [
+      'warn',
+      { prefer: 'type-imports', fixStyle: 'separate-type-imports' },
+    ],
     'react-hooks/exhaustive-deps': 'warn',
+    eqeqeq: ['warn', 'smart'],
+    'prefer-const': 'warn',
+    'no-throw-literal': 'warn',
   },
 }

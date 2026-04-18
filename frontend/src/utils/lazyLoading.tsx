@@ -3,7 +3,7 @@
  * 
  * Otimiza performance carregando dados apenas quando necessário
  */
-import React, { Suspense, lazy, ComponentType } from 'react';
+import React, { Suspense, lazy, type ComponentType } from 'react'
 import { Loading } from '../components/Loading';
 
 // ==================== Lazy Loading de Componentes ====================

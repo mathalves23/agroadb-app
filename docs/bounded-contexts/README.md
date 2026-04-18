@@ -2,6 +2,8 @@
 
 Mapa de contextos delimitados para reduzir acoplamento e orientar refactors e **testes de contrato** na API pública.
 
+Para camadas alvo (API → services → domain), convenções de código e limitações do legado, veja também **[`docs/padroes-arquitetura-codigo.md`](../padroes-arquitetura-codigo.md)**.
+
 | Contexto | Responsabilidade principal | Código de referência |
 |----------|-----------------------------|----------------------|
 | **Commercial & compliance** | Proposta B2B, LGPD, mensagens de conformidade | `app/contexts/commercial/`, `app/api/v1/endpoints/platform.py` |

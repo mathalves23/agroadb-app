@@ -1,30 +1,32 @@
 """
-API Router - combines all API endpoints
+Agregador da API v1: monta todos os routers em /api/v1.
+
+O router de notificações é o mesmo módulo montado duas vezes: prefixo legacy
+e montagem canónica (compatibilidade de URLs antigas).
 """
 from fastapi import APIRouter
 
 from app.api.v1.endpoints import (
-    platform,
+    api_keys,
     auth,
-    investigations,
-    users,
-    queue,
-    security,
-    notifications as notifications_old,
+    billing,
     collaboration,
-    legal_integration,
-    ml,
+    integration_webhooks,
     integrations,
-    settings,
-    two_factor,
+    investigations,
+    legal_integration,
     lgpd,
+    ml,
+    notifications,
     ocr,
     organizations,
-    billing,
-    integration_webhooks,
-    api_keys,
+    platform,
+    queue,
+    security,
+    settings,
+    two_factor,
+    users,
 )
-from app.api.v1.endpoints import notifications as notifications_new
 
 api_router = APIRouter()
 
@@ -34,8 +36,12 @@ api_router.include_router(users.router, prefix="/users", tags=["Users"])
 api_router.include_router(investigations.router, prefix="/investigations", tags=["Investigations"])
 api_router.include_router(queue.router, tags=["Queue & WebSocket"])
 api_router.include_router(security.router, prefix="/security", tags=["Security & LGPD"])
-api_router.include_router(notifications_old.router, prefix="/notifications-legacy", tags=["Notifications & Reports (Legacy)"])
-api_router.include_router(notifications_new.router, tags=["Notifications"])
+api_router.include_router(
+    notifications.router,
+    prefix="/notifications-legacy",
+    tags=["Notifications & Reports (Legacy)"],
+)
+api_router.include_router(notifications.router, tags=["Notifications"])
 api_router.include_router(collaboration.router, prefix="/collaboration", tags=["Collaboration"])
 api_router.include_router(legal_integration.router, prefix="/legal", tags=["Legal Integration"])
 api_router.include_router(ml.router, tags=["Machine Learning"])

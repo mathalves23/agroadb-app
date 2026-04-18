@@ -1,4 +1,4 @@
-import { driver, DriveStep, Driver } from 'driver.js';
+import { driver, type DriveStep, type Driver } from 'driver.js'
 import 'driver.js/dist/driver.css';
 
 export class OnboardingService {

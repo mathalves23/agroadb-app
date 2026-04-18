@@ -4,7 +4,8 @@
  * Componente que captura erros em tempo de execução e exibe UI amigável.
  * Sem dependência externa (framer-motion removida).
  */
-import React, { Component, ErrorInfo, ReactNode } from 'react'
+import type { ErrorInfo, ReactNode } from 'react';
+import React, { Component } from 'react'
 
 interface Props {
   children: ReactNode

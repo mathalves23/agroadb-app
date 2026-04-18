@@ -12,6 +12,8 @@ Este repositório é **público**. Não inclua nele chaves API, passwords, URLs 
 |--------|------------|
 | `backend/` | API REST, autenticação JWT, serviços de integração, ML/utilitários |
 | `frontend/` | SPA Vite + React, formulários, dashboards, exportações |
+| `docs/padroes-arquitetura-codigo.md` | Camadas, dependências e práticas de código limpo (alvo incremental) |
+| `docs/bounded-contexts/` | Mapa de contextos delimitados e dívida técnica conhecida |
 | `docs/dev/` | Notas técnicas para quem desenvolve |
 | `docs/deploy/` | Orientações genéricas de deploy com Docker |
 | `docs/MAPEAMENTO_APIS_GOV.md` | Referência de **APIs e fontes públicas** (sem credenciais) |

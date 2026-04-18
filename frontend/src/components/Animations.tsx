@@ -4,7 +4,8 @@
  * Wrapper components para adicionar animações consistentes
  */
 import { Children, useState, useEffect, type ReactNode } from 'react';
-import { motion, AnimatePresence, Variants } from 'framer-motion';
+import type { Variants } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
 // Fade In
 interface FadeInProps {

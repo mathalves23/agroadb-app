@@ -98,7 +98,7 @@ lint: ## Executa linters (backend: erros críticos; frontend: ESLint)
 	cd frontend && npm run lint
 	@echo "✅ Linting concluído!"
 
-format: ## Formata código (Python)
+format: ## Formata código Python (Black + isort; perfis em backend/pyproject.toml)
 	@echo "✨ Formatando código Python..."
 	cd backend && black app
 	cd backend && isort app
