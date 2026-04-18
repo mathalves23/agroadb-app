@@ -54,6 +54,12 @@ Segredos **opcionais**. Se não estiverem definidos, o workflow usa os valores p
 
 **Forks / PRs de contribuidores:** os secrets não são passados a workflows de PRs vindos de forks, por defeito — o CI continua a funcionar com os defaults do ficheiro `ci.yml`.
 
+### Comportamento embutido do CI (sem segredos)
+
+- **Manual de produto:** o job de frontend corre `npm run check-product-manual`; o `npm run build` também o inclui. Falha se `product/manual-do-utilizador.md` não existir ou for demasiado curto (ver `product/README.md`).
+- **Métricas Prometheus:** no job backend (e no workflow noturno completo), com o serviço Redis dos `services`, define-se `AGROADB_CI_QUEUE_METRICS=1` para o pytest exigir a presença de `agroadb_queue_tasks` na resposta de `GET /metrics`.
+- **E2E Playwright:** inclui o fluxo até `/guide` (`frontend/e2e/user-guide.spec.ts`), além dos fluxos críticos com API mockada.
+
 ## 4. Variáveis (opcional)
 
 Em **Variables** podes guardar valores não sensíveis (ex.: `PIP_INDEX_URL` já é passado no job como env).

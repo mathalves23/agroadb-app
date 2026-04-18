@@ -44,6 +44,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Validar regras Prometheus (promtool)
+        run: |
+          docker run --rm -v "${GITHUB_WORKSPACE}/monitoring/alerts:/rules:ro" prom/prometheus:v2.53.3 \
+            promtool check rules /rules/agroadb.yml
+
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
@@ -75,6 +80,8 @@ jobs:
           _CI_REDIS_URL: ${{ secrets.CI_REDIS_URL }}
           _CI_SECRET_KEY: ${{ secrets.CI_SECRET_KEY }}
           _CI_ENCRYPTION_KEY: ${{ secrets.CI_ENCRYPTION_KEY }}
+          # Serviço redis:7 no job — exige gauges de fila em GET /metrics (test_observability).
+          AGROADB_CI_QUEUE_METRICS: "1"
         run: |
           export DATABASE_URL="${_CI_DATABASE_URL:-postgresql+asyncpg://agroadb:test_password@localhost:5432/agroadb_test}"
           export REDIS_URL="${_CI_REDIS_URL:-redis://localhost:6379/0}"
@@ -121,6 +128,10 @@ jobs:
       - run: npm run type-check
         working-directory: frontend
 
+      - name: Manual de produto (fonte única em product/)
+        run: npm run check-product-manual
+        working-directory: frontend
+
       - run: npm run build
         working-directory: frontend
 
@@ -147,6 +158,6 @@ jobs:
         run: npx playwright install chromium --with-deps
         working-directory: frontend
 
-      - name: E2E (fluxos críticos com API mockada)
+      - name: E2E (críticos + manual /guide, API mockada)
         run: npm run test:e2e:ci
         working-directory: frontend

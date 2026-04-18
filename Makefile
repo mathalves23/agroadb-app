@@ -1,6 +1,6 @@
 # Makefile para AgroADB
 
-.PHONY: help install dev-up dev-down migrate test lint format clean
+.PHONY: help install dev-up dev-down migrate test lint format clean promtool-check product-manual-check
 
 # Cores para output
 GREEN  := $(shell tput -Txterm setaf 2)
@@ -93,6 +93,20 @@ test-cov: ## Executa testes com cobertura
 	@echo "🧪 Executando testes com cobertura..."
 	cd backend && pytest --cov=app --cov-report=html --cov-report=term
 	@echo "✅ Relatório de cobertura gerado em backend/htmlcov/index.html"
+
+## Observabilidade
+product-manual-check: ## Garante product/manual-do-utilizador.md (fonte única do /guide)
+	@cd frontend && npm run check-product-manual
+
+promtool-check: ## Valida monitoring/alerts/agroadb.yml (Docker + promtool ou binário promtool no PATH)
+	@if command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1; then \
+		docker run --rm -v "$$(pwd)/monitoring/alerts:/rules:ro" prom/prometheus:v2.53.3 promtool check rules /rules/agroadb.yml; \
+	elif command -v promtool >/dev/null 2>&1; then \
+		promtool check rules monitoring/alerts/agroadb.yml; \
+	else \
+		echo "Instale Docker (daemon activo) ou o binário promtool; ver monitoring/README.md"; \
+		exit 1; \
+	fi
 
 ## Code Quality
 lint: ## Executa linters (backend: erros críticos; frontend: ESLint)

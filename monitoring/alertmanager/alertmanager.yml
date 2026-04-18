@@ -1,13 +1,14 @@
 # Alertmanager — AgroADB
 # Requer --config.expand-env=true (ver docker-compose, perfil `obs`).
-# Defina SLACK_WEBHOOK_URL, PAGERDUTY_ROUTING_KEY, AM_EMAIL_TO e SMTP no ambiente.
+# Variáveis: SLACK_WEBHOOK_URL, PAGERDUTY_ROUTING_KEY, AM_EMAIL_TO, AM_SMTP_* (ver env.observability.example).
 
 global:
   resolve_timeout: 5m
   smtp_smarthost: '${AM_SMTP_SMARTHOST}'
   smtp_from: '${AM_SMTP_FROM}'
-  smtp_auth_username: '${AM_SMTP_USER}'
-  smtp_auth_password: '${AM_SMTP_PASS}'
+  # Autenticação SMTP opcional: descomente e use expand-env se o relay exigir.
+  # smtp_auth_username: '${AM_SMTP_USER}'
+  # smtp_auth_password: '${AM_SMTP_PASS}'
 
 route:
   receiver: email-oncall
@@ -40,12 +41,8 @@ receivers:
     pagerduty_configs:
       - routing_key: '${PAGERDUTY_ROUTING_KEY}'
         send_resolved: true
-        description: '{{ .CommonAnnotations.description }}'
+        description: '{{ if .CommonAnnotations.description }}{{ .CommonAnnotations.description }}{{ else }}{{ .CommonAnnotations.summary }}{{ end }}'
         severity: critical
-        details:
-          firing: '{{ template "pagerduty.default.instances" .Alerts.Firing }}'
-          num_firing: '{{ .Alerts.Firing | len }}'
-          num_resolved: '{{ .Alerts.Resolved | len }}'
 
   - name: warning-email-slack
     email_configs:
@@ -56,17 +53,10 @@ receivers:
     slack_configs:
       - api_url: '${SLACK_WEBHOOK_URL}'
         send_resolved: true
-        title: 'AgroADB — {{ .CommonLabels.severity | toUpper }}'
+        title: 'AgroADB — {{ .CommonLabels.severity }}'
         title_link: '{{ .ExternalURL }}'
         text: >-
           {{ range .Alerts }}
           *{{ .Annotations.summary }}*
           {{ .Annotations.description }}
           {{ end }}
-
-inhibit_rules:
-  - source_matchers:
-      - severity = "critical"
-    target_matchers:
-      - severity =~ "warning|info"
-    equal: ['alertname', 'cluster']

@@ -1,10 +1,16 @@
 version: '3.8'
 
+# Rede explícita `agroadb`: Prometheus, Grafana, exporters e aplicação partilham DNS interno.
+networks:
+  agroadb:
+    driver: bridge
+    name: agroadb_net
+
 services:
-  # PostgreSQL Database
   postgres:
     image: postgres:16-alpine
     container_name: agroadb-postgres
+    networks: [agroadb]
     environment:
       POSTGRES_USER: agroadb
       POSTGRES_PASSWORD: agroadb_dev_password
@@ -19,10 +25,10 @@ services:
       timeout: 5s
       retries: 5
 
-  # Redis Cache & Queue
   redis:
     image: redis:7-alpine
     container_name: agroadb-redis
+    networks: [agroadb]
     ports:
       - "6379:6379"
     volumes:
@@ -33,20 +39,23 @@ services:
       timeout: 5s
       retries: 5
 
-  # Backend API
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
     container_name: agroadb-backend
+    networks: [agroadb]
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
     ports:
       - "8000:8000"
     environment:
-      - DATABASE_URL=postgresql://agroadb:agroadb_dev_password@postgres:5432/agroadb
-      - REDIS_URL=redis://redis:6379/0
-      - SECRET_KEY=dev_secret_key_change_in_production
-      - ENVIRONMENT=development
+      DATABASE_URL: postgresql://agroadb:agroadb_dev_password@postgres:5432/agroadb
+      REDIS_URL: redis://redis:6379/0
+      SECRET_KEY: dev_secret_key_change_in_production
+      ENVIRONMENT: development
+      OTEL_ENABLED: ${OTEL_ENABLED:-false}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
+      OTEL_SERVICE_NAME: agroadb-api
     volumes:
       - ./backend:/app
     depends_on:
@@ -55,21 +64,24 @@ services:
       redis:
         condition: service_healthy
 
-  # Celery Worker (para scrapers assíncronos)
   celery-worker:
     build:
       context: ./backend
       dockerfile: Dockerfile
     container_name: agroadb-celery-worker
+    networks: [agroadb]
     command: celery -A app.workers.celery_app worker --loglevel=info
     ports:
       - "9464:9464"
     environment:
-      - DATABASE_URL=postgresql://agroadb:agroadb_dev_password@postgres:5432/agroadb
-      - REDIS_URL=redis://redis:6379/0
-      - SECRET_KEY=dev_secret_key_change_in_production
-      - ENVIRONMENT=development
-      - CELERY_METRICS_PORT=9464
+      DATABASE_URL: postgresql://agroadb:agroadb_dev_password@postgres:5432/agroadb
+      REDIS_URL: redis://redis:6379/0
+      SECRET_KEY: dev_secret_key_change_in_production
+      ENVIRONMENT: development
+      CELERY_METRICS_PORT: "9464"
+      OTEL_ENABLED: ${OTEL_ENABLED:-false}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
+      OTEL_SERVICE_NAME: agroadb-celery
     volumes:
       - ./backend:/app
     depends_on:
@@ -78,12 +90,12 @@ services:
       redis:
         condition: service_healthy
 
-  # Celery Beat (agendador de tarefas)
   celery-beat:
     build:
       context: ./backend
       dockerfile: Dockerfile
     container_name: agroadb-celery-beat
+    networks: [agroadb]
     command: celery -A app.workers.celery_app beat --loglevel=info
     environment:
       - DATABASE_URL=postgresql://agroadb:agroadb_dev_password@postgres:5432/agroadb
@@ -98,12 +110,12 @@ services:
       redis:
         condition: service_healthy
 
-  # Frontend
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile.dev
     container_name: agroadb-frontend
+    networks: [agroadb]
     ports:
       - "5173:5173"
     environment:
@@ -114,10 +126,38 @@ services:
     depends_on:
       - backend
 
+  # --- Exporters (perfil obs): mesma rede que Prometheus ---
+  postgres-exporter:
+    profiles: ["obs"]
+    image: prometheuscommunity/postgres-exporter:v0.15.1
+    container_name: agroadb-postgres-exporter
+    networks: [agroadb]
+    environment:
+      DATA_SOURCE_NAME: postgresql://agroadb:agroadb_dev_password@postgres:5432/agroadb?sslmode=disable
+    ports:
+      - "9187:9187"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  redis-exporter:
+    profiles: ["obs"]
+    image: oliver006/redis_exporter:v1.62.0
+    container_name: agroadb-redis-exporter
+    networks: [agroadb]
+    environment:
+      REDIS_ADDR: redis://redis:6379
+    ports:
+      - "9121:9121"
+    depends_on:
+      redis:
+        condition: service_healthy
+
   prometheus:
     profiles: ["obs"]
     image: prom/prometheus:v2.53.3
     container_name: agroadb-prometheus
+    networks: [agroadb]
     ports:
       - "9090:9090"
     volumes:
@@ -129,23 +169,66 @@ services:
     depends_on:
       - backend
       - celery-worker
+      - alertmanager
+      - postgres-exporter
+      - redis-exporter
+
+  alertmanager:
+    profiles: ["obs"]
+    image: prom/alertmanager:v0.27.0
+    container_name: agroadb-alertmanager
+    networks: [agroadb]
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./monitoring/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+    command:
+      - --config.file=/etc/alertmanager/alertmanager.yml
+      - --config.expand-env=true
+    environment:
+      # Defina SLACK_WEBHOOK_URL no .env (formato hooks.slack.com); sem valor, use placeholder não-Slack para o Alertmanager subir em dev.
+      SLACK_WEBHOOK_URL: ${SLACK_WEBHOOK_URL:-https://example.invalid/agroadb-configure-slack-webhook}
+      PAGERDUTY_ROUTING_KEY: ${PAGERDUTY_ROUTING_KEY:-pagerduty-routing-key-placeholder}
+      AM_EMAIL_TO: ${AM_EMAIL_TO:-root@localhost}
+      AM_SMTP_SMARTHOST: ${AM_SMTP_SMARTHOST:-localhost:25}
+      AM_SMTP_FROM: ${AM_SMTP_FROM:-alertmanager@agroadb.local}
+      AM_SMTP_USER: ${AM_SMTP_USER:-}
+      AM_SMTP_PASS: ${AM_SMTP_PASS:-}
+
+  tempo:
+    profiles: ["obs"]
+    image: grafana/tempo:2.6.1
+    container_name: agroadb-tempo
+    networks: [agroadb]
+    command:
+      - -config.file=/etc/tempo/tempo.yaml
+    ports:
+      - "3200:3200"
+      - "4317:4317"
+      - "4318:4318"
+    volumes:
+      - ./monitoring/tempo/tempo.yaml:/etc/tempo/tempo.yaml:ro
 
   grafana:
     profiles: ["obs"]
     image: grafana/grafana:11.3.1
     container_name: agroadb-grafana
+    networks: [agroadb]
     ports:
       - "3000:3000"
     environment:
-      GF_SECURITY_ADMIN_USER: admin
-      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-grafana-admin}
+      GF_SECURITY_ADMIN_PASSWORD__FILE: /run/secrets/grafana_admin_password
       GF_USERS_ALLOW_SIGN_UP: "false"
-      GF_SERVER_ROOT_URL: http://localhost:3000
+      GF_SERVER_ROOT_URL: ${GRAFANA_ROOT_URL:-http://localhost:3000}
+      GF_SECURITY_SECRET_KEY: ${GRAFANA_SECRET_KEY:-agroadb-grafana-dev-secret-change-in-prod}
     volumes:
+      - ${GRAFANA_ADMIN_PASSWORD_FILE:-./monitoring/secrets/grafana_admin_password.dev}:/run/secrets/grafana_admin_password:ro
       - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
       - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
     depends_on:
       - prometheus
+      - tempo
 
 volumes:
   postgres_data:

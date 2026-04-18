@@ -1,5 +1,6 @@
-# Regras Prometheus — AgroADB (circuitos Celery e filas)
-# Ajuste thresholds e labels `severity` ao seu processo de on-call.
+# Regras Prometheus — AgroADB (Celery, filas, circuit breakers)
+# Validar: `make promtool-check` ou CI (Docker + promtool).
+# Thresholds relaxados para reduzir falsos positivos em ambientes com pouco tráfego.
 
 groups:
   - name: agroadb_celery
@@ -8,33 +9,34 @@ groups:
       - alert: CeleryTaskFailuresHigh
         expr: |
           sum by (task_name) (
-            increase(celery_task_runs_total{state="FAILURE"}[10m])
-          ) > 8
-        for: 5m
-        labels:
-          severity: warning
-        annotations:
-          summary: "Taxa elevada de falhas Celery ({{ $labels.task_name }})"
-          description: "Mais de 8 falhas/rejeições em 10m por tarefa. Rever logs do worker e integrações."
-
-      - alert: CeleryTaskDurationHigh
-        expr: |
-          histogram_quantile(0.95,
-            sum by (le, task_name) (rate(celery_task_duration_seconds_bucket[10m]))
-          ) > 600
+            increase(celery_task_runs_total{state="FAILURE"}[15m])
+          ) > 15
         for: 10m
         labels:
           severity: warning
         annotations:
+          summary: "Taxa elevada de falhas Celery ({{ $labels.task_name }})"
+          description: "Mais de 15 falhas em 15m por tarefa. Rever logs do worker e integrações."
+
+      - alert: CeleryTaskDurationHigh
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum by (le, task_name) (rate(celery_task_duration_seconds_bucket[5m]))
+          ) > 900
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
           summary: "P95 de duração Celery alto ({{ $labels.task_name }})"
-          description: "P95 acima de 10 minutos — possível bloqueio ou integração lenta."
+          description: "P95 acima de 15 minutos — possível bloqueio ou integração lenta."
 
   - name: agroadb_circuit_queues
     interval: 30s
     rules:
       - alert: ScraperQueueCircuitBreakerOpen
         expr: agroadb_scraper_circuit_breaker_open == 1
-        for: 2m
+        for: 5m
         labels:
           severity: critical
         annotations:
@@ -43,7 +45,7 @@ groups:
 
       - alert: ExternalCircuitBreakerOpen
         expr: agroadb_external_circuit_breaker_open == 1
-        for: 2m
+        for: 5m
         labels:
           severity: critical
         annotations:
@@ -51,8 +53,8 @@ groups:
           description: "Serviço externo protegido pelo circuit breaker in-memory."
 
       - alert: QueueDepthHigh
-        expr: sum by (scraper_type) (agroadb_queue_tasks) > 200
-        for: 15m
+        expr: sum by (scraper_type) (agroadb_queue_tasks) > 500
+        for: 30m
         labels:
           severity: warning
         annotations:

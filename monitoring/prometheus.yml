@@ -1,5 +1,5 @@
-# Prometheus — AgroADB (compose com profile `obs`)
-# Targets usam nomes de serviço Docker na rede do projecto.
+# Prometheus — AgroADB (perfil Docker `obs`)
+# Todos os targets estão na rede `agroadb_net` (resolução DNS: backend, celery-worker, exporters).
 
 global:
   scrape_interval: 15s
@@ -11,7 +11,8 @@ global:
 alerting:
   alertmanagers:
     - static_configs:
-        - targets: []
+        - targets:
+            - alertmanager:9093
 
 rule_files:
   - /etc/prometheus/alerts/agroadb.yml
@@ -31,7 +32,16 @@ scrape_configs:
         labels:
           service: celery-worker
 
-  # --- Opcional: activar quando tiver exporters na mesma rede ---
-  # - job_name: postgres
-  #   static_configs:
-  #     - targets: ["postgres-exporter:9187"]
+  - job_name: postgres-exporter
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["postgres-exporter:9187"]
+        labels:
+          service: postgres
+
+  - job_name: redis-exporter
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["redis-exporter:9121"]
+        labels:
+          service: redis

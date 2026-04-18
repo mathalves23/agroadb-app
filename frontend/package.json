@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "check-product-manual": "node scripts/check-product-manual.mjs",
+    "build": "npm run check-product-manual && tsc && vite build",
     "preview": "vite preview",
     "test": "jest --coverage",
     "test:watch": "jest --watch",

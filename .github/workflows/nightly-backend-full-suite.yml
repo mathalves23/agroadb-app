@@ -61,6 +61,8 @@ jobs:
           _CI_REDIS_URL: ${{ secrets.CI_REDIS_URL }}
           _CI_SECRET_KEY: ${{ secrets.CI_SECRET_KEY }}
           _CI_ENCRYPTION_KEY: ${{ secrets.CI_ENCRYPTION_KEY }}
+          # Mesmo critério que ci.yml: Redis no job → smoke de gauges em GET /metrics.
+          AGROADB_CI_QUEUE_METRICS: "1"
         run: |
           export DATABASE_URL="${_CI_DATABASE_URL:-postgresql+asyncpg://agroadb:test_password@localhost:5432/agroadb_test}"
           export REDIS_URL="${_CI_REDIS_URL:-redis://localhost:6379/0}"

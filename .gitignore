@@ -118,3 +118,6 @@ validar_*.py
 install_ml.sh
 
 # Documentação: README na raiz; referência de APIs em docs/MAPEAMENTO_APIS_GOV.md
+
+# Grafana: palavra-passe de admin fora do ficheiro .dev versionado
+monitoring/secrets/grafana_admin_password
