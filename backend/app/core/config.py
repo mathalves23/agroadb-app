@@ -20,6 +20,9 @@ class Settings(BaseSettings):
     
     # Environment
     ENVIRONMENT: str = "development"
+    # Só em não-produção: após /enrich, criar propriedades/empresas fictícias (MOCK_DEMO) se não existirem dados.
+    # Em produção é sempre ignorado (ver app.services.investigation_enrich_demo).
+    ENABLE_INVESTIGATION_ENRICH_DEMO_SEED: bool = False
     ENABLE_WORKERS: bool = False
     ENABLE_HEAVY_INVESTIGATION_QUEUE: bool = False
     DASHBOARD_STATS_CACHE_ENABLED: bool = True

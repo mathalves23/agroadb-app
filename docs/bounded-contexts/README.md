@@ -19,3 +19,5 @@ Para camadas alvo (API → services → domain), convenções de código e limit
 1. **Integrações:** helpers em `integrations_helpers.py`; rotas particionadas em `integrations/` (`conecta`, `tribunais`, `biros_orgaos_notify`, `remainder`). Próximo passo: partir `remainder.py` por domínio (dados abertos, transparência, fiscalização…).
 2. **Analytics:** introduzir camada de aplicação async e montar sob `/api/v1/analytics` com os mesmos contratos testados.
 3. **Contratos:** ver `tests/contract/test_public_api_contract.py` e expandir a lista de rotas críticas.
+4. **Jurídico / PJe:** fluxos PJe + auditoria concentrados em `app/services/legal_pje_workflows.py` (continuar padrão para outros endpoints repetitivos).
+5. **Enriquecimento:** dados `MOCK_DEMO` controlados por `ENABLE_INVESTIGATION_ENRICH_DEMO_SEED` + bloqueio em produção (`investigation_enrich_demo.py`).

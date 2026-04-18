@@ -1258,6 +1258,17 @@ export default function InvestigationDetailPage() {
             onExportCSV={handleExportCSV}
             exportLoading={exportLoading}
           />
+          <p className="text-xs text-gray-500 max-w-3xl leading-relaxed">
+            A consulta rápida e o passo de dados cadastrais usam integrações e fontes públicas. Em ambiente de
+            produção não são criados registos fictícios de propriedades ou empresas após o enriquecimento.
+            {import.meta.env.DEV && (
+              <span className="block mt-1 text-gray-400">
+                Modo desenvolvimento: para permitir dados de demonstração (etiqueta MOCK_DEMO) no servidor,
+                defina <code className="text-[11px] bg-gray-100 px-1 rounded">ENABLE_INVESTIGATION_ENRICH_DEMO_SEED=true</code> no{' '}
+                <code className="text-[11px] bg-gray-100 px-1 rounded">.env</code> do backend (nunca em produção).
+              </span>
+            )}
+          </p>
 
           <KpiCards
             propertiesFound={investigation.properties_found}

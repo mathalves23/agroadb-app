@@ -23,6 +23,11 @@ from app.services.investigation_access import (
     legal_queries_to_public_list,
     require_investigation_for_user,
 )
+from app.services.legal_pje_workflows import (
+    consultar_processo_pje_com_audit,
+    consultar_processos_parte_com_audit,
+    obter_movimentacoes_com_audit,
+)
 from app.core.audit import AuditLogger
 from app.core.config import settings as app_settings
 
@@ -87,32 +92,14 @@ async def consultar_processo_pje(
     Permite consultar um processo específico no sistema PJe
     """
     try:
-        # Consultar processo
-        processo = await legal_integration_service.pje_service.consultar_processo(
-            data.numero_processo,
-            data.tribunal
-        )
-        
-        # Log de auditoria
-        await audit_logger.log_action(
-            db=db,
+        return await consultar_processo_pje_com_audit(
+            db,
+            audit_logger,
             user_id=current_user.id,
-            action="consulta_processo_pje",
-            resource_type="pje",
-            resource_id=data.numero_processo,
-            details={
-                "numero_processo": data.numero_processo,
-                "tribunal": data.tribunal,
-                "encontrado": processo is not None
-            },
-            ip_address=request.client.host
+            ip_address=request.client.host if request.client else None,
+            numero_processo=data.numero_processo,
+            tribunal=data.tribunal,
         )
-        
-        if not processo:
-            raise HTTPException(status_code=404, detail="Processo não encontrado")
-        
-        return processo
-    
     except HTTPException:
         raise
     except Exception as e:
@@ -131,31 +118,18 @@ async def consultar_processos_parte(
     Retorna todos os processos em que a pessoa/empresa é parte
     """
     try:
-        # Consultar processos
-        processos = await legal_integration_service.pje_service.consultar_processos_parte(
-            data.cpf_cnpj,
-            data.tipo_parte
-        )
-        
-        # Log de auditoria
-        await audit_logger.log_action(
-            db=db,
+        processos = await consultar_processos_parte_com_audit(
+            db,
+            audit_logger,
             user_id=current_user.id,
-            action="consulta_processos_parte",
-            resource_type="pje",
-            resource_id=data.cpf_cnpj,
-            details={
-                "cpf_cnpj": data.cpf_cnpj,
-                "tipo_parte": data.tipo_parte,
-                "total_encontrados": len(processos)
-            },
-            ip_address=request.client.host
+            ip_address=request.client.host if request.client else None,
+            cpf_cnpj=data.cpf_cnpj,
+            tipo_parte=data.tipo_parte,
         )
-        
         return {
             "success": True,
             "total": len(processos),
-            "processos": [p.model_dump() for p in processos]
+            "processos": [p.model_dump() for p in processos],
         }
     
     except Exception as e:
@@ -174,30 +148,18 @@ async def obter_movimentacoes(
     Retorna todas as movimentações e andamentos do processo
     """
     try:
-        # Obter movimentações
-        movimentacoes = await legal_integration_service.pje_service.obter_movimentacoes(
-            numero_processo
-        )
-        
-        # Log de auditoria
-        await audit_logger.log_action(
-            db=db,
+        movimentacoes = await obter_movimentacoes_com_audit(
+            db,
+            audit_logger,
             user_id=current_user.id,
-            action="consulta_movimentacoes",
-            resource_type="pje",
-            resource_id=numero_processo,
-            details={
-                "numero_processo": numero_processo,
-                "total_movimentacoes": len(movimentacoes)
-            },
-            ip_address=request.client.host
+            ip_address=request.client.host if request.client else None,
+            numero_processo=numero_processo,
         )
-        
         return {
             "success": True,
             "numero_processo": numero_processo,
             "total": len(movimentacoes),
-            "movimentacoes": movimentacoes
+            "movimentacoes": movimentacoes,
         }
     
     except Exception as e:

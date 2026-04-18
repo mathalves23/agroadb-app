@@ -69,6 +69,8 @@ make migrate
 
 Consulte `docs/dev/02-ambiente-desenvolvimento.md` para detalhes e armadilhas comuns.
 
+Para **remoto Git, protecção de branches e segredos do GitHub Actions**, veja [`docs/dev/github-setup.md`](docs/dev/github-setup.md).
+
 ---
 
 ## Primeiro utilizador administrador

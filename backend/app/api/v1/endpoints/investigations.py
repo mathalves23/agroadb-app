@@ -24,6 +24,7 @@ from app.core.audit import audit_logger, AuditAction
 from app.schemas.dashboard_statistics import DashboardStatisticsResponse
 from app.services.dashboard_statistics import get_dashboard_statistics_cached
 from app.services.investigation_access import require_investigation_for_user
+from app.services.investigation_enrich_demo import maybe_seed_demo_properties_and_companies
 
 router = APIRouter()
 
@@ -245,6 +246,10 @@ async def enrich_investigation(
     - CPF: consulta Receita Federal (situação cadastral, nome, nascimento)
     - CNPJ: consulta Receita Federal / BrasilAPI (razão social, situação, endereço, QSA)
     Atualiza target_name e target_description com os dados encontrados.
+
+    Dados de demonstração (propriedades/empresas fictícias, `MOCK_DEMO`) só são criados
+    fora de produção e com `ENABLE_INVESTIGATION_ENRICH_DEMO_SEED=true` — ver
+    `app.services.investigation_enrich_demo`.
     """
     investigation_repo = InvestigationRepository(db)
     investigation_service = InvestigationService(investigation_repo)
@@ -378,57 +383,12 @@ async def enrich_investigation(
         InvestigationUpdate(**enriched),
         current_user.is_superuser,
     )
-    
-    # Adicionar dados mock se nenhuma propriedade/empresa foi encontrada nas APIs
-    from app.domain.property import Property
-    from app.domain.company import Company
-    from sqlalchemy import select
-    import random
-    from datetime import datetime, timedelta
 
-    # Verificar se já tem propriedades
-    result = await db.execute(
-        select(Property).where(Property.investigation_id == investigation_id)
+    await maybe_seed_demo_properties_and_companies(
+        db,
+        investigation_id,
+        updated.target_name or "Proprietário não identificado",
     )
-    existing_properties = result.scalars().all()
-    
-    # Se não tem propriedades, criar dados de exemplo
-    if not existing_properties:
-        for i in range(random.randint(2, 4)):
-            prop = Property(
-                investigation_id=investigation_id,
-                property_name=f"Fazenda {random.choice(['Esperança', 'Boa Vista', 'Santa Rita', 'Vale Verde'])} - Lote {random.randint(1, 50)}",
-                car_number=f"BR-{random.randint(10,99)}-{random.randint(1000,9999)}-{random.randint(1000,9999)}",
-                area_hectares=round(random.uniform(100, 3000), 2),
-                city=random.choice(['Uberlândia', 'Rio Verde', 'Dourados', 'Sorriso']),
-                state=random.choice(['MG', 'GO', 'MS', 'MT']),
-                owner_name=updated.target_name or "Proprietário não identificado",
-                data_source="MOCK_DEMO",
-            )
-            db.add(prop)
-        await db.commit()
-    
-    # Verificar se já tem empresas
-    result = await db.execute(
-        select(Company).where(Company.investigation_id == investigation_id)
-    )
-    existing_companies = result.scalars().all()
-    
-    # Se não tem empresas, criar dados de exemplo
-    if not existing_companies:
-        for i in range(random.randint(1, 3)):
-            company_name = f"{random.choice(['Agropecuária', 'Fazendas', 'Empreendimentos'])} {random.choice(['Vale Verde', 'Esperança', 'Santa Helena'])} Ltda"
-            company = Company(
-                investigation_id=investigation_id,
-                cnpj=f"{random.randint(10,99)}.{random.randint(100,999)}.{random.randint(100,999)}/0001-{random.randint(10,99)}",
-                corporate_name=company_name,
-                trade_name=company_name,
-                status=random.choice(['ATIVA', 'ATIVA', 'SUSPENSA']),
-                opening_date=datetime.utcnow() - timedelta(days=random.randint(365, 2000)),
-                data_source="MOCK_DEMO",
-            )
-            db.add(company)
-        await db.commit()
 
     return InvestigationResponse.model_validate(updated)
 

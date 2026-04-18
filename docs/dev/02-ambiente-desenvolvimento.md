@@ -53,6 +53,8 @@ cd ..
 
 **Alinhar com o CI (GitHub Actions):** o job de backend instala exatamente `backend/requirements.txt`, corre `flake8` com o mesmo recorte de regras e executa o **mesmo subconjunto** de `pytest` que `make test` na raiz do repositório. Esse subconjunto assume **PostgreSQL** e **Redis** acessíveis quando a aplicação ou os testes de dependem (ver variáveis `DATABASE_URL` e `REDIS_URL` no ficheiro `.github/workflows/ci.yml`). Para reproduzir erros só observados no CI, use as mesmas URLs e segredos de teste nesse workflow ou suba serviços Docker nas mesmas portas.
 
+Para **remoto Git, branch protection e segredos opcionais** (`CI_DATABASE_URL`, `CODECOV_TOKEN`, etc.), consulte também [github-setup.md](./github-setup.md).
+
 ### 3. Configure o Frontend
 
 ```bash
