@@ -1,4 +1,5 @@
 """RBAC grosso ao nível da organização (papéis por membro)."""
+
 from __future__ import annotations
 
 from typing import Optional
@@ -17,9 +18,7 @@ def role_at_least(role: Optional[str], minimum: str) -> bool:
     return _ROLE_ORDER.get(role, 0) >= _ROLE_ORDER.get(minimum, 99)
 
 
-async def get_member_role(
-    db: AsyncSession, user_id: int, organization_id: int
-) -> Optional[str]:
+async def get_member_role(db: AsyncSession, user_id: int, organization_id: int) -> Optional[str]:
     r = await db.execute(
         select(OrganizationMember.role).where(
             OrganizationMember.user_id == user_id,

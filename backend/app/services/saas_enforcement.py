@@ -1,6 +1,7 @@
 """
 Limites SaaS por organização (trial / plano) — aplicação em criação de recursos.
 """
+
 from __future__ import annotations
 
 import logging
@@ -30,7 +31,9 @@ async def _primary_org_subscription(
 
 
 async def count_user_investigations(db: AsyncSession, user_id: int) -> int:
-    r = await db.execute(select(func.count()).select_from(Investigation).where(Investigation.user_id == user_id))
+    r = await db.execute(
+        select(func.count()).select_from(Investigation).where(Investigation.user_id == user_id)
+    )
     return int(r.scalar_one() or 0)
 
 

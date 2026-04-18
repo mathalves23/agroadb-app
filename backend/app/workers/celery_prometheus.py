@@ -5,6 +5,7 @@ Métricas Prometheus por tarefa Celery + HTTP opcional no worker.
 - ``celery_task_duration_seconds_bucket`` (histograma)
 - Com ``CELERY_METRICS_PORT > 0``, expõe ``/metrics`` no processo worker.
 """
+
 from __future__ import annotations
 
 import logging

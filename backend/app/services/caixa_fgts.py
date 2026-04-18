@@ -5,7 +5,9 @@ Consulta por: CNPJ ou CEI
 Retorna: crf, datahora, endereco, historico, inscricao, razao_social, situacao, validade
 Gratuito, consulta pública.
 """
+
 from typing import Any, Dict, Optional
+
 import httpx
 
 

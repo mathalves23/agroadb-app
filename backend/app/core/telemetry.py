@@ -2,6 +2,7 @@
 OpenTelemetry — tracing distribuído (API FastAPI e workers Celery).
 Activa com OTEL_ENABLED=true e OTEL_EXPORTER_OTLP_ENDPOINT (HTTP/protobuf).
 """
+
 from __future__ import annotations
 
 import logging
@@ -28,10 +29,10 @@ def ensure_trace_provider() -> None:
         return
 
     from opentelemetry import trace
+    from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
     from opentelemetry.sdk.resources import Resource
     from opentelemetry.sdk.trace import TracerProvider
     from opentelemetry.sdk.trace.export import BatchSpanProcessor
-    from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
 
     resource = Resource.create(
         {
@@ -44,7 +45,9 @@ def ensure_trace_provider() -> None:
     provider.add_span_processor(BatchSpanProcessor(exporter))
     trace.set_tracer_provider(provider)
     _tracer_provider = provider
-    logger.info("OpenTelemetry: TracerProvider configurado → %s", settings.OTEL_EXPORTER_OTLP_ENDPOINT)
+    logger.info(
+        "OpenTelemetry: TracerProvider configurado → %s", settings.OTEL_EXPORTER_OTLP_ENDPOINT
+    )
 
 
 def shutdown_trace_provider() -> None:

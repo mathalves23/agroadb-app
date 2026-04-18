@@ -1,21 +1,22 @@
 """
 Celery Tasks for Investigation
 """
+
 import asyncio
 import logging
 from typing import List
 
 logger = logging.getLogger(__name__)
 
-from app.workers.celery_app import celery_app
 from app.core.database import AsyncSessionLocal
+from app.domain.investigation import InvestigationStatus
 from app.repositories.investigation import InvestigationRepository
 from app.repositories.user import UserRepository
-from app.domain.investigation import InvestigationStatus
 from app.scrapers.car_scraper import CARScraper
 from app.scrapers.incra_scraper import INCRAScraper
 from app.scrapers.receita_scraper import ReceitaScraper
 from app.services.email_service import EmailService
+from app.workers.celery_app import celery_app
 
 
 @celery_app.task(name="start_investigation")
@@ -51,22 +52,22 @@ async def _start_investigation(investigation_id: int) -> dict:
     """Async function to run investigation"""
     async with AsyncSessionLocal() as db:
         investigation_repo = InvestigationRepository(db)
-        
+
         # Get investigation
         investigation = await investigation_repo.get(investigation_id)
         if not investigation:
             return {"status": "error", "message": "Investigation not found"}
-        
+
         logger.info(f"Iniciando investigação {investigation_id}")
-        
+
         # Update status to in progress
         await investigation_repo.update(
             investigation_id, {"status": InvestigationStatus.IN_PROGRESS}
         )
         await db.commit()
-        
+
         logger.info(f"Investigação {investigation_id} em andamento")
-        
+
         try:
             # Run scrapers
             results = {
@@ -74,7 +75,7 @@ async def _start_investigation(investigation_id: int) -> dict:
                 "lease_contracts": [],
                 "companies": [],
             }
-            
+
             # CAR Scraper
             logger.info(f"Executando scraper CAR para investigação {investigation_id}")
             car_scraper = CARScraper()
@@ -83,7 +84,7 @@ async def _start_investigation(investigation_id: int) -> dict:
                 investigation.target_cpf_cnpj,
             )
             results["properties"].extend(car_results)
-            
+
             # INCRA Scraper
             logger.info(f"Executando scraper INCRA para investigação {investigation_id}")
             incra_scraper = INCRAScraper()
@@ -92,14 +93,14 @@ async def _start_investigation(investigation_id: int) -> dict:
                 investigation.target_cpf_cnpj,
             )
             results["properties"].extend(incra_results)
-            
+
             # Receita Federal Scraper
             if investigation.target_cpf_cnpj:
                 logger.info(f"Executando scraper Receita para investigação {investigation_id}")
                 receita_scraper = ReceitaScraper()
                 company_results = await receita_scraper.search(investigation.target_cpf_cnpj)
                 results["companies"].extend(company_results)
-            
+
             # Update investigation with results
             await investigation_repo.update(
                 investigation_id,
@@ -111,46 +112,48 @@ async def _start_investigation(investigation_id: int) -> dict:
                 },
             )
             await db.commit()
-            
-            logger.info(f"Investigação {investigation_id} concluída: {len(results['properties'])} propriedades, {len(results['companies'])} empresas")
-            
+
+            logger.info(
+                f"Investigação {investigation_id} concluída: {len(results['properties'])} propriedades, {len(results['companies'])} empresas"
+            )
+
             # Enviar email de notificação ao usuário
             try:
                 user_repo = UserRepository(db)
                 user = await user_repo.get(investigation.user_id)
-                
+
                 if user and user.email:
                     await EmailService.send_investigation_completed(
                         user_email=user.email,
                         user_name=user.full_name or user.username,
                         investigation={
-                            'id': investigation.id,
-                            'target_name': investigation.target_name,
-                            'properties_found': len(results["properties"]),
-                            'companies_found': len(results["companies"]),
-                            'lease_contracts_found': len(results["lease_contracts"])
-                        }
+                            "id": investigation.id,
+                            "target_name": investigation.target_name,
+                            "properties_found": len(results["properties"]),
+                            "companies_found": len(results["companies"]),
+                            "lease_contracts_found": len(results["lease_contracts"]),
+                        },
                     )
                     logger.info(f"📧 Email de conclusão enviado para {user.email}")
             except Exception as email_error:
                 logger.warning(f"Falha ao enviar email de conclusão: {email_error}")
                 # Não falhar a task se o email falhar
-            
+
             return {
                 "status": "success",
                 "investigation_id": investigation_id,
                 "results": results,
             }
-        
+
         except Exception as e:
             logger.error(f"Erro na investigação {investigation_id}: {str(e)}", exc_info=True)
-            
+
             # Update status to failed
             await investigation_repo.update(
                 investigation_id, {"status": InvestigationStatus.FAILED}
             )
             await db.commit()
-            
+
             return {
                 "status": "error",
                 "investigation_id": investigation_id,

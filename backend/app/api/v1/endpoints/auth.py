@@ -1,20 +1,21 @@
 """
 Authentication Endpoints
 """
+
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordRequestForm
 
-from app.api.v1.deps import DatabaseSession, CurrentUser
+from app.api.v1.deps import CurrentUser, DatabaseSession
+from app.core.audit import AuditAction, audit_logger
+from app.repositories.user import UserRepository
 from app.schemas.user import (
+    ChangePasswordRequest,
+    RefreshTokenRequest,
+    Token,
     UserCreate,
     UserResponse,
-    Token,
-    RefreshTokenRequest,
-    ChangePasswordRequest,
 )
 from app.services.auth import AuthService
-from app.repositories.user import UserRepository
-from app.core.audit import audit_logger, AuditAction
 
 router = APIRouter()
 
@@ -28,7 +29,7 @@ async def register(
     """Register a new user"""
     user_repo = UserRepository(db)
     auth_service = AuthService(user_repo)
-    
+
     user = await auth_service.register(user_data)
 
     # Audit log
@@ -58,7 +59,7 @@ async def login(
     """Login and get access token"""
     user_repo = UserRepository(db)
     auth_service = AuthService(user_repo)
-    
+
     # Authenticate — get user for audit before generating token
     user = await user_repo.authenticate(form_data.username, form_data.password)
     if not user:

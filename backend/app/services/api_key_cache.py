@@ -1,4 +1,5 @@
 """Publica limites RPM por API key no Redis (consumido pelo RateLimiter)."""
+
 from __future__ import annotations
 
 import logging

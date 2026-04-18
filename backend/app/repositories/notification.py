@@ -1,12 +1,14 @@
 """
 Repository for Notifications
 """
-from typing import List, Optional, Dict, Any
-from sqlalchemy import select, update, delete, func, and_, or_
-from sqlalchemy.ext.asyncio import AsyncSession
-from datetime import datetime, timedelta
 
-from app.domain.notification import Notification, NotificationType, NotificationPriority
+from datetime import datetime, timedelta
+from typing import Any, Dict, List, Optional
+
+from sqlalchemy import and_, delete, func, or_, select, update
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.domain.notification import Notification, NotificationPriority, NotificationType
 
 
 class NotificationRepository:
@@ -24,10 +26,8 @@ class NotificationRepository:
     async def get_by_id(self, notification_id: int, user_id: int) -> Optional[Notification]:
         """Busca notificação por ID (apenas do usuário)"""
         result = await self.db.execute(
-            select(Notification)
-            .where(
-                Notification.id == notification_id,
-                Notification.user_id == user_id
+            select(Notification).where(
+                Notification.id == notification_id, Notification.user_id == user_id
             )
         )
         return result.scalar_one_or_none()
@@ -38,34 +38,34 @@ class NotificationRepository:
         include_read: bool = True,
         include_archived: bool = False,
         limit: int = 50,
-        offset: int = 0
+        offset: int = 0,
     ) -> List[Notification]:
         """Lista notificações do usuário"""
         query = select(Notification).where(Notification.user_id == user_id)
-        
+
         if not include_read:
             query = query.where(Notification.is_read == False)
-        
+
         if not include_archived:
             query = query.where(Notification.is_archived == False)
-        
+
         # Ordenar por não lidas primeiro, depois por data
-        query = query.order_by(
-            Notification.is_read.asc(),
-            Notification.created_at.desc()
-        ).limit(limit).offset(offset)
-        
+        query = (
+            query.order_by(Notification.is_read.asc(), Notification.created_at.desc())
+            .limit(limit)
+            .offset(offset)
+        )
+
         result = await self.db.execute(query)
         return list(result.scalars().all())
 
     async def count_unread(self, user_id: int) -> int:
         """Conta notificações não lidas"""
         result = await self.db.execute(
-            select(func.count(Notification.id))
-            .where(
+            select(func.count(Notification.id)).where(
                 Notification.user_id == user_id,
                 Notification.is_read == False,
-                Notification.is_archived == False
+                Notification.is_archived == False,
             )
         )
         return result.scalar() or 0
@@ -74,14 +74,8 @@ class NotificationRepository:
         """Marca notificação como lida"""
         result = await self.db.execute(
             update(Notification)
-            .where(
-                Notification.id == notification_id,
-                Notification.user_id == user_id
-            )
-            .values(
-                is_read=True,
-                read_at=datetime.utcnow()
-            )
+            .where(Notification.id == notification_id, Notification.user_id == user_id)
+            .values(is_read=True, read_at=datetime.utcnow())
         )
         await self.db.flush()
         return result.rowcount > 0
@@ -90,14 +84,8 @@ class NotificationRepository:
         """Marca todas notificações como lidas"""
         result = await self.db.execute(
             update(Notification)
-            .where(
-                Notification.user_id == user_id,
-                Notification.is_read == False
-            )
-            .values(
-                is_read=True,
-                read_at=datetime.utcnow()
-            )
+            .where(Notification.user_id == user_id, Notification.is_read == False)
+            .values(is_read=True, read_at=datetime.utcnow())
         )
         await self.db.flush()
         return result.rowcount
@@ -106,10 +94,7 @@ class NotificationRepository:
         """Arquiva uma notificação"""
         result = await self.db.execute(
             update(Notification)
-            .where(
-                Notification.id == notification_id,
-                Notification.user_id == user_id
-            )
+            .where(Notification.id == notification_id, Notification.user_id == user_id)
             .values(is_archived=True)
         )
         await self.db.flush()
@@ -118,10 +103,8 @@ class NotificationRepository:
     async def delete_notification(self, notification_id: int, user_id: int) -> bool:
         """Deleta uma notificação"""
         result = await self.db.execute(
-            delete(Notification)
-            .where(
-                Notification.id == notification_id,
-                Notification.user_id == user_id
+            delete(Notification).where(
+                Notification.id == notification_id, Notification.user_id == user_id
             )
         )
         await self.db.flush()
@@ -131,14 +114,10 @@ class NotificationRepository:
         """Deleta notificações antigas (limpeza automática)"""
         cutoff_date = datetime.utcnow() - timedelta(days=days)
         result = await self.db.execute(
-            delete(Notification)
-            .where(
+            delete(Notification).where(
                 or_(
-                    and_(
-                        Notification.is_read == True,
-                        Notification.created_at < cutoff_date
-                    ),
-                    Notification.expires_at < datetime.utcnow()
+                    and_(Notification.is_read == True, Notification.created_at < cutoff_date),
+                    Notification.expires_at < datetime.utcnow(),
                 )
             )
         )
@@ -151,7 +130,8 @@ class NotificationRepository:
             select(Notification)
             .where(
                 Notification.email_sent == False,
-                Notification.created_at > datetime.utcnow() - timedelta(hours=24)  # Apenas últimas 24h
+                Notification.created_at
+                > datetime.utcnow() - timedelta(hours=24),  # Apenas últimas 24h
             )
             .order_by(Notification.created_at.asc())
             .limit(limit)
@@ -163,10 +143,7 @@ class NotificationRepository:
         await self.db.execute(
             update(Notification)
             .where(Notification.id == notification_id)
-            .values(
-                email_sent=True,
-                email_sent_at=datetime.utcnow()
-            )
+            .values(email_sent=True, email_sent_at=datetime.utcnow())
         )
         await self.db.flush()
 
@@ -174,21 +151,18 @@ class NotificationRepository:
         """Estatísticas de notificações do usuário"""
         # Total
         total_result = await self.db.execute(
-            select(func.count(Notification.id))
-            .where(Notification.user_id == user_id)
+            select(func.count(Notification.id)).where(Notification.user_id == user_id)
         )
         total = total_result.scalar() or 0
-        
+
         # Não lidas
         unread_result = await self.db.execute(
-            select(func.count(Notification.id))
-            .where(
-                Notification.user_id == user_id,
-                Notification.is_read == False
+            select(func.count(Notification.id)).where(
+                Notification.user_id == user_id, Notification.is_read == False
             )
         )
         unread = unread_result.scalar() or 0
-        
+
         # Por tipo
         type_result = await self.db.execute(
             select(Notification.type, func.count(Notification.id))
@@ -196,9 +170,5 @@ class NotificationRepository:
             .group_by(Notification.type)
         )
         by_type = {row[0]: row[1] for row in type_result.all()}
-        
-        return {
-            "total": total,
-            "unread": unread,
-            "by_type": by_type
-        }
+
+        return {"total": total, "unread": unread, "by_type": by_type}

@@ -4,11 +4,13 @@ https://dadosabertos.tse.jus.br/
 Consulta: Candidatos, Bens declarados, Doações
 Sem autenticação. Gratuito.
 """
+
 from typing import Any, Dict, List, Optional
+
 import httpx
 
-from app.core.retry import retry_with_backoff
 from app.core.circuit_breaker import circuit_protected
+from app.core.retry import retry_with_backoff
 
 
 class TSEService:
@@ -47,7 +49,9 @@ class TSEService:
 
     @retry_with_backoff(max_retries=2, base_delay=0.5)
     @circuit_protected(service_name="tse", failure_threshold=5, recovery_timeout=60.0)
-    async def buscar_candidatos(self, nome: Optional[str] = None, cpf: Optional[str] = None, ano: int = 2024) -> Dict[str, Any]:
+    async def buscar_candidatos(
+        self, nome: Optional[str] = None, cpf: Optional[str] = None, ano: int = 2024
+    ) -> Dict[str, Any]:
         """Busca candidatos por nome ou CPF via datasets"""
         query = f"candidatos {ano}"
         if nome:
@@ -60,4 +64,6 @@ class TSEService:
     @circuit_protected(service_name="tse", failure_threshold=5, recovery_timeout=60.0)
     async def buscar_bens_candidatos(self, ano: int = 2024) -> Dict[str, Any]:
         """Busca dataset de bens declarados de candidatos"""
-        return await self._get("/action/package_search", params={"q": f"bens candidatos {ano}", "rows": 5})
+        return await self._get(
+            "/action/package_search", params={"q": f"bens candidatos {ano}", "rows": 5}
+        )

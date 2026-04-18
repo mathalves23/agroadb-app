@@ -1,4 +1,5 @@
 """Checkout e webhooks de faturação (Stripe / Pagar.me)."""
+
 from __future__ import annotations
 
 from typing import Any, Dict, Literal, Optional
@@ -63,7 +64,9 @@ async def stripe_webhook(
                 settings.STRIPE_WEBHOOK_SECRET,
             )
         except Exception:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Assinatura inválida")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail="Assinatura inválida"
+            )
     return {"status": "received"}
 
 
@@ -83,5 +86,7 @@ async def pagarme_webhook(
             x_hub_signature,
             prefix="sha256=",
         ):
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Assinatura inválida")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="Assinatura inválida"
+            )
     return {"status": "received"}

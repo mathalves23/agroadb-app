@@ -3,13 +3,13 @@ Sistema de Audit Log Completo
 Rastreia todas as ações dos usuários no sistema para compliance e segurança
 """
 
-from datetime import datetime
-from typing import Optional, Dict, Any, List
-from enum import Enum
 import json
-from sqlalchemy import Column, Integer, String, DateTime, Text, Index
-from sqlalchemy import JSON
 import logging
+from datetime import datetime
+from enum import Enum
+from typing import Any, Dict, List, Optional
+
+from sqlalchemy import JSON, Column, DateTime, Index, Integer, String, Text
 
 from app.core.database import Base
 
@@ -311,7 +311,7 @@ class AuditLogger:
         Returns:
             Lista de logs
         """
-        from sqlalchemy import select, desc
+        from sqlalchemy import desc, select
 
         query = (
             select(AuditLog)
@@ -340,7 +340,7 @@ class AuditLogger:
         Returns:
             Lista de logs
         """
-        from sqlalchemy import select, desc
+        from sqlalchemy import desc, select
 
         query = (
             select(AuditLog)
@@ -385,7 +385,7 @@ class AuditLogger:
         Returns:
             Tupla (logs, total_count)
         """
-        from sqlalchemy import select, desc, func
+        from sqlalchemy import desc, func, select
 
         # Query base
         query = select(AuditLog)
@@ -451,7 +451,7 @@ class AuditLogger:
         Returns:
             Dicionário com estatísticas
         """
-        from sqlalchemy import select, func
+        from sqlalchemy import func, select
 
         # Filtros base
         filters = []

@@ -4,6 +4,7 @@ Testes do InvestigationService (async, repositório real em SQLite em memória).
 O serviço legado síncrono (`db=Session`) foi substituído por `InvestigationRepository`
 + métodos async; o fallback de scrapers é isolado com mock para não aceder à rede.
 """
+
 from __future__ import annotations
 
 from unittest.mock import AsyncMock, patch

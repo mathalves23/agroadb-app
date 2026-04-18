@@ -1,11 +1,12 @@
 """Gestão de API keys e limite RPM por chave (Redis)."""
+
 from __future__ import annotations
 
 from typing import List, Optional
 
 from fastapi import APIRouter, HTTPException, status
-from starlette.responses import Response
 from pydantic import BaseModel, Field
+from starlette.responses import Response
 
 from app.api.v1.deps import CurrentUser, DatabaseSession
 from app.repositories.api_key import ApiKeyRepository

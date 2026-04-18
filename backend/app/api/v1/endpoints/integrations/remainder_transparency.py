@@ -1,57 +1,60 @@
 """Integrações — transparência federal, REDESIM, IBGE, TSE, CVM, BCB, dados.gov."""
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query
 import io
-from sqlalchemy.ext.asyncio import AsyncSession
-from typing import Dict, List, Optional, Any
-from pydantic import BaseModel, ConfigDict
 import logging
+from typing import Any, Dict, List, Optional
 
-from app.core.database import get_db
-from app.core.config import settings
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from pydantic import BaseModel, ConfigDict
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.api.v1.deps import get_current_user
-from app.domain.user import User
-from app.integrations.car_estados import CARIntegration, query_car_single
-from app.integrations.tribunais import TribunalIntegration, query_process_by_number
-from app.integrations.orgaos_federais import OrgaoFederalIntegration
-from app.integrations.bureaus import BureauIntegration
-from app.integrations.comunicacao import ComunicacaoIntegration
-from app.services.sigef_parcelas import SigefParcelasService
-from app.services.conecta_sncr import ConectaSNCRService
-from app.services.conecta_sigef import ConectaSIGEFService
-from app.services.conecta_sicar import ConectaSICARService
-from app.services.conecta_sncci import ConectaSNCCIService
-from app.services.conecta_sigef_geo import ConectaSIGEFGeoService
-from app.services.conecta_cnpj import ConectaCNPJService
-from app.services.conecta_cnd import ConectaCNDService
-from app.services.conecta_cadin import ConectaCadinService
-from app.services.portal_servicos import PortalServicosService
-from app.services.servicos_estaduais import ServicosEstaduaisService
-from app.services.brasil_api import BrasilAPIService
-from app.services.portal_transparencia import PortalTransparenciaService
-from app.services.ibge_api import IBGEService
-from app.services.tse_api import TSEService
-from app.services.cvm_api import CVMService
-from app.services.bcb_api import BCBService
-from app.services.dados_gov import DadosGovService
-from app.services.redesim_api import RedesimService
-from app.services.tjmg_api import TJMGService
-from app.services.antecedentes_mg import AntecedentesMGService
-from app.services.sicar_publico import SICARPublicoService
-from app.services.caixa_fgts import CaixaFGTSService
-from app.services.bnmp_cnj import BNMPService
-from app.services.seeu_cnj import SEEUService
-from app.services.sigef_publico import SIGEFPublicoService
-from app.services.receita_cpf import ReceitaCPFService
-from app.services.receita_cnpj import ReceitaCNPJService
-from app.core.audit import AuditLogger
-from app.services.legal_query_audit import record_legal_query_if_investigation
+from app.api.v1.endpoints.integrations_helpers import conecta_items as _conecta_items
 from app.api.v1.endpoints.integrations_helpers import (
-    result_count as _result_count,
-    is_credentials_missing as _is_credentials_missing,
-    conecta_items as _conecta_items,
     conecta_standard_response as _conecta_standard_response,
 )
+from app.api.v1.endpoints.integrations_helpers import (
+    is_credentials_missing as _is_credentials_missing,
+)
+from app.api.v1.endpoints.integrations_helpers import result_count as _result_count
+from app.core.audit import AuditLogger
+from app.core.config import settings
+from app.core.database import get_db
+from app.domain.user import User
+from app.integrations.bureaus import BureauIntegration
+from app.integrations.car_estados import CARIntegration, query_car_single
+from app.integrations.comunicacao import ComunicacaoIntegration
+from app.integrations.orgaos_federais import OrgaoFederalIntegration
+from app.integrations.tribunais import TribunalIntegration, query_process_by_number
+from app.services.antecedentes_mg import AntecedentesMGService
+from app.services.bcb_api import BCBService
+from app.services.bnmp_cnj import BNMPService
+from app.services.brasil_api import BrasilAPIService
+from app.services.caixa_fgts import CaixaFGTSService
+from app.services.conecta_cadin import ConectaCadinService
+from app.services.conecta_cnd import ConectaCNDService
+from app.services.conecta_cnpj import ConectaCNPJService
+from app.services.conecta_sicar import ConectaSICARService
+from app.services.conecta_sigef import ConectaSIGEFService
+from app.services.conecta_sigef_geo import ConectaSIGEFGeoService
+from app.services.conecta_sncci import ConectaSNCCIService
+from app.services.conecta_sncr import ConectaSNCRService
+from app.services.cvm_api import CVMService
+from app.services.dados_gov import DadosGovService
+from app.services.ibge_api import IBGEService
+from app.services.legal_query_audit import record_legal_query_if_investigation
+from app.services.portal_servicos import PortalServicosService
+from app.services.portal_transparencia import PortalTransparenciaService
+from app.services.receita_cnpj import ReceitaCNPJService
+from app.services.receita_cpf import ReceitaCPFService
+from app.services.redesim_api import RedesimService
+from app.services.seeu_cnj import SEEUService
+from app.services.servicos_estaduais import ServicosEstaduaisService
+from app.services.sicar_publico import SICARPublicoService
+from app.services.sigef_parcelas import SigefParcelasService
+from app.services.sigef_publico import SIGEFPublicoService
+from app.services.tjmg_api import TJMGService
+from app.services.tse_api import TSEService
 
 logger = logging.getLogger(__name__)
 audit_logger = AuditLogger()
@@ -80,7 +83,7 @@ async def transparencia_sancoes(
     if not service.api_key:
         raise HTTPException(
             status_code=503,
-            detail="Portal da Transparência não configurado. Configure PORTAL_TRANSPARENCIA_API_KEY no arquivo .env"
+            detail="Portal da Transparência não configurado. Configure PORTAL_TRANSPARENCIA_API_KEY no arquivo .env",
         )
 
     try:
@@ -101,7 +104,9 @@ async def transparencia_sancoes(
     except ValueError as e:
         error_msg = str(e)
         if "401" in error_msg or "Chave de API" in error_msg:
-            raise HTTPException(status_code=401, detail="API Key do Portal da Transparência inválida ou expirada")
+            raise HTTPException(
+                status_code=401, detail="API Key do Portal da Transparência inválida ou expirada"
+            )
         raise HTTPException(status_code=500, detail=error_msg)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -114,14 +119,14 @@ async def transparencia_contratos(
     db: AsyncSession = Depends(get_db),
 ):
     service = PortalTransparenciaService()
-    
+
     # Verificar se credenciais estão configuradas
     if not service.api_key:
         raise HTTPException(
             status_code=503,
-            detail="Portal da Transparência não configurado. Configure PORTAL_TRANSPARENCIA_API_KEY no arquivo .env"
+            detail="Portal da Transparência não configurado. Configure PORTAL_TRANSPARENCIA_API_KEY no arquivo .env",
         )
-    
+
     try:
         result = await service.consultar_contratos(request.cpf_cnpj)
         await record_legal_query_if_investigation(
@@ -152,14 +157,14 @@ async def transparencia_servidores(
     db: AsyncSession = Depends(get_db),
 ):
     service = PortalTransparenciaService()
-    
+
     # Verificar se credenciais estão configuradas
     if not service.api_key:
         raise HTTPException(
             status_code=503,
-            detail="Portal da Transparência não configurado. Configure PORTAL_TRANSPARENCIA_API_KEY no arquivo .env"
+            detail="Portal da Transparência não configurado. Configure PORTAL_TRANSPARENCIA_API_KEY no arquivo .env",
         )
-    
+
     try:
         result = await service.consultar_servidores(request.cpf_cnpj)
         await record_legal_query_if_investigation(
@@ -189,14 +194,14 @@ async def transparencia_beneficios(
     db: AsyncSession = Depends(get_db),
 ):
     service = PortalTransparenciaService()
-    
+
     # Verificar se credenciais estão configuradas
     if not service.api_key:
         raise HTTPException(
             status_code=503,
-            detail="Portal da Transparência não configurado. Configure PORTAL_TRANSPARENCIA_API_KEY no arquivo .env"
+            detail="Portal da Transparência não configurado. Configure PORTAL_TRANSPARENCIA_API_KEY no arquivo .env",
         )
-    
+
     try:
         result = await service.consultar_beneficios(request.cpf_cnpj)
         await record_legal_query_if_investigation(
@@ -242,7 +247,10 @@ async def transparencia_despesas(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/transparencia/completa", summary="Transparência - Consulta completa (sanções + contratos + servidores + benefícios)")
+@router.post(
+    "/transparencia/completa",
+    summary="Transparência - Consulta completa (sanções + contratos + servidores + benefícios)",
+)
 async def transparencia_completa(
     request: TransparenciaRequest,
     current_user: User = Depends(get_current_user),
@@ -523,7 +531,9 @@ async def bcb_cdi(current_user: User = Depends(get_current_user)):
 
 
 @router.get("/bcb/cambio/{moeda}", summary="BCB - Taxa de câmbio PTAX")
-async def bcb_cambio(moeda: str, data: Optional[str] = None, current_user: User = Depends(get_current_user)):
+async def bcb_cambio(
+    moeda: str, data: Optional[str] = None, current_user: User = Depends(get_current_user)
+):
     service = BCBService()
     try:
         return await service.consultar_taxa_cambio(moeda, data)
@@ -596,4 +606,3 @@ async def dados_gov_organizacoes(
         return await service.buscar_organizacoes(query)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-

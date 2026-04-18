@@ -1,8 +1,10 @@
 """
 SIGEF Parcelas - Integração via web service configurável
 """
-from typing import Any, Dict, Optional
+
 import logging
+from typing import Any, Dict, Optional
+
 import httpx
 
 from app.core.config import settings
@@ -47,9 +49,17 @@ class SigefParcelasService:
             raise ValueError(f"SIGEF Parcelas erro {response.status_code}: {response.text}")
 
         result = response.json()
-        count = len(result) if isinstance(result, list) else (len(result.get("parcelas", [])) if isinstance(result, dict) else 0)
+        count = (
+            len(result)
+            if isinstance(result, list)
+            else (len(result.get("parcelas", [])) if isinstance(result, dict) else 0)
+        )
         logger.info(
             "sigef_parcelas: consulta executada",
-            extra={"param_keys": list(params.keys()), "result_count": count, "pagina": params.get("pagina")},
+            extra={
+                "param_keys": list(params.keys()),
+                "result_count": count,
+                "pagina": params.get("pagina"),
+            },
         )
         return result

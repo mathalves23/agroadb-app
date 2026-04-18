@@ -3,9 +3,12 @@ Investigation Domain Model
 """
 
 from datetime import datetime
-from typing import TYPE_CHECKING, List, Optional
 from enum import Enum
-from sqlalchemy import String, Text, DateTime, ForeignKey, Integer, Enum as SQLEnum
+from typing import TYPE_CHECKING, List, Optional
+
+from sqlalchemy import DateTime
+from sqlalchemy import Enum as SQLEnum
+from sqlalchemy import ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base

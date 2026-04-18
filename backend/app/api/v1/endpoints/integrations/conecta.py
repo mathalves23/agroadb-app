@@ -1,67 +1,72 @@
 """Sub-router Conecta gov.br + SIGEF parcelas (WS)."""
+
 """
 Endpoints REST para Integrações Externas
 
 Expõe todas as integrações via API REST
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query
-from fastapi.responses import StreamingResponse, Response
 import io
-from sqlalchemy.ext.asyncio import AsyncSession
-from typing import Dict, List, Optional, Any
-from pydantic import BaseModel, ConfigDict
 import logging
+from typing import Any, Dict, List, Optional
 
-from app.core.database import get_db
-from app.core.config import settings
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi.responses import Response, StreamingResponse
+from pydantic import BaseModel, ConfigDict
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.api.v1.deps import get_current_user
-from app.domain.user import User
-from app.integrations.car_estados import CARIntegration, query_car_single
-from app.integrations.tribunais import TribunalIntegration, query_process_by_number
-from app.integrations.orgaos_federais import OrgaoFederalIntegration
-from app.integrations.bureaus import BureauIntegration
-from app.integrations.comunicacao import ComunicacaoIntegration
-from app.services.sigef_parcelas import SigefParcelasService
-from app.services.conecta_sncr import ConectaSNCRService
-from app.services.conecta_sigef import ConectaSIGEFService
-from app.services.conecta_sicar import ConectaSICARService
-from app.services.conecta_sncci import ConectaSNCCIService
-from app.services.conecta_sigef_geo import ConectaSIGEFGeoService
-from app.services.conecta_cnpj import ConectaCNPJService
-from app.services.conecta_cnd import ConectaCNDService
-from app.services.conecta_cadin import ConectaCadinService
-from app.services.portal_servicos import PortalServicosService
-from app.services.servicos_estaduais import ServicosEstaduaisService
-from app.services.brasil_api import BrasilAPIService
-from app.services.portal_transparencia import PortalTransparenciaService
-from app.services.ibge_api import IBGEService
-from app.services.tse_api import TSEService
-from app.services.cvm_api import CVMService
-from app.services.bcb_api import BCBService
-from app.services.dados_gov import DadosGovService
-from app.services.redesim_api import RedesimService
-from app.services.tjmg_api import TJMGService
-from app.services.antecedentes_mg import AntecedentesMGService
-from app.services.sicar_publico import SICARPublicoService
-from app.services.caixa_fgts import CaixaFGTSService
-from app.services.bnmp_cnj import BNMPService
-from app.services.seeu_cnj import SEEUService
-from app.services.sigef_publico import SIGEFPublicoService
-from app.services.receita_cpf import ReceitaCPFService
-from app.services.receita_cnpj import ReceitaCNPJService
-from app.repositories.legal_query import LegalQueryRepository
-from app.core.audit import AuditLogger
+from app.api.v1.endpoints.integrations_helpers import conecta_items as _conecta_items
 from app.api.v1.endpoints.integrations_helpers import (
-    result_count as _result_count,
-    is_credentials_missing as _is_credentials_missing,
-    conecta_items as _conecta_items,
     conecta_standard_response as _conecta_standard_response,
 )
+from app.api.v1.endpoints.integrations_helpers import (
+    is_credentials_missing as _is_credentials_missing,
+)
+from app.api.v1.endpoints.integrations_helpers import result_count as _result_count
+from app.core.audit import AuditLogger
+from app.core.config import settings
+from app.core.database import get_db
+from app.domain.user import User
+from app.integrations.bureaus import BureauIntegration
+from app.integrations.car_estados import CARIntegration, query_car_single
+from app.integrations.comunicacao import ComunicacaoIntegration
+from app.integrations.orgaos_federais import OrgaoFederalIntegration
+from app.integrations.tribunais import TribunalIntegration, query_process_by_number
+from app.repositories.legal_query import LegalQueryRepository
+from app.services.antecedentes_mg import AntecedentesMGService
+from app.services.bcb_api import BCBService
+from app.services.bnmp_cnj import BNMPService
+from app.services.brasil_api import BrasilAPIService
+from app.services.caixa_fgts import CaixaFGTSService
+from app.services.conecta_cadin import ConectaCadinService
+from app.services.conecta_cnd import ConectaCNDService
+from app.services.conecta_cnpj import ConectaCNPJService
+from app.services.conecta_sicar import ConectaSICARService
+from app.services.conecta_sigef import ConectaSIGEFService
+from app.services.conecta_sigef_geo import ConectaSIGEFGeoService
+from app.services.conecta_sncci import ConectaSNCCIService
+from app.services.conecta_sncr import ConectaSNCRService
+from app.services.cvm_api import CVMService
+from app.services.dados_gov import DadosGovService
+from app.services.ibge_api import IBGEService
+from app.services.portal_servicos import PortalServicosService
+from app.services.portal_transparencia import PortalTransparenciaService
+from app.services.receita_cnpj import ReceitaCNPJService
+from app.services.receita_cpf import ReceitaCPFService
+from app.services.redesim_api import RedesimService
+from app.services.seeu_cnj import SEEUService
+from app.services.servicos_estaduais import ServicosEstaduaisService
+from app.services.sicar_publico import SICARPublicoService
+from app.services.sigef_parcelas import SigefParcelasService
+from app.services.sigef_publico import SIGEFPublicoService
+from app.services.tjmg_api import TJMGService
+from app.services.tse_api import TSEService
 
 logger = logging.getLogger(__name__)
 audit_logger = AuditLogger()
 router = APIRouter()
+
 
 # Schemas
 class CARQueryRequest(BaseModel):
@@ -209,14 +214,16 @@ async def query_sigef_parcelas(
         count = _result_count(result)
         if request.investigation_id:
             repo = LegalQueryRepository(db)
-            await repo.create({
-                "investigation_id": request.investigation_id,
-                "provider": "sigef_parcelas",
-                "query_type": "parcelas",
-                "query_params": params,
-                "result_count": count,
-                "response": result if isinstance(result, dict) else {"result": result},
-            })
+            await repo.create(
+                {
+                    "investigation_id": request.investigation_id,
+                    "provider": "sigef_parcelas",
+                    "query_type": "parcelas",
+                    "query_params": params,
+                    "result_count": count,
+                    "response": result if isinstance(result, dict) else {"result": result},
+                }
+            )
         await audit_logger.log_action(
             db=db,
             user_id=current_user.id,
@@ -244,14 +251,16 @@ async def conecta_sncr_imovel(
         result = await service.consultar_imovel(request.codigo_imovel)
         if request.investigation_id:
             repo = LegalQueryRepository(db)
-            await repo.create({
-                "investigation_id": request.investigation_id,
-                "provider": "conecta_sncr",
-                "query_type": "imovel",
-                "query_params": {"codigo_imovel": request.codigo_imovel},
-                "result_count": _result_count(result),
-                "response": result if isinstance(result, dict) else {"result": result},
-            })
+            await repo.create(
+                {
+                    "investigation_id": request.investigation_id,
+                    "provider": "conecta_sncr",
+                    "query_type": "imovel",
+                    "query_params": {"codigo_imovel": request.codigo_imovel},
+                    "result_count": _result_count(result),
+                    "response": result if isinstance(result, dict) else {"result": result},
+                }
+            )
         return _conecta_standard_response(result)
     except ValueError as e:
         if _is_credentials_missing(e):
@@ -275,14 +284,16 @@ async def conecta_sncr_cpf_cnpj(
         result = await service.consultar_por_cpf_cnpj(request.cpf_cnpj)
         if request.investigation_id:
             repo = LegalQueryRepository(db)
-            await repo.create({
-                "investigation_id": request.investigation_id,
-                "provider": "conecta_sncr",
-                "query_type": "cpf_cnpj",
-                "query_params": {"cpf_cnpj": request.cpf_cnpj},
-                "result_count": _result_count(result),
-                "response": result if isinstance(result, dict) else {"result": result},
-            })
+            await repo.create(
+                {
+                    "investigation_id": request.investigation_id,
+                    "provider": "conecta_sncr",
+                    "query_type": "cpf_cnpj",
+                    "query_params": {"cpf_cnpj": request.cpf_cnpj},
+                    "result_count": _result_count(result),
+                    "response": result if isinstance(result, dict) else {"result": result},
+                }
+            )
         return _conecta_standard_response(result)
     except ValueError as e:
         if _is_credentials_missing(e):
@@ -307,14 +318,16 @@ async def conecta_sncr_situacao(
         result = await service.verificar_situacao(codigo)
         if investigation_id:
             repo = LegalQueryRepository(db)
-            await repo.create({
-                "investigation_id": investigation_id,
-                "provider": "conecta_sncr",
-                "query_type": "situacao",
-                "query_params": {"codigo_imovel": codigo},
-                "result_count": _result_count(result),
-                "response": result if isinstance(result, dict) else {"result": result},
-            })
+            await repo.create(
+                {
+                    "investigation_id": investigation_id,
+                    "provider": "conecta_sncr",
+                    "query_type": "situacao",
+                    "query_params": {"codigo_imovel": codigo},
+                    "result_count": _result_count(result),
+                    "response": result if isinstance(result, dict) else {"result": result},
+                }
+            )
         return _conecta_standard_response(result)
     except ValueError as e:
         if _is_credentials_missing(e):
@@ -368,14 +381,16 @@ async def conecta_sncci_parcelas(
         result = await service.listar_parcelas(request.cod_credito)
         if request.investigation_id:
             repo = LegalQueryRepository(db)
-            await repo.create({
-                "investigation_id": request.investigation_id,
-                "provider": "conecta_sncci",
-                "query_type": "parcelas",
-                "query_params": {"cod_credito": request.cod_credito},
-                "result_count": _result_count(result),
-                "response": result if isinstance(result, dict) else {"result": result},
-            })
+            await repo.create(
+                {
+                    "investigation_id": request.investigation_id,
+                    "provider": "conecta_sncci",
+                    "query_type": "parcelas",
+                    "query_params": {"cod_credito": request.cod_credito},
+                    "result_count": _result_count(result),
+                    "response": result if isinstance(result, dict) else {"result": result},
+                }
+            )
         return result
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -394,14 +409,16 @@ async def conecta_sncci_creditos_ativos(
         result = await service.listar_creditos_ativos(request.cod_beneficiario)
         if request.investigation_id:
             repo = LegalQueryRepository(db)
-            await repo.create({
-                "investigation_id": request.investigation_id,
-                "provider": "conecta_sncci",
-                "query_type": "creditos_ativos",
-                "query_params": {"cod_beneficiario": request.cod_beneficiario},
-                "result_count": _result_count(result),
-                "response": result if isinstance(result, dict) else {"result": result},
-            })
+            await repo.create(
+                {
+                    "investigation_id": request.investigation_id,
+                    "provider": "conecta_sncci",
+                    "query_type": "creditos_ativos",
+                    "query_params": {"cod_beneficiario": request.cod_beneficiario},
+                    "result_count": _result_count(result),
+                    "response": result if isinstance(result, dict) else {"result": result},
+                }
+            )
         return result
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -409,7 +426,9 @@ async def conecta_sncci_creditos_ativos(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/conecta/sncci/creditos/{codigo}", summary="SNCCI - Retorna dados de crédito por código")
+@router.get(
+    "/conecta/sncci/creditos/{codigo}", summary="SNCCI - Retorna dados de crédito por código"
+)
 async def conecta_sncci_creditos(
     codigo: str,
     investigation_id: Optional[int] = Query(None),
@@ -421,14 +440,16 @@ async def conecta_sncci_creditos(
         result = await service.consultar_credito(codigo)
         if investigation_id:
             repo = LegalQueryRepository(db)
-            await repo.create({
-                "investigation_id": investigation_id,
-                "provider": "conecta_sncci",
-                "query_type": "creditos",
-                "query_params": {"codigo": codigo},
-                "result_count": _result_count(result),
-                "response": result if isinstance(result, dict) else {"result": result},
-            })
+            await repo.create(
+                {
+                    "investigation_id": investigation_id,
+                    "provider": "conecta_sncci",
+                    "query_type": "creditos",
+                    "query_params": {"codigo": codigo},
+                    "result_count": _result_count(result),
+                    "response": result if isinstance(result, dict) else {"result": result},
+                }
+            )
         return result
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -474,14 +495,16 @@ async def conecta_sigef_geo_parcelas(
         result = await service.consultar_parcelas(params)
         if request.investigation_id:
             repo = LegalQueryRepository(db)
-            await repo.create({
-                "investigation_id": request.investigation_id,
-                "provider": "conecta_sigef_geo",
-                "query_type": "parcelas",
-                "query_params": params,
-                "result_count": _result_count(result),
-                "response": result if isinstance(result, dict) else {"result": result},
-            })
+            await repo.create(
+                {
+                    "investigation_id": request.investigation_id,
+                    "provider": "conecta_sigef_geo",
+                    "query_type": "parcelas",
+                    "query_params": params,
+                    "result_count": _result_count(result),
+                    "response": result if isinstance(result, dict) else {"result": result},
+                }
+            )
         return result
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -489,7 +512,9 @@ async def conecta_sigef_geo_parcelas(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/conecta/sigef-geo/parcelas-geojson", summary="SIGEF GEO - Consultar parcelas (GeoJSON)")
+@router.post(
+    "/conecta/sigef-geo/parcelas-geojson", summary="SIGEF GEO - Consultar parcelas (GeoJSON)"
+)
 async def conecta_sigef_geo_parcelas_geojson(
     request: SigefGeoParcelasRequest,
     current_user: User = Depends(get_current_user),
@@ -502,14 +527,16 @@ async def conecta_sigef_geo_parcelas_geojson(
         result = await service.consultar_parcelas_geojson(params)
         if request.investigation_id:
             repo = LegalQueryRepository(db)
-            await repo.create({
-                "investigation_id": request.investigation_id,
-                "provider": "conecta_sigef_geo",
-                "query_type": "parcelas_geojson",
-                "query_params": params,
-                "result_count": _result_count(result),
-                "response": result if isinstance(result, dict) else {"result": result},
-            })
+            await repo.create(
+                {
+                    "investigation_id": request.investigation_id,
+                    "provider": "conecta_sigef_geo",
+                    "query_type": "parcelas_geojson",
+                    "query_params": params,
+                    "result_count": _result_count(result),
+                    "response": result if isinstance(result, dict) else {"result": result},
+                }
+            )
         return result
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -528,14 +555,16 @@ async def conecta_cnpj_basica(
         result = await service.consultar_basica(request.cnpj, request.cpf_usuario)
         if request.investigation_id:
             repo = LegalQueryRepository(db)
-            await repo.create({
-                "investigation_id": request.investigation_id,
-                "provider": "conecta_cnpj",
-                "query_type": "basica",
-                "query_params": {"cnpj": request.cnpj},
-                "result_count": _result_count(result),
-                "response": result if isinstance(result, dict) else {"result": result},
-            })
+            await repo.create(
+                {
+                    "investigation_id": request.investigation_id,
+                    "provider": "conecta_cnpj",
+                    "query_type": "basica",
+                    "query_params": {"cnpj": request.cnpj},
+                    "result_count": _result_count(result),
+                    "response": result if isinstance(result, dict) else {"result": result},
+                }
+            )
         return result
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -554,14 +583,16 @@ async def conecta_cnpj_qsa(
         result = await service.consultar_qsa(request.cnpj, request.cpf_usuario)
         if request.investigation_id:
             repo = LegalQueryRepository(db)
-            await repo.create({
-                "investigation_id": request.investigation_id,
-                "provider": "conecta_cnpj",
-                "query_type": "qsa",
-                "query_params": {"cnpj": request.cnpj},
-                "result_count": _result_count(result),
-                "response": result if isinstance(result, dict) else {"result": result},
-            })
+            await repo.create(
+                {
+                    "investigation_id": request.investigation_id,
+                    "provider": "conecta_cnpj",
+                    "query_type": "qsa",
+                    "query_params": {"cnpj": request.cnpj},
+                    "result_count": _result_count(result),
+                    "response": result if isinstance(result, dict) else {"result": result},
+                }
+            )
         return result
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -580,14 +611,16 @@ async def conecta_cnpj_empresa(
         result = await service.consultar_empresa(request.cnpj, request.cpf_usuario)
         if request.investigation_id:
             repo = LegalQueryRepository(db)
-            await repo.create({
-                "investigation_id": request.investigation_id,
-                "provider": "conecta_cnpj",
-                "query_type": "empresa",
-                "query_params": {"cnpj": request.cnpj},
-                "result_count": _result_count(result),
-                "response": result if isinstance(result, dict) else {"result": result},
-            })
+            await repo.create(
+                {
+                    "investigation_id": request.investigation_id,
+                    "provider": "conecta_cnpj",
+                    "query_type": "empresa",
+                    "query_params": {"cnpj": request.cnpj},
+                    "result_count": _result_count(result),
+                    "response": result if isinstance(result, dict) else {"result": result},
+                }
+            )
         return result
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -608,14 +641,16 @@ async def conecta_cnd_certidao(
         result = await service.consultar_certidao(payload)
         if request.investigation_id:
             repo = LegalQueryRepository(db)
-            await repo.create({
-                "investigation_id": request.investigation_id,
-                "provider": "conecta_cnd",
-                "query_type": "certidao",
-                "query_params": payload,
-                "result_count": _result_count(result),
-                "response": result if isinstance(result, dict) else {"result": result},
-            })
+            await repo.create(
+                {
+                    "investigation_id": request.investigation_id,
+                    "provider": "conecta_cnd",
+                    "query_type": "certidao",
+                    "query_params": payload,
+                    "result_count": _result_count(result),
+                    "response": result if isinstance(result, dict) else {"result": result},
+                }
+            )
         return result
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -636,14 +671,16 @@ async def conecta_cadin_info_cpf(
         result = await service.info_cpf(request.cpf)
         if request.investigation_id:
             repo = LegalQueryRepository(db)
-            await repo.create({
-                "investigation_id": request.investigation_id,
-                "provider": "conecta_cadin",
-                "query_type": "info_cpf",
-                "query_params": {"cpf": request.cpf},
-                "result_count": _result_count(result),
-                "response": result if isinstance(result, dict) else {"result": result},
-            })
+            await repo.create(
+                {
+                    "investigation_id": request.investigation_id,
+                    "provider": "conecta_cadin",
+                    "query_type": "info_cpf",
+                    "query_params": {"cpf": request.cpf},
+                    "result_count": _result_count(result),
+                    "response": result if isinstance(result, dict) else {"result": result},
+                }
+            )
         return result
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -664,14 +701,16 @@ async def conecta_cadin_info_cnpj(
         result = await service.info_cnpj(request.cnpj)
         if request.investigation_id:
             repo = LegalQueryRepository(db)
-            await repo.create({
-                "investigation_id": request.investigation_id,
-                "provider": "conecta_cadin",
-                "query_type": "info_cnpj",
-                "query_params": {"cnpj": request.cnpj},
-                "result_count": _result_count(result),
-                "response": result if isinstance(result, dict) else {"result": result},
-            })
+            await repo.create(
+                {
+                    "investigation_id": request.investigation_id,
+                    "provider": "conecta_cadin",
+                    "query_type": "info_cnpj",
+                    "query_params": {"cnpj": request.cnpj},
+                    "result_count": _result_count(result),
+                    "response": result if isinstance(result, dict) else {"result": result},
+                }
+            )
         return result
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -692,14 +731,16 @@ async def conecta_cadin_completa_cpf(
         result = await service.completa_cpf(request.cpf)
         if request.investigation_id:
             repo = LegalQueryRepository(db)
-            await repo.create({
-                "investigation_id": request.investigation_id,
-                "provider": "conecta_cadin",
-                "query_type": "completa_cpf",
-                "query_params": {"cpf": request.cpf},
-                "result_count": _result_count(result),
-                "response": result if isinstance(result, dict) else {"result": result},
-            })
+            await repo.create(
+                {
+                    "investigation_id": request.investigation_id,
+                    "provider": "conecta_cadin",
+                    "query_type": "completa_cpf",
+                    "query_params": {"cpf": request.cpf},
+                    "result_count": _result_count(result),
+                    "response": result if isinstance(result, dict) else {"result": result},
+                }
+            )
         return result
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -720,14 +761,16 @@ async def conecta_cadin_completa_cnpj(
         result = await service.completa_cnpj(request.cnpj)
         if request.investigation_id:
             repo = LegalQueryRepository(db)
-            await repo.create({
-                "investigation_id": request.investigation_id,
-                "provider": "conecta_cadin",
-                "query_type": "completa_cnpj",
-                "query_params": {"cnpj": request.cnpj},
-                "result_count": _result_count(result),
-                "response": result if isinstance(result, dict) else {"result": result},
-            })
+            await repo.create(
+                {
+                    "investigation_id": request.investigation_id,
+                    "provider": "conecta_cadin",
+                    "query_type": "completa_cnpj",
+                    "query_params": {"cnpj": request.cnpj},
+                    "result_count": _result_count(result),
+                    "response": result if isinstance(result, dict) else {"result": result},
+                }
+            )
         return result
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -762,7 +805,9 @@ async def portal_servicos_orgao(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/portal-servicos/servicos/{servico_id}", summary="Portal Serviços - Consultar serviço completo")
+@router.get(
+    "/portal-servicos/servicos/{servico_id}", summary="Portal Serviços - Consultar serviço completo"
+)
 async def portal_servicos_servico(
     servico_id: str,
     current_user: User = Depends(get_current_user),
@@ -776,7 +821,10 @@ async def portal_servicos_servico(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/portal-servicos/servicos-simples/{servico_id}", summary="Portal Serviços - Consultar serviço simples")
+@router.get(
+    "/portal-servicos/servicos-simples/{servico_id}",
+    summary="Portal Serviços - Consultar serviço simples",
+)
 async def portal_servicos_servico_simples(
     servico_id: str,
     current_user: User = Depends(get_current_user),
@@ -848,7 +896,9 @@ async def servicos_estaduais_editar(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/servicos-estaduais/servicos/{servico_id}", summary="Serviços Estaduais - Consultar serviço")
+@router.get(
+    "/servicos-estaduais/servicos/{servico_id}", summary="Serviços Estaduais - Consultar serviço"
+)
 async def servicos_estaduais_consultar(
     servico_id: str,
     authorization: str,
@@ -874,14 +924,16 @@ async def conecta_sigef_imovel(
         result = await service.consultar_imovel(request.codigo_imovel)
         if request.investigation_id:
             repo = LegalQueryRepository(db)
-            await repo.create({
-                "investigation_id": request.investigation_id,
-                "provider": "conecta_sigef",
-                "query_type": "imovel",
-                "query_params": {"codigo_imovel": request.codigo_imovel},
-                "result_count": _result_count(result),
-                "response": result if isinstance(result, dict) else {"result": result},
-            })
+            await repo.create(
+                {
+                    "investigation_id": request.investigation_id,
+                    "provider": "conecta_sigef",
+                    "query_type": "imovel",
+                    "query_params": {"codigo_imovel": request.codigo_imovel},
+                    "result_count": _result_count(result),
+                    "response": result if isinstance(result, dict) else {"result": result},
+                }
+            )
         return _conecta_standard_response(result)
     except ValueError as e:
         if _is_credentials_missing(e):
@@ -905,14 +957,16 @@ async def conecta_sigef_parcelas(
         result = await service.consultar_parcelas(request.cpf_cnpj)
         if request.investigation_id:
             repo = LegalQueryRepository(db)
-            await repo.create({
-                "investigation_id": request.investigation_id,
-                "provider": "conecta_sigef",
-                "query_type": "parcelas",
-                "query_params": {"cpf_cnpj": request.cpf_cnpj},
-                "result_count": _result_count(result),
-                "response": result if isinstance(result, dict) else {"result": result},
-            })
+            await repo.create(
+                {
+                    "investigation_id": request.investigation_id,
+                    "provider": "conecta_sigef",
+                    "query_type": "parcelas",
+                    "query_params": {"cpf_cnpj": request.cpf_cnpj},
+                    "result_count": _result_count(result),
+                    "response": result if isinstance(result, dict) else {"result": result},
+                }
+            )
         return _conecta_standard_response(result)
     except ValueError as e:
         if _is_credentials_missing(e):
@@ -936,14 +990,16 @@ async def conecta_sicar_cpf_cnpj(
         result = await service.consultar_por_cpf_cnpj(request.cpf_cnpj)
         if request.investigation_id:
             repo = LegalQueryRepository(db)
-            await repo.create({
-                "investigation_id": request.investigation_id,
-                "provider": "conecta_sicar",
-                "query_type": "cpf_cnpj",
-                "query_params": {"cpf_cnpj": request.cpf_cnpj},
-                "result_count": _result_count(result),
-                "response": result if isinstance(result, dict) else {"result": result},
-            })
+            await repo.create(
+                {
+                    "investigation_id": request.investigation_id,
+                    "provider": "conecta_sicar",
+                    "query_type": "cpf_cnpj",
+                    "query_params": {"cpf_cnpj": request.cpf_cnpj},
+                    "result_count": _result_count(result),
+                    "response": result if isinstance(result, dict) else {"result": result},
+                }
+            )
         return _conecta_standard_response(result)
     except ValueError as e:
         if _is_credentials_missing(e):
@@ -968,14 +1024,16 @@ async def conecta_sicar_cpf_cnpj_get(
         result = await service.consultar_por_cpf_cnpj(cpf_cnpj)
         if investigation_id:
             repo = LegalQueryRepository(db)
-            await repo.create({
-                "investigation_id": investigation_id,
-                "provider": "conecta_sicar",
-                "query_type": "cpf_cnpj",
-                "query_params": {"cpf_cnpj": cpf_cnpj},
-                "result_count": _result_count(result),
-                "response": result if isinstance(result, dict) else {"result": result},
-            })
+            await repo.create(
+                {
+                    "investigation_id": investigation_id,
+                    "provider": "conecta_sicar",
+                    "query_type": "cpf_cnpj",
+                    "query_params": {"cpf_cnpj": cpf_cnpj},
+                    "result_count": _result_count(result),
+                    "response": result if isinstance(result, dict) else {"result": result},
+                }
+            )
         return _conecta_standard_response(result)
     except ValueError as e:
         if _is_credentials_missing(e):
@@ -999,14 +1057,16 @@ async def conecta_sicar_imovel(
         result = await service.consultar_imovel(request.codigo_imovel)
         if request.investigation_id:
             repo = LegalQueryRepository(db)
-            await repo.create({
-                "investigation_id": request.investigation_id,
-                "provider": "conecta_sicar",
-                "query_type": "imovel",
-                "query_params": {"codigo_imovel": request.codigo_imovel},
-                "result_count": _result_count(result),
-                "response": result if isinstance(result, dict) else {"result": result},
-            })
+            await repo.create(
+                {
+                    "investigation_id": request.investigation_id,
+                    "provider": "conecta_sicar",
+                    "query_type": "imovel",
+                    "query_params": {"codigo_imovel": request.codigo_imovel},
+                    "result_count": _result_count(result),
+                    "response": result if isinstance(result, dict) else {"result": result},
+                }
+            )
         return _conecta_standard_response(result)
     except ValueError as e:
         if _is_credentials_missing(e):
@@ -1017,4 +1077,3 @@ async def conecta_sicar_imovel(
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-

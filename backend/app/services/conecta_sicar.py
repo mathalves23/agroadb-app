@@ -1,7 +1,9 @@
 """
 Conecta gov.br - Integração SICAR
 """
+
 from typing import Any, Dict
+
 import httpx
 
 from app.core.config import settings
@@ -61,7 +63,9 @@ class ConectaSICARService:
             raise self._credential_error()
         if not self.path_imovel:
             raise ValueError("CONECTA_SICAR_IMOVEL_PATH não configurado")
-        path = self.path_imovel.replace("{codigo_imovel}", codigo_imovel).replace("{codigo}", codigo_imovel)
+        path = self.path_imovel.replace("{codigo_imovel}", codigo_imovel).replace(
+            "{codigo}", codigo_imovel
+        )
         url = self._build_url(path)
         headers = await self.auth.build_headers()
         async with httpx.AsyncClient(timeout=self.timeout) as client:

@@ -11,10 +11,13 @@ Cobre:
 - Cache de resultados
 - Rate limiting
 """
-import pytest
+
 from datetime import datetime, timedelta
-from unittest.mock import Mock, patch, AsyncMock
-from app.scrapers.receita_scraper import ReceitaScraper, APIProvider
+from unittest.mock import AsyncMock, Mock, patch
+
+import pytest
+
+from app.scrapers.receita_scraper import APIProvider, ReceitaScraper
 
 
 @pytest.fixture
@@ -116,82 +119,90 @@ def mock_company_data_receitaws():
 
 class TestReceitaScraperBasicSearch:
     """Testes para busca básica"""
-    
+
     @pytest.mark.asyncio
     async def test_search_valid_cnpj(self, receita_scraper, mock_company_data_brasilapi):
         """Testa busca com CNPJ válido"""
-        with patch.object(receita_scraper, '_fetch_from_provider', new_callable=AsyncMock) as mock_fetch:
+        with patch.object(
+            receita_scraper, "_fetch_from_provider", new_callable=AsyncMock
+        ) as mock_fetch:
             mock_fetch.return_value = mock_company_data_brasilapi
-            
+
             results = await receita_scraper.search("12.345.678/0001-90")
-            
+
             assert len(results) == 1
             assert results[0]["cnpj_clean"] == "12345678000190"
             assert results[0]["corporate_name"] == "EMPRESA TESTE LTDA"
-    
+
     @pytest.mark.asyncio
     async def test_search_invalid_cnpj(self, receita_scraper):
         """Testa busca com CNPJ inválido"""
         results = await receita_scraper.search("123")  # CNPJ muito curto
-        
+
         assert results == []
-    
+
     @pytest.mark.asyncio
     async def test_search_with_cache(self, receita_scraper, mock_company_data_brasilapi):
         """Testa que busca usa cache em segunda chamada"""
-        with patch.object(receita_scraper, '_fetch_from_provider', new_callable=AsyncMock) as mock_fetch:
+        with patch.object(
+            receita_scraper, "_fetch_from_provider", new_callable=AsyncMock
+        ) as mock_fetch:
             mock_fetch.return_value = mock_company_data_brasilapi
-            
+
             # Primeira busca
             results1 = await receita_scraper.search("12345678000190")
             assert len(results1) == 1
-            
+
             # Segunda busca deve usar cache
             results2 = await receita_scraper.search("12345678000190")
             assert len(results2) == 1
-            
+
             # Deve ter chamado API apenas uma vez
             assert mock_fetch.call_count == 1
 
 
 class TestReceitaScraperFallback:
     """Testes para sistema de fallback entre APIs"""
-    
+
     @pytest.mark.asyncio
     async def test_fallback_to_second_api(self, receita_scraper, mock_company_data_receitaws):
         """Testa fallback quando primeira API falha"""
+
         async def mock_fetch_side_effect(provider, cnpj):
             if provider == APIProvider.BRASILAPI:
                 return None  # Primeira API falha
             elif provider == APIProvider.RECEITAWS:
                 return mock_company_data_receitaws  # Segunda API funciona
             return None
-        
-        with patch.object(receita_scraper, '_fetch_from_provider', side_effect=mock_fetch_side_effect):
+
+        with patch.object(
+            receita_scraper, "_fetch_from_provider", side_effect=mock_fetch_side_effect
+        ):
             results = await receita_scraper.search("12345678000190")
-            
+
             assert len(results) == 1
             assert results[0]["provider"] == "ReceitaWS"
-    
+
     @pytest.mark.asyncio
     async def test_all_apis_fail(self, receita_scraper):
         """Testa quando todas as APIs falham"""
-        with patch.object(receita_scraper, '_fetch_from_provider', new_callable=AsyncMock, return_value=None):
+        with patch.object(
+            receita_scraper, "_fetch_from_provider", new_callable=AsyncMock, return_value=None
+        ):
             results = await receita_scraper.search("12345678000190")
-            
+
             assert results == []
 
 
 class TestReceitaScraperDataProcessing:
     """Testes para processamento de dados"""
-    
+
     def test_process_company_data_complete(self, receita_scraper, mock_company_data_brasilapi):
         """Testa processamento de dados completos"""
         result = receita_scraper._process_company_data(
-            mock_company_data_brasilapi,
-            APIProvider.BRASILAPI
+            mock_company_data_brasilapi, APIProvider.BRASILAPI
         )
-        
+
         assert result["cnpj"] == "12.345.678/0001-90"
         assert result["cnpj_clean"] == "12345678000190"
         assert result["corporate_name"] == "EMPRESA TESTE LTDA"
@@ -203,35 +214,30 @@ class TestReceitaScraperDataProcessing:
         assert result["is_matriz"] is True
         assert result["partners_count"] == 3
         assert result["provider"] == "BrasilAPI"
-    
+
     def test_extract_partners(self, receita_scraper, mock_company_data_brasilapi):
         """Testa extração de sócios"""
         partners = receita_scraper._extract_partners(
-            mock_company_data_brasilapi,
-            APIProvider.BRASILAPI
+            mock_company_data_brasilapi, APIProvider.BRASILAPI
         )
-        
+
         assert len(partners) == 3
         assert partners[0]["name"] == "JOÃO SILVA"
         assert partners[0]["qualification"]["description"] == "Sócio-Administrador"
         assert partners[0]["percentage"] == "60.00"
-        
+
         # Sócio PJ
         assert partners[2]["name"] == "EMPRESA HOLDING LTDA"
         assert partners[2]["cpf_cnpj"] == "98765432000100"
-    
+
     def test_extract_related_cnpjs(self, receita_scraper, mock_company_data_brasilapi):
         """Testa extração de CNPJs relacionados"""
         partners = receita_scraper._extract_partners(
-            mock_company_data_brasilapi,
-            APIProvider.BRASILAPI
+            mock_company_data_brasilapi, APIProvider.BRASILAPI
         )
-        
-        related = receita_scraper._extract_related_cnpjs(
-            mock_company_data_brasilapi,
-            partners
-        )
-        
+
+        related = receita_scraper._extract_related_cnpjs(mock_company_data_brasilapi, partners)
+
         # Deve identificar sócio PJ
         assert len(related) >= 1
         cnpj_socio_pj = [r for r in related if r["relationship"] == "Sócio PJ"]
@@ -241,25 +247,25 @@ class TestReceitaScraperDataProcessing:
 
 class TestReceitaScraperHelpers:
     """Testes para métodos auxiliares"""
-    
+
     def test_clean_cnpj(self, receita_scraper):
         """Testa limpeza de CNPJ"""
         assert receita_scraper._clean_cnpj("12.345.678/0001-90") == "12345678000190"
         assert receita_scraper._clean_cnpj("12345678000190") == "12345678000190"
         assert receita_scraper._clean_cnpj("  12.345.678/0001-90  ") == "12345678000190"
-    
+
     def test_format_cnpj(self, receita_scraper):
         """Testa formatação de CNPJ"""
         assert receita_scraper._format_cnpj("12345678000190") == "12.345.678/0001-90"
         assert receita_scraper._format_cnpj("12.345.678/0001-90") == "12.345.678/0001-90"
-    
+
     def test_validate_cnpj(self, receita_scraper):
         """Testa validação de CNPJ"""
         assert receita_scraper._validate_cnpj("12345678000190") is True
         assert receita_scraper._validate_cnpj("12.345.678/0001-90") is True
         assert receita_scraper._validate_cnpj("123") is False
         assert receita_scraper._validate_cnpj("abc") is False
-    
+
     def test_format_address(self, receita_scraper):
         """Testa formatação de endereço"""
         data = {
@@ -269,7 +275,7 @@ class TestReceitaScraperHelpers:
         }
         address = receita_scraper._format_address(data)
         assert address == "Rua Teste, 123, Sala 456"
-    
+
     def test_clean_cpf_cnpj_with_protection(self, receita_scraper):
         """Testa limpeza de CPF/CNPJ com proteção LGPD"""
         assert receita_scraper._clean_cpf_cnpj("***123456**") == "123456"
@@ -278,129 +284,129 @@ class TestReceitaScraperHelpers:
 
 class TestReceitaScraperRateLimiting:
     """Testes para rate limiting"""
-    
+
     def test_can_make_request_no_limit(self, receita_scraper):
         """Testa requisição sem rate limit"""
         assert receita_scraper._can_make_request(APIProvider.BRASILAPI) is True
-    
+
     def test_can_make_request_with_limit(self, receita_scraper):
         """Testa requisição com rate limit"""
         # Primeira requisição sempre pode
         assert receita_scraper._can_make_request(APIProvider.RECEITAWS) is True
-        
+
         # Marcar requisição
         receita_scraper._mark_request(APIProvider.RECEITAWS)
-        
+
         # Imediatamente após, não pode (rate limit = 3 req/min)
         assert receita_scraper._can_make_request(APIProvider.RECEITAWS) is False
-    
+
     def test_rate_limit_expires(self, receita_scraper):
         """Testa que rate limit expira após tempo adequado"""
         # Marcar requisição antiga
         receita_scraper.last_request[APIProvider.RECEITAWS] = datetime.now() - timedelta(seconds=30)
-        
+
         # Deve poder fazer requisição (3 req/min = 20s de intervalo)
         assert receita_scraper._can_make_request(APIProvider.RECEITAWS) is True
 
 
 class TestReceitaScraperCorporateStructure:
     """Testes para estrutura corporativa"""
-    
+
     @pytest.mark.asyncio
     async def test_get_full_corporate_structure(self, receita_scraper, mock_company_data_brasilapi):
         """Testa busca de estrutura corporativa"""
-        with patch.object(receita_scraper, '_fetch_from_provider', new_callable=AsyncMock) as mock_fetch:
+        with patch.object(
+            receita_scraper, "_fetch_from_provider", new_callable=AsyncMock
+        ) as mock_fetch:
             mock_fetch.return_value = mock_company_data_brasilapi
-            
+
             structure = await receita_scraper.get_full_corporate_structure(
-                "12345678000190",
-                depth=1
+                "12345678000190", depth=1
             )
-            
+
             assert "company" in structure
             assert "related_companies" in structure
             assert structure["depth_level"] == 1
             assert structure["company"]["cnpj_clean"] == "12345678000190"
-    
+
     @pytest.mark.asyncio
     async def test_get_full_corporate_structure_depth_zero(self, receita_scraper):
         """Testa estrutura com profundidade zero"""
-        structure = await receita_scraper.get_full_corporate_structure(
-            "12345678000190",
-            depth=0
-        )
-        
+        structure = await receita_scraper.get_full_corporate_structure("12345678000190", depth=0)
+
         assert structure == {}
-    
+
     @pytest.mark.asyncio
     async def test_analyze_corporate_network(self, receita_scraper, mock_company_data_brasilapi):
         """Testa análise de rede corporativa"""
-        with patch.object(receita_scraper, '_fetch_from_provider', new_callable=AsyncMock) as mock_fetch:
+        with patch.object(
+            receita_scraper, "_fetch_from_provider", new_callable=AsyncMock
+        ) as mock_fetch:
             mock_fetch.return_value = mock_company_data_brasilapi
-            
+
             analysis = await receita_scraper.analyze_corporate_network("12345678000190")
-            
+
             assert "root_cnpj" in analysis
             assert "total_companies" in analysis
             assert "all_cnpjs" in analysis
             assert "total_partners" in analysis
             assert "common_partners" in analysis
             assert "corporate_structure" in analysis
-            
+
             assert analysis["root_cnpj"] == "12345678000190"
             assert analysis["total_companies"] >= 1
 
 
 class TestReceitaScraperCache:
     """Testes para sistema de cache"""
-    
+
     def test_save_and_get_from_cache(self, receita_scraper):
         """Testa salvar e recuperar do cache"""
         key = "12345678000190"
         data = {"cnpj": key, "corporate_name": "Teste"}
-        
+
         receita_scraper._save_to_cache(key, data)
         cached = receita_scraper._get_from_cache(key)
-        
+
         assert cached == data
-    
+
     def test_cache_expiration(self, receita_scraper):
         """Testa expiração do cache"""
         key = "12345678000190"
         data = {"cnpj": key}
-        
+
         # Salvar com TTL muito curto
         receita_scraper.cache_ttl = timedelta(seconds=-1)
         receita_scraper._save_to_cache(key, data)
-        
+
         cached = receita_scraper._get_from_cache(key)
-        
+
         assert cached is None
-    
+
     def test_clear_cache(self, receita_scraper):
         """Testa limpeza do cache"""
         receita_scraper._save_to_cache("key1", {"a": 1})
         receita_scraper._save_to_cache("key2", {"b": 2})
-        
+
         assert len(receita_scraper.cache) == 2
-        
+
         receita_scraper.clear_cache()
-        
+
         assert len(receita_scraper.cache) == 0
-    
+
     def test_get_cache_stats(self):
         """Testa estatísticas do cache"""
         scraper = ReceitaScraper()
-        
+
         # Cache válido
         scraper._save_to_cache("valid1", {"a": 1})
         scraper._save_to_cache("valid2", {"b": 2})
-        
+
         # Forçar cache expirado
         scraper.cache["expired"] = (datetime.now() - timedelta(hours=49), {"c": 3})
-        
+
         stats = scraper.get_cache_stats()
-        
+
         assert stats["total_entries"] == 3
         assert stats["valid_entries"] == 2
         assert stats["expired_entries"] == 1
@@ -409,26 +415,26 @@ class TestReceitaScraperCache:
 
 class TestReceitaScraperSecondaryActivities:
     """Testes para atividades secundárias"""
-    
+
     def test_extract_secondary_activities(self, receita_scraper, mock_company_data_brasilapi):
         """Testa extração de CNAEs secundários"""
         activities = receita_scraper._extract_secondary_activities(mock_company_data_brasilapi)
-        
+
         assert len(activities) == 1
         assert activities[0]["code"] == "6202300"
         assert "programas de computador" in activities[0]["description"].lower()
-    
+
     def test_extract_secondary_activities_empty(self, receita_scraper):
         """Testa extração sem CNAEs secundários"""
         data = {"cnaes_secundarios": []}
         activities = receita_scraper._extract_secondary_activities(data)
-        
+
         assert activities == []
 
 
 class TestReceitaScraperFilialIdentification:
     """Testes para identificação de filiais"""
-    
+
     def test_extract_related_cnpjs_for_filial(self, receita_scraper):
         """Testa extração de matriz quando é filial"""
         data = {
@@ -436,9 +442,9 @@ class TestReceitaScraperFilialIdentification:
             "identificador_matriz_filial": "2",  # É filial
         }
         partners = []
-        
+
         related = receita_scraper._extract_related_cnpjs(data, partners)
-        
+
         # Deve identificar matriz
         matriz = [r for r in related if r["relationship"] == "Matriz"]
         assert len(matriz) == 1

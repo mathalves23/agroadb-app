@@ -4,7 +4,9 @@ https://www.policiacivil.mg.gov.br/pagina/emissao-atestado
 Consulta por: CPF + RG (emitido em MG)
 Retorna: conseguiu_emitir_certidao_negativa, numero, codigo
 """
+
 from typing import Any, Dict, Optional
+
 import httpx
 
 
@@ -76,7 +78,10 @@ class AntecedentesMGService:
                 "codigo": None,
                 "mensagem": "Serviço de consulta disponível apenas via portal da Polícia Civil de MG.",
                 "portal_url": f"{self.BASE_URL}/pagina/emissao-atestado",
-                "parametros_enviados": {"cpf": f"***{cleaned_cpf[-4:]}", "rg": f"***{cleaned_rg[-3:]}"},
+                "parametros_enviados": {
+                    "cpf": f"***{cleaned_cpf[-4:]}",
+                    "rg": f"***{cleaned_rg[-3:]}",
+                },
             }
 
     async def verificar_disponibilidade(self) -> Dict[str, Any]:

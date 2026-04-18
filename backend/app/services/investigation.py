@@ -5,17 +5,18 @@ Investigation Service
 import logging
 from datetime import datetime
 from typing import List, Optional
+
 from fastapi import HTTPException, status
 
 logger = logging.getLogger(__name__)
 
+from app.core.config import settings
+from app.domain.collaboration import PermissionLevel
 from app.domain.investigation import Investigation, InvestigationStatus
 from app.repositories.investigation import InvestigationRepository
 from app.schemas.investigation import InvestigationCreate, InvestigationUpdate
-from app.workers.tasks import start_investigation_task
-from app.core.config import settings
-from app.domain.collaboration import PermissionLevel
 from app.services.collaboration import collaboration_service
+from app.workers.tasks import start_investigation_task
 
 
 class InvestigationService:

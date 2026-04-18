@@ -1,4 +1,5 @@
 """Regras de dados MOCK_DEMO no enriquecimento (sem base de dados)."""
+
 from __future__ import annotations
 
 import pytest
@@ -16,7 +17,9 @@ def test_enrich_demo_never_in_production(monkeypatch: pytest.MonkeyPatch) -> Non
 
 
 def test_enrich_demo_respects_flag_off_outside_production(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr("app.services.investigation_enrich_demo.settings.ENVIRONMENT", "development")
+    monkeypatch.setattr(
+        "app.services.investigation_enrich_demo.settings.ENVIRONMENT", "development"
+    )
     monkeypatch.setattr(
         "app.services.investigation_enrich_demo.settings.ENABLE_INVESTIGATION_ENRICH_DEMO_SEED",
         False,

@@ -1,8 +1,10 @@
 """
 Repository for LegalQuery
 """
+
 from typing import List, Optional
-from sqlalchemy import select, func
+
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.investigation import Investigation
@@ -40,5 +42,8 @@ class LegalQueryRepository:
             .group_by(LegalQuery.provider)
         )
         rows = result.all()
-        summary = {row.provider: {"total": int(row.total or 0), "queries": int(row.queries or 0)} for row in rows}
+        summary = {
+            row.provider: {"total": int(row.total or 0), "queries": int(row.queries or 0)}
+            for row in rows
+        }
         return summary

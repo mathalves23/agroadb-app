@@ -13,25 +13,17 @@ Importa e consolida todas as funcionalidades dos arquivos separados.
 
 # Importar classes base
 from app.analytics.management_reports import (
-    ROIReport,
+    CostMetrics,
     CostReport,
+    ErrorMetrics,
     ReportPeriod,
     ROIMetrics,
-    CostMetrics,
+    ROIReport,
     ScraperPerformanceMetrics,
     UptimeMetrics,
-    ErrorMetrics
 )
-
-from app.analytics.management_reports_part2 import (
-    ScraperPerformanceReport,
-    UptimeReport
-)
-
-from app.analytics.management_reports_part3 import (
-    ErrorReport,
-    ManagementReportsConsolidator
-)
+from app.analytics.management_reports_part2 import ScraperPerformanceReport, UptimeReport
+from app.analytics.management_reports_part3 import ErrorReport, ManagementReportsConsolidator
 
 __all__ = [
     "ROIReport",
@@ -45,5 +37,5 @@ __all__ = [
     "CostMetrics",
     "ScraperPerformanceMetrics",
     "UptimeMetrics",
-    "ErrorMetrics"
+    "ErrorMetrics",
 ]

@@ -1,13 +1,14 @@
 """
 Validação completa de CPF e CNPJ — algoritmo de dígitos verificadores
 """
+
 import re
 from typing import Optional
 
 
 def limpar_documento(doc: str) -> str:
     """Remove formatação de um documento (pontos, traços, barras)."""
-    return re.sub(r'\D', '', doc.strip())
+    return re.sub(r"\D", "", doc.strip())
 
 
 def validar_cpf(cpf: str) -> bool:
@@ -97,11 +98,11 @@ def validar_documento(doc: str) -> tuple[bool, str]:
     cleaned = limpar_documento(doc)
 
     if len(cleaned) == 11:
-        return validar_cpf(cleaned), 'cpf'
+        return validar_cpf(cleaned), "cpf"
     elif len(cleaned) == 14:
-        return validar_cnpj(cleaned), 'cnpj'
+        return validar_cnpj(cleaned), "cnpj"
     else:
-        return False, 'invalido'
+        return False, "invalido"
 
 
 def formatar_cpf(cpf: str) -> str:

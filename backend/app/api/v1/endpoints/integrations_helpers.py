@@ -4,6 +4,7 @@ Funções partilhadas dos endpoints de integrações (bounded context: Integraç
 Mantidas fora dos routers em `integrations/` para reduzir dívida técnica e
 permitir testes unitários isolados.
 """
+
 from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
@@ -22,7 +23,9 @@ def result_count(result: Any) -> int:
 
 def is_credentials_missing(exc: Exception) -> bool:
     msg = str(exc).lower()
-    return "não configuradas" in msg or "credenciais conecta" in msg or "credenciais ausentes" in msg
+    return (
+        "não configuradas" in msg or "credenciais conecta" in msg or "credenciais ausentes" in msg
+    )
 
 
 def conecta_items(result: Any) -> list:

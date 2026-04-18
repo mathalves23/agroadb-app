@@ -1,6 +1,7 @@
 """
 Celery Application Configuration
 """
+
 from celery import Celery
 
 from app.core.config import settings

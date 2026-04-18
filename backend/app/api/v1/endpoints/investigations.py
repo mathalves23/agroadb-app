@@ -3,37 +3,37 @@ Investigations Endpoints
 """
 
 from datetime import datetime
+from io import BytesIO
 from typing import List, Optional
 
-from fastapi import APIRouter, HTTPException, Request, status, Query
-from pydantic import BaseModel, Field
+from fastapi import APIRouter, HTTPException, Query, Request, status
 from fastapi.responses import Response, StreamingResponse
-from io import BytesIO
+from pydantic import BaseModel, Field
 
-from app.api.v1.deps import DatabaseSession, CurrentUser
-from app.schemas.investigation import (
-    InvestigationCreate,
-    InvestigationUpdate,
-    InvestigationResponse,
-    InvestigationListResponse,
-)
-from app.schemas.property import PropertyResponse, LeaseContractResponse, CompanyResponse
-from app.services.investigation import InvestigationService
-from app.services.excel_export import ExcelExportService
-from app.services.pdf_export import PDFExportService
+from app.api.v1.deps import CurrentUser, DatabaseSession
+from app.core.audit import AuditAction, audit_logger
+from app.core.config import settings
 from app.repositories.investigation import InvestigationRepository
 from app.repositories.legal_query import LegalQueryRepository
-from app.core.config import settings
-from app.core.audit import audit_logger, AuditAction
 from app.schemas.dashboard_statistics import DashboardStatisticsResponse
+from app.schemas.investigation import (
+    InvestigationCreate,
+    InvestigationListResponse,
+    InvestigationResponse,
+    InvestigationUpdate,
+)
+from app.schemas.property import CompanyResponse, LeaseContractResponse, PropertyResponse
+from app.services import investigation_guest_link as guest_link_service
 from app.services.dashboard_statistics import get_dashboard_statistics_cached
+from app.services.excel_export import ExcelExportService
+from app.services.investigation import InvestigationService
 from app.services.investigation_access import (
     require_investigation_for_user,
     require_investigation_owner_or_superuser,
 )
 from app.services.investigation_enrich_demo import maybe_seed_demo_properties_and_companies
+from app.services.pdf_export import PDFExportService
 from app.services.trust_export import build_trust_bundle_zip
-from app.services import investigation_guest_link as guest_link_service
 
 router = APIRouter()
 
@@ -44,8 +44,8 @@ async def investigation_to_response(
     current_user: CurrentUser,
 ) -> InvestigationResponse:
     """Enriquece resposta com nome do revisor e permissão para registar revisão do score."""
-    from app.services.collaboration import collaboration_service
     from app.domain.collaboration import PermissionLevel
+    from app.services.collaboration import collaboration_service
 
     resp = InvestigationResponse.model_validate(investigation)
     reviewer_name = None
@@ -156,7 +156,7 @@ async def list_investigations_cursor(
     status_filter: str = Query(None, alias="status"),
 ):
     """List investigations with cursor-based pagination (more efficient for large datasets)"""
-    from app.core.pagination import cursor_paginate, CursorPage
+    from app.core.pagination import CursorPage, cursor_paginate
     from app.domain.investigation import Investigation
 
     filters = {"user_id": current_user.id}

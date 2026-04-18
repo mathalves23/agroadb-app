@@ -7,9 +7,10 @@ Complementa a API Conecta SIGEF e o serviço SIGEF Parcelas (WS) com:
 
 Melhora a base de dados quando as credenciais não estão configuradas.
 """
-from typing import List, Dict, Any, Optional
-from datetime import datetime
+
 import re
+from datetime import datetime
+from typing import Any, Dict, List, Optional
 
 from app.scrapers.base import BaseScraper
 
@@ -32,7 +33,7 @@ class SigefParcelasScraper(BaseScraper):
         municipio: Optional[str] = None,
         uf: Optional[str] = None,
         max_records: int = 100,
-        **kwargs
+        **kwargs,
     ) -> List[Dict[str, Any]]:
         """
         Busca parcelas/imóveis SIGEF por código, CPF/CNPJ, município ou UF.
@@ -76,11 +77,13 @@ class SigefParcelasScraper(BaseScraper):
                         for f in features:
                             attrs = f.get("attributes", {})
                             if attrs:
-                                results.append({
-                                    **attrs,
-                                    "data_source": "sigef_parcelas_scraper_arcgis",
-                                    "consulted_at": datetime.utcnow().isoformat(),
-                                })
+                                results.append(
+                                    {
+                                        **attrs,
+                                        "data_source": "sigef_parcelas_scraper_arcgis",
+                                        "consulted_at": datetime.utcnow().isoformat(),
+                                    }
+                                )
                         if results:
                             break
                 except Exception:
@@ -88,29 +91,35 @@ class SigefParcelasScraper(BaseScraper):
 
             if not results and (codigo_imovel or cpf_cnpj):
                 # 2) Estrutura de fallback quando não houver dados públicos
-                results.append({
-                    "codigo_imovel": codigo_imovel,
-                    "cpf_cnpj": cpf_cnpj,
-                    "municipio": municipio,
-                    "uf": uf,
+                results.append(
+                    {
+                        "codigo_imovel": codigo_imovel,
+                        "cpf_cnpj": cpf_cnpj,
+                        "municipio": municipio,
+                        "uf": uf,
+                        "success": False,
+                        "message": "Nenhum dado público encontrado. Configure SIGEF_PARCELAS_API_URL ou Conecta SIGEF para consulta completa.",
+                        "data_source": "sigef_parcelas_scraper",
+                        "consulted_at": datetime.utcnow().isoformat(),
+                    }
+                )
+        except Exception as e:
+            results.append(
+                {
                     "success": False,
-                    "message": "Nenhum dado público encontrado. Configure SIGEF_PARCELAS_API_URL ou Conecta SIGEF para consulta completa.",
+                    "error": str(e),
                     "data_source": "sigef_parcelas_scraper",
                     "consulted_at": datetime.utcnow().isoformat(),
-                })
-        except Exception as e:
-            results.append({
-                "success": False,
-                "error": str(e),
-                "data_source": "sigef_parcelas_scraper",
-                "consulted_at": datetime.utcnow().isoformat(),
-            })
+                }
+            )
         return results
 
     async def search_by_codigo(self, codigo_imovel: str) -> List[Dict[str, Any]]:
         """Busca apenas por código do imóvel."""
         return await self.search(codigo_imovel=codigo_imovel)
 
-    async def search_by_uf_municipio(self, uf: str, municipio: Optional[str] = None) -> List[Dict[str, Any]]:
+    async def search_by_uf_municipio(
+        self, uf: str, municipio: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
         """Busca por UF e opcionalmente município (listagem regional)."""
         return await self.search(uf=uf, municipio=municipio, max_records=200)

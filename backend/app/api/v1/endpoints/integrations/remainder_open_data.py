@@ -1,62 +1,66 @@
 """Integrações — dados abertos, status, CAR, Conecta, SIGEF, birôs e health."""
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query
 import io
-from sqlalchemy.ext.asyncio import AsyncSession
-from typing import Dict, List, Optional, Any
-from pydantic import BaseModel, ConfigDict
 import logging
+from typing import Any, Dict, List, Optional
 
-from app.core.database import get_db
-from app.core.config import settings
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from pydantic import BaseModel, ConfigDict
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.api.v1.deps import get_current_user
-from app.domain.user import User
-from app.integrations.car_estados import CARIntegration, query_car_single
-from app.integrations.tribunais import TribunalIntegration, query_process_by_number
-from app.integrations.orgaos_federais import OrgaoFederalIntegration
-from app.integrations.bureaus import BureauIntegration
-from app.integrations.comunicacao import ComunicacaoIntegration
-from app.services.sigef_parcelas import SigefParcelasService
-from app.services.conecta_sncr import ConectaSNCRService
-from app.services.conecta_sigef import ConectaSIGEFService
-from app.services.conecta_sicar import ConectaSICARService
-from app.services.conecta_sncci import ConectaSNCCIService
-from app.services.conecta_sigef_geo import ConectaSIGEFGeoService
-from app.services.conecta_cnpj import ConectaCNPJService
-from app.services.conecta_cnd import ConectaCNDService
-from app.services.conecta_cadin import ConectaCadinService
-from app.services.portal_servicos import PortalServicosService
-from app.services.servicos_estaduais import ServicosEstaduaisService
-from app.services.brasil_api import BrasilAPIService
-from app.services.portal_transparencia import PortalTransparenciaService
-from app.services.ibge_api import IBGEService
-from app.services.tse_api import TSEService
-from app.services.cvm_api import CVMService
-from app.services.bcb_api import BCBService
-from app.services.dados_gov import DadosGovService
-from app.services.redesim_api import RedesimService
-from app.services.tjmg_api import TJMGService
-from app.services.antecedentes_mg import AntecedentesMGService
-from app.services.sicar_publico import SICARPublicoService
-from app.services.caixa_fgts import CaixaFGTSService
-from app.services.bnmp_cnj import BNMPService
-from app.services.seeu_cnj import SEEUService
-from app.services.sigef_publico import SIGEFPublicoService
-from app.services.receita_cpf import ReceitaCPFService
-from app.services.receita_cnpj import ReceitaCNPJService
-from app.core.audit import AuditLogger
-from app.services.legal_query_audit import record_legal_query_if_investigation
+from app.api.v1.endpoints.integrations_helpers import conecta_items as _conecta_items
 from app.api.v1.endpoints.integrations_helpers import (
-    result_count as _result_count,
-    is_credentials_missing as _is_credentials_missing,
-    conecta_items as _conecta_items,
     conecta_standard_response as _conecta_standard_response,
 )
+from app.api.v1.endpoints.integrations_helpers import (
+    is_credentials_missing as _is_credentials_missing,
+)
+from app.api.v1.endpoints.integrations_helpers import result_count as _result_count
+from app.core.audit import AuditLogger
+from app.core.config import settings
+from app.core.database import get_db
+from app.domain.user import User
+from app.integrations.bureaus import BureauIntegration
+from app.integrations.car_estados import CARIntegration, query_car_single
+from app.integrations.comunicacao import ComunicacaoIntegration
+from app.integrations.orgaos_federais import OrgaoFederalIntegration
+from app.integrations.tribunais import TribunalIntegration, query_process_by_number
+from app.services.antecedentes_mg import AntecedentesMGService
+from app.services.bcb_api import BCBService
+from app.services.bnmp_cnj import BNMPService
+from app.services.brasil_api import BrasilAPIService
+from app.services.caixa_fgts import CaixaFGTSService
+from app.services.conecta_cadin import ConectaCadinService
+from app.services.conecta_cnd import ConectaCNDService
+from app.services.conecta_cnpj import ConectaCNPJService
+from app.services.conecta_sicar import ConectaSICARService
+from app.services.conecta_sigef import ConectaSIGEFService
+from app.services.conecta_sigef_geo import ConectaSIGEFGeoService
+from app.services.conecta_sncci import ConectaSNCCIService
+from app.services.conecta_sncr import ConectaSNCRService
+from app.services.cvm_api import CVMService
+from app.services.dados_gov import DadosGovService
+from app.services.ibge_api import IBGEService
+from app.services.legal_query_audit import record_legal_query_if_investigation
+from app.services.portal_servicos import PortalServicosService
+from app.services.portal_transparencia import PortalTransparenciaService
+from app.services.receita_cnpj import ReceitaCNPJService
+from app.services.receita_cpf import ReceitaCPFService
+from app.services.redesim_api import RedesimService
+from app.services.seeu_cnj import SEEUService
+from app.services.servicos_estaduais import ServicosEstaduaisService
+from app.services.sicar_publico import SICARPublicoService
+from app.services.sigef_parcelas import SigefParcelasService
+from app.services.sigef_publico import SIGEFPublicoService
+from app.services.tjmg_api import TJMGService
+from app.services.tse_api import TSEService
 
 logger = logging.getLogger(__name__)
 audit_logger = AuditLogger()
 
 router = APIRouter()
+
 
 # Status de configuração
 @router.get("/status", summary="Status das integrações externas")
@@ -321,11 +325,9 @@ class BrasilAPICepRequest(BaseModel):
 
 # CAR Endpoints
 
+
 @router.post("/car/query", summary="Consultar CAR")
-async def query_car(
-    request: CARQueryRequest,
-    current_user: User = Depends(get_current_user)
-):
+async def query_car(request: CARQueryRequest, current_user: User = Depends(get_current_user)):
     """Consulta CAR em um estado específico"""
     try:
         result = await query_car_single(request.car_code, request.state)
@@ -338,16 +340,15 @@ async def query_car(
 async def list_car_states(current_user: User = Depends(get_current_user)):
     """Lista todos os estados com sistema CAR"""
     from app.integrations.car_estados import CARStateConfig
-    
+
     return {
         "states": list(CARStateConfig.URLS.keys()),
         "total": len(CARStateConfig.URLS),
-        "with_api": CARStateConfig.HAS_API
+        "with_api": CARStateConfig.HAS_API,
     }
 
 
 # Tribunais Endpoints
-
 
 
 @router.post("/brasil-api/cnpj", summary="BrasilAPI - Consulta CNPJ (gratuito)")
@@ -432,36 +433,19 @@ async def brasil_api_municipios(uf: str, current_user: User = Depends(get_curren
 
 # Health Check
 
+
 @router.get("/health", summary="Status das integrações")
 async def integrations_health():
     """Verifica status de todas as integrações"""
     return {
-        "car": {
-            "status": "available",
-            "states": 27
-        },
-        "tribunais": {
-            "status": "available",
-            "systems": ["esaj", "projudi", "pje"]
-        },
+        "car": {"status": "available", "states": 27},
+        "tribunais": {"status": "available", "systems": ["esaj", "projudi", "pje"]},
         "orgaos_federais": {
             "status": "available",
-            "services": ["ibama", "icmbio", "funai", "spu", "cvm"]
+            "services": ["ibama", "icmbio", "funai", "spu", "cvm"],
         },
-        "bureaus": {
-            "status": "requires_api_keys",
-            "services": ["serasa", "boavista"]
-        },
-        "comunicacao": {
-            "status": "requires_webhooks",
-            "services": ["slack", "teams"]
-        },
-        "ocr": {
-            "status": "available",
-            "services": ["tesseract", "pdf2image"]
-        },
-        "environmental": {
-            "status": "available",
-            "services": ["ibama", "funai", "icmbio"]
-        }
+        "bureaus": {"status": "requires_api_keys", "services": ["serasa", "boavista"]},
+        "comunicacao": {"status": "requires_webhooks", "services": ["slack", "teams"]},
+        "ocr": {"status": "available", "services": ["tesseract", "pdf2image"]},
+        "environmental": {"status": "available", "services": ["ibama", "funai", "icmbio"]},
     }

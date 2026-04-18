@@ -2,14 +2,20 @@
 Testes para serviços de integração legal: DataJud, SIGEF Parcelas, Conecta (SNCR).
 Usa mock de httpx para não depender de APIs externas.
 """
+
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
-from unittest.mock import AsyncMock, patch, MagicMock
 
 
 @pytest.mark.asyncio
 async def test_datajud_service_raises_when_api_key_missing():
-    with patch.dict("app.services.datajud.settings.__dict__", {"DATAJUD_API_URL": "https://api.datajud.cnj.jus.br", "DATAJUD_API_KEY": ""}):
+    with patch.dict(
+        "app.services.datajud.settings.__dict__",
+        {"DATAJUD_API_URL": "https://api.datajud.cnj.jus.br", "DATAJUD_API_KEY": ""},
+    ):
         from app.services.datajud import DataJudService
+
         service = DataJudService()
         with pytest.raises(ValueError) as exc_info:
             await service.request("GET", "/test")
@@ -18,8 +24,12 @@ async def test_datajud_service_raises_when_api_key_missing():
 
 @pytest.mark.asyncio
 async def test_datajud_service_request_success():
-    with patch.dict("app.services.datajud.settings.__dict__", {"DATAJUD_API_URL": "https://api.datajud.cnj.jus.br", "DATAJUD_API_KEY": "test-key"}):
+    with patch.dict(
+        "app.services.datajud.settings.__dict__",
+        {"DATAJUD_API_URL": "https://api.datajud.cnj.jus.br", "DATAJUD_API_KEY": "test-key"},
+    ):
         from app.services.datajud import DataJudService
+
         service = DataJudService()
         mock_response = MagicMock()
         mock_response.status_code = 200
@@ -38,8 +48,12 @@ async def test_datajud_service_request_success():
 
 @pytest.mark.asyncio
 async def test_sigef_parcelas_service_raises_when_url_not_configured():
-    with patch.dict("app.services.sigef_parcelas.settings.__dict__", {"SIGEF_PARCELAS_API_URL": "", "SIGEF_PARCELAS_MAX_PAGES": 5}):
+    with patch.dict(
+        "app.services.sigef_parcelas.settings.__dict__",
+        {"SIGEF_PARCELAS_API_URL": "", "SIGEF_PARCELAS_MAX_PAGES": 5},
+    ):
         from app.services.sigef_parcelas import SigefParcelasService
+
         service = SigefParcelasService()
         with pytest.raises(ValueError) as exc_info:
             await service.query({})
@@ -48,8 +62,15 @@ async def test_sigef_parcelas_service_raises_when_url_not_configured():
 
 @pytest.mark.asyncio
 async def test_sigef_parcelas_service_query_success():
-    with patch.dict("app.services.sigef_parcelas.settings.__dict__", {"SIGEF_PARCELAS_API_URL": "https://sigef.example.com/parcelas", "SIGEF_PARCELAS_MAX_PAGES": 5}):
+    with patch.dict(
+        "app.services.sigef_parcelas.settings.__dict__",
+        {
+            "SIGEF_PARCELAS_API_URL": "https://sigef.example.com/parcelas",
+            "SIGEF_PARCELAS_MAX_PAGES": 5,
+        },
+    ):
         from app.services.sigef_parcelas import SigefParcelasService
+
         service = SigefParcelasService()
         mock_response = MagicMock()
         mock_response.status_code = 200
@@ -79,6 +100,7 @@ async def test_conecta_sncr_raises_when_credentials_missing():
         mock_settings.CONECTA_SNCR_API_KEY = ""
 
         from app.services.conecta_sncr import ConectaSNCRService
+
         service = ConectaSNCRService()
         with pytest.raises(ValueError) as exc_info:
             await service.consultar_imovel("12345")

@@ -4,10 +4,11 @@ Investigation Schemas
 
 from datetime import datetime
 from typing import Optional
+
 from pydantic import BaseModel, Field, field_validator
 
+from app.core.validators import limpar_documento, validar_cnpj, validar_cpf
 from app.domain.investigation import InvestigationStatus
-from app.core.validators import limpar_documento, validar_cpf, validar_cnpj
 
 
 def _validar_cpf_cnpj(v: Optional[str]) -> Optional[str]:

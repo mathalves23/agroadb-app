@@ -8,9 +8,10 @@ de consulta pública do SNCR/CCIR (INCRA):
 
 Melhora a base de dados quando as credenciais Conecta não estão configuradas.
 """
-from typing import List, Dict, Any, Optional
-from datetime import datetime
+
 import re
+from datetime import datetime
+from typing import Any, Dict, List, Optional
 
 from app.scrapers.base import BaseScraper
 
@@ -36,7 +37,7 @@ class SNCRPublicScraper(BaseScraper):
         codigo_imovel: Optional[str] = None,
         ccir_number: Optional[str] = None,
         state: Optional[str] = None,
-        **kwargs
+        **kwargs,
     ) -> List[Dict[str, Any]]:
         """
         Busca dados SNCR/CCIR por CPF/CNPJ, código do imóvel ou número CCIR.
@@ -64,12 +65,14 @@ class SNCRPublicScraper(BaseScraper):
                 items = await self._fetch_by_cpf_cnpj(self._clean_cpf_cnpj(cpf_cnpj), state)
                 results.extend(items)
         except Exception as e:
-            results.append({
-                "success": False,
-                "error": str(e),
-                "data_source": "sncr_public_scraper",
-                "consulted_at": datetime.utcnow().isoformat(),
-            })
+            results.append(
+                {
+                    "success": False,
+                    "error": str(e),
+                    "data_source": "sncr_public_scraper",
+                    "consulted_at": datetime.utcnow().isoformat(),
+                }
+            )
         return results
 
     async def _fetch_by_ccir(self, ccir_number: str) -> Optional[Dict[str, Any]]:
@@ -141,38 +144,46 @@ class SNCRPublicScraper(BaseScraper):
                 # Verificar se há formulário público (campo CPF/CNPJ)
                 form = soup.find("form")
                 if form and ("cpf" in form.get_text().lower() or "cnpj" in form.get_text().lower()):
-                    results.append({
-                        "cpf_cnpj": cpf_cnpj,
-                        "state": state,
-                        "success": True,
-                        "message": "Página de emissão CCIR disponível. Consulta por CPF/CNPJ pode exigir login.",
-                        "data_source": "sncr_public_scraper",
-                        "consulted_at": datetime.utcnow().isoformat(),
-                    })
+                    results.append(
+                        {
+                            "cpf_cnpj": cpf_cnpj,
+                            "state": state,
+                            "success": True,
+                            "message": "Página de emissão CCIR disponível. Consulta por CPF/CNPJ pode exigir login.",
+                            "data_source": "sncr_public_scraper",
+                            "consulted_at": datetime.utcnow().isoformat(),
+                        }
+                    )
                 else:
-                    results.append({
+                    results.append(
+                        {
+                            "cpf_cnpj": cpf_cnpj,
+                            "success": False,
+                            "message": "Configure CONECTA_SNCR_* no .env para consulta por CPF/CNPJ. Scraper SNCR complementa com consulta por CCIR ou código do imóvel.",
+                            "data_source": "sncr_public_scraper",
+                            "consulted_at": datetime.utcnow().isoformat(),
+                        }
+                    )
+            else:
+                results.append(
+                    {
                         "cpf_cnpj": cpf_cnpj,
                         "success": False,
-                        "message": "Configure CONECTA_SNCR_* no .env para consulta por CPF/CNPJ. Scraper SNCR complementa com consulta por CCIR ou código do imóvel.",
+                        "message": "Portal SNCR indisponível ou consulta por CPF/CNPJ requer credenciais Conecta.",
                         "data_source": "sncr_public_scraper",
                         "consulted_at": datetime.utcnow().isoformat(),
-                    })
-            else:
-                results.append({
+                    }
+                )
+        except Exception as e:
+            results.append(
+                {
                     "cpf_cnpj": cpf_cnpj,
                     "success": False,
-                    "message": "Portal SNCR indisponível ou consulta por CPF/CNPJ requer credenciais Conecta.",
+                    "error": str(e),
                     "data_source": "sncr_public_scraper",
                     "consulted_at": datetime.utcnow().isoformat(),
-                })
-        except Exception as e:
-            results.append({
-                "cpf_cnpj": cpf_cnpj,
-                "success": False,
-                "error": str(e),
-                "data_source": "sncr_public_scraper",
-                "consulted_at": datetime.utcnow().isoformat(),
-            })
+                }
+            )
         return results
 
     def _parse_ccir_html(self, soup, ccir_number: str) -> Dict[str, Any]:

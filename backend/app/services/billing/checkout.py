@@ -2,6 +2,7 @@
 Abstração de checkout / faturação — Stripe e Pagar.me.
 Sem dependências obrigatórias: se as chaves não estiverem definidas, devolve URLs de demonstração.
 """
+
 from __future__ import annotations
 
 import logging

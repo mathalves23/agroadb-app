@@ -1,4 +1,5 @@
 """Pacote de routers de integrações externas (sub-routers + restante)."""
+
 from fastapi import APIRouter
 
 from .biros_orgaos_notify import router as biros_router

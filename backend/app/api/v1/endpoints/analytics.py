@@ -1,4 +1,5 @@
 """API v1 — analytics assíncronos (montado em /api/v1/analytics)."""
+
 from __future__ import annotations
 
 from datetime import datetime

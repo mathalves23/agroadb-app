@@ -3,6 +3,7 @@ Calibração pós-processo do score de risco (dados reais onde legal).
 
 Suporta ficheiro JSON externo (RISK_CALIBRATION_PATH) ou identidade por omissão.
 """
+
 from __future__ import annotations
 
 import json
@@ -61,7 +62,9 @@ def load_calibration_config(explicit_path: str | None) -> Dict[str, Any]:
     return {"enabled": False, "method": "identity"}
 
 
-def apply_risk_calibration(raw_score: float, cfg: Dict[str, Any] | None = None) -> Tuple[float, Dict[str, Any]]:
+def apply_risk_calibration(
+    raw_score: float, cfg: Dict[str, Any] | None = None
+) -> Tuple[float, Dict[str, Any]]:
     """
     Aplica transformação monótona ao score bruto [0,100].
 

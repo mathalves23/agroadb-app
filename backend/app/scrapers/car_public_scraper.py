@@ -9,9 +9,10 @@ Complementa a API e o CARScraper com scraping das páginas de consulta pública:
 Melhora a base de dados quando as APIs não estão disponíveis ou para obter
 dados adicionais de demonstrativos e listagens públicas.
 """
-from typing import List, Dict, Any, Optional
-from datetime import datetime
+
 import re
+from datetime import datetime
+from typing import Any, Dict, List, Optional
 
 from app.scrapers.base import BaseScraper
 
@@ -33,7 +34,7 @@ class CARPublicScraper(BaseScraper):
         car_number: Optional[str] = None,
         cpf_cnpj: Optional[str] = None,
         state: Optional[str] = None,
-        **kwargs
+        **kwargs,
     ) -> List[Dict[str, Any]]:
         """
         Busca dados do CAR por número do CAR ou CPF/CNPJ.
@@ -57,12 +58,14 @@ class CARPublicScraper(BaseScraper):
                 items = await self._fetch_by_cpf_cnpj(cpf_cnpj_clean, state)
                 results.extend(items)
         except Exception as e:
-            results.append({
-                "success": False,
-                "error": str(e),
-                "data_source": "car_public_scraper",
-                "consulted_at": datetime.utcnow().isoformat(),
-            })
+            results.append(
+                {
+                    "success": False,
+                    "error": str(e),
+                    "data_source": "car_public_scraper",
+                    "consulted_at": datetime.utcnow().isoformat(),
+                }
+            )
         return results
 
     async def _fetch_by_car_number(self, car_number: str) -> Optional[Dict[str, Any]]:
@@ -108,34 +111,44 @@ class CARPublicScraper(BaseScraper):
             if response and response.status_code == 200:
                 try:
                     data = response.json()
-                    items = data if isinstance(data, list) else data.get("imoveis", data.get("items", []))
+                    items = (
+                        data
+                        if isinstance(data, list)
+                        else data.get("imoveis", data.get("items", []))
+                    )
                     for item in items:
                         if isinstance(item, dict):
-                            results.append({
-                                **item,
-                                "data_source": "car_public_scraper",
-                                "consulted_at": datetime.utcnow().isoformat(),
-                            })
+                            results.append(
+                                {
+                                    **item,
+                                    "data_source": "car_public_scraper",
+                                    "consulted_at": datetime.utcnow().isoformat(),
+                                }
+                            )
                 except Exception:
                     pass
             if not results:
                 # Estrutura vazia com nota para uso futuro
-                results.append({
+                results.append(
+                    {
+                        "cpf_cnpj": cpf_cnpj,
+                        "state": state,
+                        "success": False,
+                        "message": "Consulta pública CAR por CPF/CNPJ pode exigir autenticação GOV.BR. Use a API Conecta SICAR quando disponível.",
+                        "data_source": "car_public_scraper",
+                        "consulted_at": datetime.utcnow().isoformat(),
+                    }
+                )
+        except Exception as e:
+            results.append(
+                {
                     "cpf_cnpj": cpf_cnpj,
-                    "state": state,
                     "success": False,
-                    "message": "Consulta pública CAR por CPF/CNPJ pode exigir autenticação GOV.BR. Use a API Conecta SICAR quando disponível.",
+                    "error": str(e),
                     "data_source": "car_public_scraper",
                     "consulted_at": datetime.utcnow().isoformat(),
-                })
-        except Exception as e:
-            results.append({
-                "cpf_cnpj": cpf_cnpj,
-                "success": False,
-                "error": str(e),
-                "data_source": "car_public_scraper",
-                "consulted_at": datetime.utcnow().isoformat(),
-            })
+                }
+            )
         return results
 
     def _parse_car_html(self, soup, car_number: str) -> Dict[str, Any]:

@@ -1,4 +1,5 @@
 """Testes unitários dos helpers de integrações (bounded context)."""
+
 from __future__ import annotations
 
 from app.api.v1.endpoints.integrations_helpers import (

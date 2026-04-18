@@ -1,57 +1,60 @@
 """Integrações — tribunais estaduais, fiscalização cadastral, birôs de crédito, órgãos."""
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query
 import io
-from sqlalchemy.ext.asyncio import AsyncSession
-from typing import Dict, List, Optional, Any
-from pydantic import BaseModel, ConfigDict
 import logging
+from typing import Any, Dict, List, Optional
 
-from app.core.database import get_db
-from app.core.config import settings
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from pydantic import BaseModel, ConfigDict
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.api.v1.deps import get_current_user
-from app.domain.user import User
-from app.integrations.car_estados import CARIntegration, query_car_single
-from app.integrations.tribunais import TribunalIntegration, query_process_by_number
-from app.integrations.orgaos_federais import OrgaoFederalIntegration
-from app.integrations.bureaus import BureauIntegration
-from app.integrations.comunicacao import ComunicacaoIntegration
-from app.services.sigef_parcelas import SigefParcelasService
-from app.services.conecta_sncr import ConectaSNCRService
-from app.services.conecta_sigef import ConectaSIGEFService
-from app.services.conecta_sicar import ConectaSICARService
-from app.services.conecta_sncci import ConectaSNCCIService
-from app.services.conecta_sigef_geo import ConectaSIGEFGeoService
-from app.services.conecta_cnpj import ConectaCNPJService
-from app.services.conecta_cnd import ConectaCNDService
-from app.services.conecta_cadin import ConectaCadinService
-from app.services.portal_servicos import PortalServicosService
-from app.services.servicos_estaduais import ServicosEstaduaisService
-from app.services.brasil_api import BrasilAPIService
-from app.services.portal_transparencia import PortalTransparenciaService
-from app.services.ibge_api import IBGEService
-from app.services.tse_api import TSEService
-from app.services.cvm_api import CVMService
-from app.services.bcb_api import BCBService
-from app.services.dados_gov import DadosGovService
-from app.services.redesim_api import RedesimService
-from app.services.tjmg_api import TJMGService
-from app.services.antecedentes_mg import AntecedentesMGService
-from app.services.sicar_publico import SICARPublicoService
-from app.services.caixa_fgts import CaixaFGTSService
-from app.services.bnmp_cnj import BNMPService
-from app.services.seeu_cnj import SEEUService
-from app.services.sigef_publico import SIGEFPublicoService
-from app.services.receita_cpf import ReceitaCPFService
-from app.services.receita_cnpj import ReceitaCNPJService
-from app.core.audit import AuditLogger
-from app.services.legal_query_audit import record_legal_query_if_investigation
+from app.api.v1.endpoints.integrations_helpers import conecta_items as _conecta_items
 from app.api.v1.endpoints.integrations_helpers import (
-    result_count as _result_count,
-    is_credentials_missing as _is_credentials_missing,
-    conecta_items as _conecta_items,
     conecta_standard_response as _conecta_standard_response,
 )
+from app.api.v1.endpoints.integrations_helpers import (
+    is_credentials_missing as _is_credentials_missing,
+)
+from app.api.v1.endpoints.integrations_helpers import result_count as _result_count
+from app.core.audit import AuditLogger
+from app.core.config import settings
+from app.core.database import get_db
+from app.domain.user import User
+from app.integrations.bureaus import BureauIntegration
+from app.integrations.car_estados import CARIntegration, query_car_single
+from app.integrations.comunicacao import ComunicacaoIntegration
+from app.integrations.orgaos_federais import OrgaoFederalIntegration
+from app.integrations.tribunais import TribunalIntegration, query_process_by_number
+from app.services.antecedentes_mg import AntecedentesMGService
+from app.services.bcb_api import BCBService
+from app.services.bnmp_cnj import BNMPService
+from app.services.brasil_api import BrasilAPIService
+from app.services.caixa_fgts import CaixaFGTSService
+from app.services.conecta_cadin import ConectaCadinService
+from app.services.conecta_cnd import ConectaCNDService
+from app.services.conecta_cnpj import ConectaCNPJService
+from app.services.conecta_sicar import ConectaSICARService
+from app.services.conecta_sigef import ConectaSIGEFService
+from app.services.conecta_sigef_geo import ConectaSIGEFGeoService
+from app.services.conecta_sncci import ConectaSNCCIService
+from app.services.conecta_sncr import ConectaSNCRService
+from app.services.cvm_api import CVMService
+from app.services.dados_gov import DadosGovService
+from app.services.ibge_api import IBGEService
+from app.services.legal_query_audit import record_legal_query_if_investigation
+from app.services.portal_servicos import PortalServicosService
+from app.services.portal_transparencia import PortalTransparenciaService
+from app.services.receita_cnpj import ReceitaCNPJService
+from app.services.receita_cpf import ReceitaCPFService
+from app.services.redesim_api import RedesimService
+from app.services.seeu_cnj import SEEUService
+from app.services.servicos_estaduais import ServicosEstaduaisService
+from app.services.sicar_publico import SICARPublicoService
+from app.services.sigef_parcelas import SigefParcelasService
+from app.services.sigef_publico import SIGEFPublicoService
+from app.services.tjmg_api import TJMGService
+from app.services.tse_api import TSEService
 
 logger = logging.getLogger(__name__)
 audit_logger = AuditLogger()
@@ -88,7 +91,11 @@ async def tjmg_processos(
             nome_advogado=request.nome_advogado,
             numero_processo=request.numero_processo,
         )
-        params = {k: v for k, v in request.model_dump().items() if v is not None and k != "investigation_id"}
+        params = {
+            k: v
+            for k, v in request.model_dump().items()
+            if v is not None and k != "investigation_id"
+        }
         await record_legal_query_if_investigation(
             db,
             request.investigation_id,
@@ -199,7 +206,9 @@ class AntecedentesMGRequest(BaseModel):
     investigation_id: Optional[int] = None
 
 
-@router.post("/antecedentes-mg/consultar", summary="Antecedentes Criminais MG - Consultar por CPF + RG")
+@router.post(
+    "/antecedentes-mg/consultar", summary="Antecedentes Criminais MG - Consultar por CPF + RG"
+)
 async def antecedentes_mg_consultar(
     request: AntecedentesMGRequest,
     current_user: User = Depends(get_current_user),
@@ -225,7 +234,10 @@ async def antecedentes_mg_consultar(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/antecedentes-mg/disponibilidade", summary="Antecedentes Criminais MG - Verificar disponibilidade")
+@router.get(
+    "/antecedentes-mg/disponibilidade",
+    summary="Antecedentes Criminais MG - Verificar disponibilidade",
+)
 async def antecedentes_mg_disponibilidade(current_user: User = Depends(get_current_user)):
     service = AntecedentesMGService()
     try:
@@ -270,7 +282,9 @@ async def sicar_publico_imovel(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/sicar-publico/municipio/{codigo_ibge}", summary="SICAR Público - Imóveis por município")
+@router.get(
+    "/sicar-publico/municipio/{codigo_ibge}", summary="SICAR Público - Imóveis por município"
+)
 async def sicar_publico_municipio(
     codigo_ibge: str,
     current_user: User = Depends(get_current_user),
@@ -397,7 +411,9 @@ async def bnmp_consultar_cpf(
         ignore_errors=True,
     )
 
-    return _conecta_standard_response(result, warnings=result.get("mensagem") and [result["mensagem"]] or [])
+    return _conecta_standard_response(
+        result, warnings=result.get("mensagem") and [result["mensagem"]] or []
+    )
 
 
 @router.get("/bnmp/disponibilidade", summary="BNMP/CNJ - Verificar disponibilidade")
@@ -595,7 +611,9 @@ async def receita_cpf_consultar(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/receita-cpf/disponibilidade", summary="Receita Federal CPF - Verificar disponibilidade")
+@router.get(
+    "/receita-cpf/disponibilidade", summary="Receita Federal CPF - Verificar disponibilidade"
+)
 async def receita_cpf_disponibilidade(current_user: User = Depends(get_current_user)):
     service = ReceitaCPFService()
     try:
@@ -646,7 +664,9 @@ async def receita_cnpj_consultar(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/receita-cnpj/disponibilidade", summary="Receita Federal CNPJ - Verificar disponibilidade")
+@router.get(
+    "/receita-cnpj/disponibilidade", summary="Receita Federal CNPJ - Verificar disponibilidade"
+)
 async def receita_cnpj_disponibilidade(current_user: User = Depends(get_current_user)):
     service = ReceitaCNPJService()
     try:
@@ -659,16 +679,17 @@ async def receita_cnpj_disponibilidade(current_user: User = Depends(get_current_
 # Tribunais Estaduais — e-SAJ e Projudi
 # ======================================================================
 
+
 class TribunalEstadualRequest(BaseModel):
     cpf_cnpj: str
     tribunal: str  # tjsp, tjgo, tjms, tjmt, tjpr, tjsc, etc
     investigation_id: Optional[int] = None
 
 
-
 # ======================================================================
 # Birôs de Crédito — Serasa e Boa Vista
 # ======================================================================
+
 
 class CreditoBureauRequest(BaseModel):
     cpf_cnpj: str
@@ -683,28 +704,28 @@ async def serasa_score(
 ):
     """
     Consulta score de crédito no Serasa Experian
-    
+
     ATENÇÃO: Requer credenciais comerciais (SERASA_CLIENT_ID, SERASA_CLIENT_SECRET)
     """
     from app.services.integrations.serasa_service import SerasaService
-    
+
     try:
         async with SerasaService() as service:
             score = await service.consultar_score(request.cpf_cnpj)
-        
+
         if not score:
             return {
                 "success": False,
-                "message": "Score não disponível ou credenciais não configuradas"
+                "message": "Score não disponível ou credenciais não configuradas",
             }
-        
+
         score_dict = {
-            'score': score.score,
-            'faixa': score.faixa,
-            'probabilidade_inadimplencia': score.probabilidade_inadimplencia,
-            'data_consulta': score.data_consulta.isoformat()
+            "score": score.score,
+            "faixa": score.faixa,
+            "probabilidade_inadimplencia": score.probabilidade_inadimplencia,
+            "data_consulta": score.data_consulta.isoformat(),
         }
-        
+
         await record_legal_query_if_investigation(
             db,
             request.investigation_id,
@@ -715,11 +736,8 @@ async def serasa_score(
             response=score_dict,
         )
 
-        return {
-            "success": True,
-            "score": score_dict
-        }
-    
+        return {"success": True, "score": score_dict}
+
     except Exception as e:
         logger.error(f"Erro ao consultar Serasa Score: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -733,56 +751,60 @@ async def serasa_relatorio(
 ):
     """
     Busca relatório completo de crédito no Serasa
-    
+
     Inclui: score, restrições, protestos, ações judiciais, cheques, dívidas, consultas
     """
     from app.services.integrations.serasa_service import SerasaService
-    
+
     try:
         async with SerasaService() as service:
             report = await service.get_full_report(request.cpf_cnpj)
-        
+
         if not report:
             return {
                 "success": False,
-                "message": "Relatório não disponível ou credenciais não configuradas"
+                "message": "Relatório não disponível ou credenciais não configuradas",
             }
-        
+
         # Converter para dict
         report_dict = {
-            'cpf_cnpj': report.cpf_cnpj,
-            'nome': report.nome,
-            'score': {
-                'score': report.score.score,
-                'faixa': report.score.faixa,
-                'probabilidade_inadimplencia': report.score.probabilidade_inadimplencia
-            } if report.score else None,
-            'restricoes': [
+            "cpf_cnpj": report.cpf_cnpj,
+            "nome": report.nome,
+            "score": (
                 {
-                    'tipo': r.tipo,
-                    'credor': r.credor,
-                    'valor': r.valor,
-                    'data_ocorrencia': r.data_ocorrencia.isoformat(),
-                    'cidade': r.cidade,
-                    'uf': r.uf,
-                    'origem': r.origem
+                    "score": report.score.score,
+                    "faixa": report.score.faixa,
+                    "probabilidade_inadimplencia": report.score.probabilidade_inadimplencia,
+                }
+                if report.score
+                else None
+            ),
+            "restricoes": [
+                {
+                    "tipo": r.tipo,
+                    "credor": r.credor,
+                    "valor": r.valor,
+                    "data_ocorrencia": r.data_ocorrencia.isoformat(),
+                    "cidade": r.cidade,
+                    "uf": r.uf,
+                    "origem": r.origem,
                 }
                 for r in report.restricoes
             ],
-            'resumo': {
-                'protestos_quantidade': report.protestos_quantidade,
-                'protestos_valor_total': report.protestos_valor_total,
-                'acoes_quantidade': report.acoes_quantidade,
-                'acoes_valor_total': report.acoes_valor_total,
-                'cheques_quantidade': report.cheques_quantidade,
-                'dividas_quantidade': report.dividas_quantidade,
-                'dividas_valor_total': report.dividas_valor_total,
-                'consultas_ultimos_90_dias': report.consultas_ultimos_90_dias
+            "resumo": {
+                "protestos_quantidade": report.protestos_quantidade,
+                "protestos_valor_total": report.protestos_valor_total,
+                "acoes_quantidade": report.acoes_quantidade,
+                "acoes_valor_total": report.acoes_valor_total,
+                "cheques_quantidade": report.cheques_quantidade,
+                "dividas_quantidade": report.dividas_quantidade,
+                "dividas_valor_total": report.dividas_valor_total,
+                "consultas_ultimos_90_dias": report.consultas_ultimos_90_dias,
             },
-            'participacao_empresas': report.participacao_empresas,
-            'data_consulta': report.data_consulta.isoformat()
+            "participacao_empresas": report.participacao_empresas,
+            "data_consulta": report.data_consulta.isoformat(),
         }
-        
+
         await record_legal_query_if_investigation(
             db,
             request.investigation_id,
@@ -793,11 +815,8 @@ async def serasa_relatorio(
             response=report_dict,
         )
 
-        return {
-            "success": True,
-            "relatorio": report_dict
-        }
-    
+        return {"success": True, "relatorio": report_dict}
+
     except Exception as e:
         logger.error(f"Erro ao consultar Serasa: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -811,27 +830,27 @@ async def boavista_score(
 ):
     """
     Consulta score de crédito na Boa Vista SCPC
-    
+
     ATENÇÃO: Requer credenciais comerciais (BOAVISTA_CLIENT_ID, BOAVISTA_CLIENT_SECRET)
     """
     from app.services.integrations.boavista_service import BoaVistaService
-    
+
     try:
         async with BoaVistaService() as service:
             score = await service.consultar_score(request.cpf_cnpj)
-        
+
         if not score:
             return {
                 "success": False,
-                "message": "Score não disponível ou credenciais não configuradas"
+                "message": "Score não disponível ou credenciais não configuradas",
             }
-        
+
         score_dict = {
-            'score': score.score,
-            'classificacao': score.classificacao,
-            'data_consulta': score.data_consulta.isoformat()
+            "score": score.score,
+            "classificacao": score.classificacao,
+            "data_consulta": score.data_consulta.isoformat(),
         }
-        
+
         await record_legal_query_if_investigation(
             db,
             request.investigation_id,
@@ -842,11 +861,8 @@ async def boavista_score(
             response=score_dict,
         )
 
-        return {
-            "success": True,
-            "score": score_dict
-        }
-    
+        return {"success": True, "score": score_dict}
+
     except Exception as e:
         logger.error(f"Erro ao consultar Boa Vista Score: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -860,74 +876,75 @@ async def boavista_relatorio(
 ):
     """
     Busca relatório completo na Boa Vista SCPC
-    
+
     Inclui: score, restrições, protestos, cheques sem fundo, ações judiciais
     """
     from app.services.integrations.boavista_service import BoaVistaService
-    
+
     try:
         async with BoaVistaService() as service:
             report = await service.get_full_report(request.cpf_cnpj)
-        
+
         if not report:
             return {
                 "success": False,
-                "message": "Relatório não disponível ou credenciais não configuradas"
+                "message": "Relatório não disponível ou credenciais não configuradas",
             }
-        
+
         report_dict = {
-            'cpf_cnpj': report.cpf_cnpj,
-            'nome': report.nome,
-            'score': {
-                'score': report.score.score,
-                'classificacao': report.score.classificacao
-            } if report.score else None,
-            'restricoes_financeiras': [
+            "cpf_cnpj": report.cpf_cnpj,
+            "nome": report.nome,
+            "score": (
+                {"score": report.score.score, "classificacao": report.score.classificacao}
+                if report.score
+                else None
+            ),
+            "restricoes_financeiras": [
                 {
-                    'tipo': r.tipo,
-                    'origem': r.origem,
-                    'valor': r.valor,
-                    'data_inclusao': r.data_inclusao.isoformat(),
-                    'descricao': r.descricao
+                    "tipo": r.tipo,
+                    "origem": r.origem,
+                    "valor": r.valor,
+                    "data_inclusao": r.data_inclusao.isoformat(),
+                    "descricao": r.descricao,
                 }
                 for r in report.restricoes_financeiras
             ],
-            'protestos': [
+            "protestos": [
                 {
-                    'cartorio': p.cartorio,
-                    'cidade': p.cidade,
-                    'uf': p.uf,
-                    'data_protesto': p.data_protesto.isoformat(),
-                    'valor': p.valor
+                    "cartorio": p.cartorio,
+                    "cidade": p.cidade,
+                    "uf": p.uf,
+                    "data_protesto": p.data_protesto.isoformat(),
+                    "valor": p.valor,
                 }
                 for p in report.protestos
             ],
-            'cheques_sem_fundo': [
+            "cheques_sem_fundo": [
                 {
-                    'banco': c.banco,
-                    'agencia': c.agencia,
-                    'numero_cheque': c.numero_cheque,
-                    'data_ocorrencia': c.data_ocorrencia.isoformat(),
-                    'valor': c.valor,
-                    'motivo': c.motivo
+                    "banco": c.banco,
+                    "agencia": c.agencia,
+                    "numero_cheque": c.numero_cheque,
+                    "data_ocorrencia": c.data_ocorrencia.isoformat(),
+                    "valor": c.valor,
+                    "motivo": c.motivo,
                 }
                 for c in report.cheques_sem_fundo
             ],
-            'acoes_judiciais': [
+            "acoes_judiciais": [
                 {
-                    'tribunal': a.tribunal,
-                    'numero_processo': a.numero_processo,
-                    'tipo': a.tipo,
-                    'data_distribuicao': a.data_distribuicao.isoformat(),
-                    'valor': a.valor
+                    "tribunal": a.tribunal,
+                    "numero_processo": a.numero_processo,
+                    "tipo": a.tipo,
+                    "data_distribuicao": a.data_distribuicao.isoformat(),
+                    "valor": a.valor,
                 }
                 for a in report.acoes_judiciais
             ],
-            'participacao_sociedades': report.participacao_sociedades,
-            'consultas_recentes': report.consultas_recentes,
-            'data_consulta': report.data_consulta.isoformat()
+            "participacao_sociedades": report.participacao_sociedades,
+            "consultas_recentes": report.consultas_recentes,
+            "data_consulta": report.data_consulta.isoformat(),
         }
-        
+
         await record_legal_query_if_investigation(
             db,
             request.investigation_id,
@@ -938,12 +955,8 @@ async def boavista_relatorio(
             response=report_dict,
         )
 
-        return {
-            "success": True,
-            "relatorio": report_dict
-        }
-    
+        return {"success": True, "relatorio": report_dict}
+
     except Exception as e:
         logger.error(f"Erro ao consultar Boa Vista: {e}")
         raise HTTPException(status_code=500, detail=str(e))
-

@@ -70,7 +70,13 @@ jobs:
       - name: Flake8 (erros sintáticos e nomes indefinidos)
         run: |
           cd backend
-          flake8 app --count --select=E9,F63,F7,F82 --show-source --statistics
+          flake8 app tests --count --select=E9,F63,F7,F82 --show-source --statistics
+
+      - name: Black + isort (formatação e ordem de imports)
+        run: |
+          cd backend
+          black --check app tests alembic
+          isort --check-only app tests alembic --profile black
 
       # Política: CI verde = barra mínima (subconjunto). Suíte completa: workflow noturno nightly-backend-full-suite.yml + pytest tests/ local.
       # Segredos opcionais (repo/fork sem secrets usa os defaults abaixo). Ver docs/dev/github-setup.md

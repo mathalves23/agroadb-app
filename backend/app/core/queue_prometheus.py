@@ -4,6 +4,7 @@ Métricas Prometheus para filas Redis e circuit breakers de scrapers.
 Expõe gauges actualizados periodicamente pela API (lifespan) e contadores
 em transições críticas. Requer PROMETHEUS_ENABLED e Redis ligado ao queue_manager.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -60,8 +61,8 @@ async def refresh_queue_and_registry_gauges(queue_manager: QueueManager) -> None
     if not settings.PROMETHEUS_ENABLED:
         return
     try:
-        from app.core.queue import ScraperType, TaskPriority
         from app.core.circuit_breaker import CircuitBreakerRegistry
+        from app.core.queue import ScraperType, TaskPriority
 
         if queue_manager.redis_client:
             for st in ScraperType:
@@ -70,7 +71,9 @@ async def refresh_queue_and_registry_gauges(queue_manager: QueueManager) -> None
                     n = await queue_manager.redis_client.zcard(qkey)
                     QUEUE_TASKS.labels(scraper_type=st.value, priority=pr.name).set(float(n))
                 circ = await queue_manager.get_circuit_status(st)
-                SCRAPER_CIRCUIT_OPEN.labels(scraper_type=st.value).set(1.0 if circ["is_open"] else 0.0)
+                SCRAPER_CIRCUIT_OPEN.labels(scraper_type=st.value).set(
+                    1.0 if circ["is_open"] else 0.0
+                )
 
         for row in CircuitBreakerRegistry.get_all_status():
             name = str(row.get("name", "unknown"))
@@ -80,7 +83,9 @@ async def refresh_queue_and_registry_gauges(queue_manager: QueueManager) -> None
         logger.debug("refresh_queue_and_registry_gauges: %s", exc)
 
 
-async def prometheus_gauge_refresh_loop(queue_manager: QueueManager, interval_seconds: float = 15.0) -> None:
+async def prometheus_gauge_refresh_loop(
+    queue_manager: QueueManager, interval_seconds: float = 15.0
+) -> None:
     """Loop em background até cancelado."""
     while True:
         await refresh_queue_and_registry_gauges(queue_manager)

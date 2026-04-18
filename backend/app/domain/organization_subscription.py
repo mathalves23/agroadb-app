@@ -1,13 +1,14 @@
 """
 Planos SaaS, trial e referências Stripe / Pagar.me por organização.
 """
+
 from __future__ import annotations
 
 from datetime import datetime
 from enum import Enum
 from typing import TYPE_CHECKING, Any, Dict, Optional
 
-from sqlalchemy import DateTime, ForeignKey, String, JSON
+from sqlalchemy import JSON, DateTime, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
@@ -50,8 +51,12 @@ class OrganizationSubscription(Base):
     )
 
     plan: Mapped[str] = mapped_column(String(32), nullable=False, default=PlanTier.TRIAL.value)
-    status: Mapped[str] = mapped_column(String(32), nullable=False, default=SubscriptionStatus.TRIALING.value)
-    billing_provider: Mapped[str] = mapped_column(String(16), nullable=False, default=BillingProvider.NONE.value)
+    status: Mapped[str] = mapped_column(
+        String(32), nullable=False, default=SubscriptionStatus.TRIALING.value
+    )
+    billing_provider: Mapped[str] = mapped_column(
+        String(16), nullable=False, default=BillingProvider.NONE.value
+    )
 
     trial_ends_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     current_period_end: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
@@ -73,4 +78,6 @@ class OrganizationSubscription(Base):
         DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False
     )
 
-    organization: Mapped["Organization"] = relationship("Organization", back_populates="subscription")
+    organization: Mapped["Organization"] = relationship(
+        "Organization", back_populates="subscription"
+    )

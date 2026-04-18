@@ -1,7 +1,9 @@
 """
 Portal gov.br - API de Serviços Estaduais
 """
+
 from typing import Any, Dict, Optional
+
 import httpx
 
 from app.core.config import settings
@@ -21,7 +23,13 @@ class ServicosEstaduaisService:
             path = f"/{path}"
         return f"{self.base_url}{path}"
 
-    async def _request(self, method: str, path: str, token: Optional[str] = None, payload: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    async def _request(
+        self,
+        method: str,
+        path: str,
+        token: Optional[str] = None,
+        payload: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
         url = self._build_url(path)
         headers: Dict[str, str] = {}
         if token:
@@ -33,9 +41,13 @@ class ServicosEstaduaisService:
             return response.json()
 
     async def autenticar(self, email: str, senha: str) -> Dict[str, Any]:
-        return await self._request("POST", "/autenticacao", payload={"email": email, "senha": senha})
+        return await self._request(
+            "POST", "/autenticacao", payload={"email": email, "senha": senha}
+        )
 
-    async def inserir_servico(self, payload: Dict[str, Any], token: Optional[str]) -> Dict[str, Any]:
+    async def inserir_servico(
+        self, payload: Dict[str, Any], token: Optional[str]
+    ) -> Dict[str, Any]:
         return await self._request("POST", "/servicos", token=token, payload=payload)
 
     async def editar_servico(self, payload: Dict[str, Any], token: Optional[str]) -> Dict[str, Any]:

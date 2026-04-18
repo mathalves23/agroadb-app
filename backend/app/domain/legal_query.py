@@ -1,8 +1,10 @@
 """
 Legal Query Result - armazenamento de consultas externas
 """
+
 from datetime import datetime
-from sqlalchemy import Integer, String, DateTime, ForeignKey, JSON
+
+from sqlalchemy import JSON, DateTime, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base

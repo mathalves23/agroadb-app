@@ -1,20 +1,22 @@
 """
 Endpoints de WebSocket e Monitoramento de Filas
 """
+
 from typing import Optional
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends, HTTPException, Query
+
+from fastapi import APIRouter, Depends, HTTPException, Query, WebSocket, WebSocketDisconnect
 from fastapi.responses import JSONResponse
 
+from app.api.v1.deps import get_current_user
+from app.core.queue import ScraperType, TaskPriority, queue_manager
 from app.core.websocket import connection_manager
-from app.core.queue import queue_manager, ScraperType, TaskPriority
+from app.domain.user import User
 from app.workers.scraper_workers import (
+    cancel_investigation_scrapers,
     enqueue_investigation_scrapers,
     enqueue_single_scraper,
     get_task_status,
-    cancel_investigation_scrapers
 )
-from app.api.v1.deps import get_current_user
-from app.domain.user import User
 
 router = APIRouter()
 
@@ -31,21 +33,21 @@ async def investigation_websocket(
 ):
     """
     WebSocket para notificações em tempo real de uma investigação
-    
+
     **Como usar:**
     ```javascript
     const ws = new WebSocket('ws://localhost:8000/api/v1/ws/investigations/123?user_token=...');
-    
+
     ws.onmessage = (event) => {
         const data = JSON.parse(event.data);
         console.log('Notificação:', data);
-        
+
         if (data.type === 'task_completed') {
             console.log(`Scraper ${data.scraper_type} concluído!`);
         }
     };
     ```
-    
+
     **Tipos de mensagens recebidas:**
     - `connected`: Conexão estabelecida
     - `task_started`: Scraper iniciado
@@ -58,18 +60,18 @@ async def investigation_websocket(
     """
     # TODO: Validar token e obter user_id
     user_id = "temp_user"  # Temporário
-    
+
     await connection_manager.connect(websocket, investigation_id, user_id)
-    
+
     try:
         while True:
             # Manter conexão ativa
             data = await websocket.receive_text()
-            
+
             # Cliente pode enviar 'ping' para manter conexão
             if data == "ping":
                 await websocket.send_json({"type": "pong"})
-    
+
     except WebSocketDisconnect:
         connection_manager.disconnect(websocket, investigation_id)
 
@@ -115,11 +117,11 @@ async def start_investigation(
         "high": TaskPriority.HIGH,
         "normal": TaskPriority.NORMAL,
         "low": TaskPriority.LOW,
-        "background": TaskPriority.BACKGROUND
+        "background": TaskPriority.BACKGROUND,
     }
-    
+
     task_priority = priority_map.get(priority.lower(), TaskPriority.NORMAL)
-    
+
     # Enfileirar scrapers
     task_ids = await enqueue_investigation_scrapers(
         investigation_id=investigation_id,
@@ -127,15 +129,15 @@ async def start_investigation(
         target_cpf_cnpj=target_cpf_cnpj,
         state=state,
         city=city,
-        priority=task_priority
+        priority=task_priority,
     )
-    
+
     return {
         "status": "success",
         "message": f"{len(task_ids)} scrapers enfileirados",
         "investigation_id": investigation_id,
         "task_ids": task_ids,
-        "priority": priority
+        "priority": priority,
     }
 
 
@@ -175,49 +177,38 @@ async def start_single_scraper(
     try:
         scraper_enum = ScraperType(scraper_type)
     except ValueError:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Tipo de scraper inválido: {scraper_type}"
-        )
-    
+        raise HTTPException(status_code=400, detail=f"Tipo de scraper inválido: {scraper_type}")
+
     priority_map = {
         "critical": TaskPriority.CRITICAL,
         "high": TaskPriority.HIGH,
         "normal": TaskPriority.NORMAL,
         "low": TaskPriority.LOW,
-        "background": TaskPriority.BACKGROUND
+        "background": TaskPriority.BACKGROUND,
     }
-    
+
     task_priority = priority_map.get(priority.lower(), TaskPriority.NORMAL)
-    
-    params = {
-        "name": target_name,
-        "cpf_cnpj": target_cpf_cnpj,
-        "state": state,
-        "city": city
-    }
-    
+
+    params = {"name": target_name, "cpf_cnpj": target_cpf_cnpj, "state": state, "city": city}
+
     task_id = await enqueue_single_scraper(
         investigation_id=investigation_id,
         scraper_type=scraper_enum,
         params=params,
         priority=task_priority,
-        max_retries=max_retries
+        max_retries=max_retries,
     )
-    
+
     if task_id:
         return {
             "status": "success",
             "message": f"Scraper {scraper_type} enfileirado",
             "investigation_id": investigation_id,
             "scraper_type": scraper_type,
-            "task_id": task_id
+            "task_id": task_id,
         }
     else:
-        raise HTTPException(
-            status_code=500,
-            detail="Falha ao enfileirar scraper"
-        )
+        raise HTTPException(status_code=500, detail="Falha ao enfileirar scraper")
 
 
 @router.get("/investigations/{investigation_id}/progress")
@@ -227,7 +218,7 @@ async def get_investigation_progress(
 ):
     """
     Retorna progresso de uma investigação
-    
+
     **Exemplo de resposta:**
     ```json
     {
@@ -248,24 +239,21 @@ async def get_investigation_progress(
     ```
     """
     await queue_manager.connect()
-    
+
     progress = await queue_manager.get_investigation_progress(investigation_id)
-    
+
     if not progress:
-        raise HTTPException(
-            status_code=404,
-            detail="Investigação não encontrada ou sem progresso"
-        )
-    
+        raise HTTPException(status_code=404, detail="Investigação não encontrada ou sem progresso")
+
     total = progress.get("total_tasks", 0)
     completed = progress.get("completed_tasks", 0)
     failed = progress.get("failed_tasks", 0)
     running = progress.get("running_tasks", 0)
-    
+
     return {
         **progress,
         "pending_tasks": total - completed - failed - running,
-        "percentage": round((completed + failed) / total * 100, 2) if total > 0 else 0
+        "percentage": round((completed + failed) / total * 100, 2) if total > 0 else 0,
     }
 
 
@@ -276,20 +264,17 @@ async def get_task(
 ):
     """
     Retorna status de uma task específica
-    
+
     **Exemplo:**
     ```bash
     curl "http://localhost:8000/api/v1/tasks/123_car_abc123"
     ```
     """
     status = await get_task_status(task_id)
-    
+
     if not status:
-        raise HTTPException(
-            status_code=404,
-            detail="Task não encontrada"
-        )
-    
+        raise HTTPException(status_code=404, detail="Task não encontrada")
+
     return status
 
 
@@ -300,19 +285,19 @@ async def cancel_investigation(
 ):
     """
     Cancela todos os scrapers pendentes de uma investigação
-    
+
     **Exemplo:**
     ```bash
     curl -X DELETE "http://localhost:8000/api/v1/investigations/123/cancel"
     ```
     """
     cancelled_count = await cancel_investigation_scrapers(investigation_id)
-    
+
     return {
         "status": "success",
         "message": f"{cancelled_count} tasks canceladas",
         "investigation_id": investigation_id,
-        "cancelled_count": cancelled_count
+        "cancelled_count": cancelled_count,
     }
 
 
@@ -326,16 +311,16 @@ async def get_queue_stats(
 ):
     """
     Retorna estatísticas das filas
-    
+
     **Exemplo:**
     ```bash
     # Todas as filas
     curl "http://localhost:8000/api/v1/queue/stats"
-    
+
     # Fila específica
     curl "http://localhost:8000/api/v1/queue/stats?scraper_type=car"
     ```
-    
+
     **Resposta:**
     ```json
     {
@@ -360,19 +345,16 @@ async def get_queue_stats(
     ```
     """
     await queue_manager.connect()
-    
+
     scraper_enum = None
     if scraper_type:
         try:
             scraper_enum = ScraperType(scraper_type)
         except ValueError:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Tipo de scraper inválido: {scraper_type}"
-            )
-    
+            raise HTTPException(status_code=400, detail=f"Tipo de scraper inválido: {scraper_type}")
+
     stats = await queue_manager.get_queue_stats(scraper_enum)
-    
+
     return stats
 
 
@@ -382,12 +364,12 @@ async def get_websocket_stats(
 ):
     """
     Retorna estatísticas de conexões WebSocket
-    
+
     **Exemplo:**
     ```bash
     curl "http://localhost:8000/api/v1/websocket/stats"
     ```
-    
+
     **Resposta:**
     ```json
     {
@@ -411,7 +393,7 @@ async def get_circuit_breaker_status(
 ):
     """
     Retorna status do circuit breaker de um scraper
-    
+
     **Exemplo:**
     ```bash
     curl "http://localhost:8000/api/v1/circuit-breaker/car"
@@ -420,15 +402,12 @@ async def get_circuit_breaker_status(
     try:
         scraper_enum = ScraperType(scraper_type)
     except ValueError:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Tipo de scraper inválido: {scraper_type}"
-        )
-    
+        raise HTTPException(status_code=400, detail=f"Tipo de scraper inválido: {scraper_type}")
+
     await queue_manager.connect()
-    
+
     status = await queue_manager.get_circuit_status(scraper_enum)
-    
+
     return status
 
 
@@ -436,7 +415,7 @@ async def get_circuit_breaker_status(
 async def health_check():
     """
     Health check do sistema de filas
-    
+
     **Exemplo:**
     ```bash
     curl "http://localhost:8000/api/v1/health"
@@ -444,23 +423,15 @@ async def health_check():
     """
     try:
         await queue_manager.connect()
-        
+
         # Verificar conexão Redis
         stats = await queue_manager.get_queue_stats()
-        
+
         return {
             "status": "healthy",
             "redis": "connected",
             "websocket_connections": connection_manager.get_connection_count(),
-            "total_queued_tasks": sum(
-                s["total"] for s in stats.values()
-            )
+            "total_queued_tasks": sum(s["total"] for s in stats.values()),
         }
     except Exception as e:
-        return JSONResponse(
-            status_code=503,
-            content={
-                "status": "unhealthy",
-                "error": str(e)
-            }
-        )
+        return JSONResponse(status_code=503, content={"status": "unhealthy", "error": str(e)})

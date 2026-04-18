@@ -4,26 +4,26 @@ Score de risco, detecção de padrões, análise de rede
 """
 
 import shutil
-
-from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Query, Request
-from fastapi.responses import Response
 from typing import Literal, Optional
+
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request
+from fastapi.responses import Response
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.deps import get_current_user
-from app.core.database import get_db
 from app.core.audit import AuditAction, audit_logger
+from app.core.database import get_db
 from app.domain.user import User
 from app.repositories.investigation import InvestigationRepository
 from app.services.investigation_access import (
     require_investigation_for_user,
     require_investigation_owner_or_superuser,
 )
-from app.services.ml.risk_scoring import RiskScoringEngine
-from app.services.ml.pattern_detection import PatternDetectionEngine
 from app.services.ml.network_analysis import NetworkAnalysisEngine
 from app.services.ml.network_export import export_investigation_graph
+from app.services.ml.pattern_detection import PatternDetectionEngine
+from app.services.ml.risk_scoring import RiskScoringEngine
 
 router = APIRouter()
 

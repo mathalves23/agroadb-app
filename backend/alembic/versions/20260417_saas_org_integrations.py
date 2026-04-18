@@ -4,9 +4,10 @@ Revision ID: 20260417_saas_org
 Revises: add_capital_to_companies
 Create Date: 2026-04-17
 """
-from alembic import op
+
 import sqlalchemy as sa
 
+from alembic import op
 
 revision = "20260417_saas_org"
 down_revision = "add_capital_to_companies"
@@ -120,7 +121,9 @@ def upgrade() -> None:
 def downgrade() -> None:
     bind = op.get_bind()
     if bind.dialect.name == "postgresql":
-        op.execute(sa.text("DROP MATERIALIZED VIEW IF EXISTS mv_dashboard_investigation_summary CASCADE"))
+        op.execute(
+            sa.text("DROP MATERIALIZED VIEW IF EXISTS mv_dashboard_investigation_summary CASCADE")
+        )
 
     op.drop_index("ix_api_keys_user", table_name="api_keys")
     op.drop_table("api_keys")

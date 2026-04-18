@@ -5,13 +5,15 @@ Parâmetros: cpf, data_nascimento (birthdate)
 Retorna: nome, situação cadastral, data inscrição, ano óbito, etc.
 Gratuito, consulta pública.
 """
-from typing import Any, Dict, Optional
+
 import logging
+from typing import Any, Dict, Optional
+
 import httpx
 
 from app.core.cache import cache_service
-from app.core.retry import retry_with_backoff
 from app.core.circuit_breaker import circuit_protected
+from app.core.retry import retry_with_backoff
 
 logger = logging.getLogger(__name__)
 
@@ -32,9 +34,7 @@ class ReceitaCPFService:
 
     @retry_with_backoff(max_retries=3, base_delay=1.0)
     @circuit_protected(service_name="receita_cpf", failure_threshold=5, recovery_timeout=60.0)
-    async def consultar(
-        self, cpf: str, data_nascimento: Optional[str] = None
-    ) -> Dict[str, Any]:
+    async def consultar(self, cpf: str, data_nascimento: Optional[str] = None) -> Dict[str, Any]:
         """
         Consulta situação cadastral de CPF na Receita Federal.
         data_nascimento: formato DD/MM/AAAA
@@ -141,8 +141,9 @@ class ReceitaCPFService:
 
     def _parse_html(self, html: str, result: Dict[str, Any]) -> Dict[str, Any]:
         """Extrai dados básicos do HTML retornado pela Receita Federal usando BeautifulSoup."""
-        from bs4 import BeautifulSoup
         import re as _re
+
+        from bs4 import BeautifulSoup
 
         soup = BeautifulSoup(html, "lxml")
         text = soup.get_text(separator="\n")
@@ -171,11 +172,11 @@ class ReceitaCPFService:
             if field not in result:
                 for label in labels:
                     if field == "ano_obito":
-                        pattern = _re.escape(label) + r'\s*[:\-]?\s*(\d{4})'
+                        pattern = _re.escape(label) + r"\s*[:\-]?\s*(\d{4})"
                     elif field == "digito_verificador":
-                        pattern = _re.escape(label) + r'\s*[:\-]?\s*(\d+)'
+                        pattern = _re.escape(label) + r"\s*[:\-]?\s*(\d+)"
                     else:
-                        pattern = _re.escape(label) + r'\s*[:\-]?\s*(.+?)(?:\n|$)'
+                        pattern = _re.escape(label) + r"\s*[:\-]?\s*(.+?)(?:\n|$)"
                     match = _re.search(pattern, text, _re.IGNORECASE)
                     if match:
                         value = match.group(1).strip()
@@ -187,9 +188,7 @@ class ReceitaCPFService:
 
     async def verificar_disponibilidade(self) -> Dict[str, Any]:
         """Verifica se o portal da Receita Federal está acessível."""
-        async with httpx.AsyncClient(
-            timeout=15.0, follow_redirects=True, verify=True
-        ) as client:
+        async with httpx.AsyncClient(timeout=15.0, follow_redirects=True, verify=True) as client:
             try:
                 resp = await client.head(self.CONSULTA_URL)
                 return {

@@ -4,7 +4,8 @@ User Domain Model
 
 from datetime import datetime
 from typing import Optional
-from sqlalchemy import String, Boolean, DateTime
+
+from sqlalchemy import Boolean, DateTime, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base

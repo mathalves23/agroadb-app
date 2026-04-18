@@ -1,7 +1,9 @@
 """
 Conecta gov.br - Integração SIGEF
 """
+
 from typing import Any, Dict, Optional
+
 import httpx
 
 from app.core.config import settings
@@ -50,7 +52,9 @@ class ConectaSIGEFService:
     async def consultar_imovel(self, codigo_imovel: str) -> Dict[str, Any]:
         if self._credentials_missing():
             raise self._credential_error()
-        path = self.path_imovel.replace("{codigo_imovel}", codigo_imovel).replace("{codigo}", codigo_imovel)
+        path = self.path_imovel.replace("{codigo_imovel}", codigo_imovel).replace(
+            "{codigo}", codigo_imovel
+        )
         url = self._build_url(path)
         headers = await self.auth.build_headers()
         async with httpx.AsyncClient(timeout=self.timeout) as client:

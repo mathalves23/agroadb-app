@@ -4,11 +4,13 @@ https://dados.cvm.gov.br/
 Consulta: Fundos de Investimento, FIIs, Participantes
 Sem autenticação. Gratuito.
 """
+
 from typing import Any, Dict, List, Optional
+
 import httpx
 
-from app.core.retry import retry_with_backoff
 from app.core.circuit_breaker import circuit_protected
+from app.core.retry import retry_with_backoff
 
 
 class CVMService:
@@ -35,7 +37,9 @@ class CVMService:
 
     @retry_with_backoff(max_retries=2, base_delay=0.5)
     @circuit_protected(service_name="cvm", failure_threshold=5, recovery_timeout=60.0)
-    async def buscar_fundos(self, cnpj: Optional[str] = None, nome: Optional[str] = None) -> Dict[str, Any]:
+    async def buscar_fundos(
+        self, cnpj: Optional[str] = None, nome: Optional[str] = None
+    ) -> Dict[str, Any]:
         """Busca fundos de investimento por CNPJ ou nome"""
         query = "fundos investimento"
         if cnpj:

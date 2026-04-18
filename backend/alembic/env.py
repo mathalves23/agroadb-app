@@ -1,21 +1,23 @@
 """Alembic environment configuration"""
-from logging.config import fileConfig
-from sqlalchemy import engine_from_config
-from sqlalchemy import pool
-from alembic import context
+
 import asyncio
+from logging.config import fileConfig
+
+from sqlalchemy import engine_from_config, pool
 from sqlalchemy.ext.asyncio import AsyncEngine
+
+from alembic import context
+from app.core.config import settings
 
 # Import your models base
 from app.core.database import Base
-from app.core.config import settings
+from app.domain.company import Company
+from app.domain.investigation import Investigation
+from app.domain.lease_contract import LeaseContract
+from app.domain.property import Property
 
 # Import all models to ensure they're registered
 from app.domain.user import User
-from app.domain.investigation import Investigation
-from app.domain.property import Property
-from app.domain.lease_contract import LeaseContract
-from app.domain.company import Company
 
 # this is the Alembic Config object
 config = context.config

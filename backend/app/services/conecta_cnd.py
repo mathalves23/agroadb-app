@@ -1,7 +1,9 @@
 """
 Conecta gov.br - Integração Consulta CND (RFB/PGFN)
 """
+
 from typing import Any, Dict
+
 import httpx
 
 from app.core.config import settings

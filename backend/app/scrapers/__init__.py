@@ -12,15 +12,16 @@ Scrapers disponíveis:
 - ReceitaScraper: CNPJ (APIs + fallback HTML)
 - CARScraper, INCRAScraper, SIGEFSICARScraper, etc. (existentes)
 """
+
 from app.scrapers.base import BaseScraper
-from app.scrapers.tribunais_scraper import TribunaisScraper
 from app.scrapers.car_public_scraper import CARPublicScraper
-from app.scrapers.sncr_public_scraper import SNCRPublicScraper
-from app.scrapers.sigef_parcelas_scraper import SigefParcelasScraper
 from app.scrapers.car_scraper import CARScraper
 from app.scrapers.incra_scraper import INCRAScraper
 from app.scrapers.receita_scraper import ReceitaScraper
+from app.scrapers.sigef_parcelas_scraper import SigefParcelasScraper
 from app.scrapers.sigef_sicar_scraper import SIGEFSICARScraper
+from app.scrapers.sncr_public_scraper import SNCRPublicScraper
+from app.scrapers.tribunais_scraper import TribunaisScraper
 
 __all__ = [
     "BaseScraper",

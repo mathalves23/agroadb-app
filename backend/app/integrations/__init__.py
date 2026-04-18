@@ -9,11 +9,11 @@ Este módulo contém todas as integrações com sistemas externos:
 - Ferramentas de comunicação (Slack, Microsoft Teams)
 """
 
-from app.integrations.car_estados import CARIntegration
-from app.integrations.tribunais import TribunalIntegration
-from app.integrations.orgaos_federais import OrgaoFederalIntegration
 from app.integrations.bureaus import BureauIntegration
+from app.integrations.car_estados import CARIntegration
 from app.integrations.comunicacao import ComunicacaoIntegration
+from app.integrations.orgaos_federais import OrgaoFederalIntegration
+from app.integrations.tribunais import TribunalIntegration
 
 __all__ = [
     "CARIntegration",

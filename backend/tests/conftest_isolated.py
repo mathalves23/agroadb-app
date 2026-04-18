@@ -6,8 +6,9 @@ Este arquivo fornece fixtures para testes sem depender de configurações
 completas do sistema.
 """
 
+from unittest.mock import MagicMock, Mock
+
 import pytest
-from unittest.mock import Mock, MagicMock
 from sqlalchemy.orm import Session
 
 
@@ -15,7 +16,7 @@ from sqlalchemy.orm import Session
 def mock_db():
     """Mock completo do banco de dados SQLAlchemy"""
     db = Mock(spec=Session)
-    
+
     # Mock métodos comuns
     db.query = Mock()
     db.add = Mock()
@@ -26,7 +27,7 @@ def mock_db():
     db.close = Mock()
     db.flush = Mock()
     db.execute = Mock()
-    
+
     # Mock query builder
     query_mock = Mock()
     query_mock.filter = Mock(return_value=query_mock)
@@ -40,9 +41,9 @@ def mock_db():
     query_mock.first = Mock(return_value=None)
     query_mock.scalar = Mock(return_value=0)
     query_mock.count = Mock(return_value=0)
-    
+
     db.query.return_value = query_mock
-    
+
     return db
 
 
@@ -50,17 +51,15 @@ def mock_db():
 def sample_date_range():
     """Datas de exemplo para testes"""
     from datetime import datetime, timedelta
-    return {
-        "start_date": datetime.utcnow() - timedelta(days=30),
-        "end_date": datetime.utcnow()
-    }
+
+    return {"start_date": datetime.utcnow() - timedelta(days=30), "end_date": datetime.utcnow()}
 
 
 @pytest.fixture
 def mock_investigation():
     """Mock de uma investigação"""
     from datetime import datetime
-    
+
     inv = Mock()
     inv.id = 1
     inv.title = "Test Investigation"
@@ -72,7 +71,7 @@ def mock_investigation():
     inv.updated_at = datetime.utcnow()
     inv.completed_at = None
     inv.created_by_id = 1
-    
+
     return inv
 
 
@@ -80,7 +79,7 @@ def mock_investigation():
 def mock_user():
     """Mock de um usuário"""
     from datetime import datetime
-    
+
     user = Mock()
     user.id = 1
     user.name = "Test User"
@@ -89,7 +88,7 @@ def mock_user():
     user.is_active = True
     user.created_at = datetime.utcnow()
     user.last_login = datetime.utcnow()
-    
+
     return user
 
 
@@ -97,14 +96,14 @@ def mock_user():
 def mock_httpx_client():
     """Mock do cliente httpx"""
     import httpx
-    
+
     client = Mock(spec=httpx.AsyncClient)
-    
+
     # Mock métodos HTTP
     client.get = Mock()
     client.post = Mock()
     client.put = Mock()
     client.delete = Mock()
     client.aclose = Mock()
-    
+
     return client

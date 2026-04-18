@@ -1,7 +1,9 @@
 """
 Portal gov.br - API de Serviços
 """
+
 from typing import Any, Dict, Optional
+
 import httpx
 
 from app.core.config import settings
@@ -42,4 +44,6 @@ class PortalServicosService:
         return await self._get_json(f"/servicos/simples/{servico_id}")
 
     async def listar_servicos_auth(self, token: Optional[str]) -> Dict[str, Any]:
-        return await self._get_json("/servicos-auth", token=token or settings.PORTAL_SERVICOS_AUTH_TOKEN)
+        return await self._get_json(
+            "/servicos-auth", token=token or settings.PORTAL_SERVICOS_AUTH_TOKEN
+        )

@@ -4,7 +4,9 @@ https://dados.gov.br/swagger-ui/index.html
 Consulta: Datasets, Organizações, Tags
 Sem autenticação para leitura. Gratuito.
 """
+
 from typing import Any, Dict, Optional
+
 import httpx
 
 
@@ -24,14 +26,19 @@ class DadosGovService:
                 raise ValueError(f"dados.gov.br erro {resp.status_code}: {resp.text[:300]}")
             return resp.json()
 
-    async def buscar_datasets(self, query: str, pagina: int = 1, tamanhoPagina: int = 10) -> Dict[str, Any]:
+    async def buscar_datasets(
+        self, query: str, pagina: int = 1, tamanhoPagina: int = 10
+    ) -> Dict[str, Any]:
         """Busca datasets por termo"""
-        return await self._get("/conjuntos-dados", params={
-            "isPrivado": "false",
-            "nomeConjuntoDados": query,
-            "pagina": pagina,
-            "tamanhoPagina": tamanhoPagina
-        })
+        return await self._get(
+            "/conjuntos-dados",
+            params={
+                "isPrivado": "false",
+                "nomeConjuntoDados": query,
+                "pagina": pagina,
+                "tamanhoPagina": tamanhoPagina,
+            },
+        )
 
     async def detalhar_dataset(self, dataset_id: str) -> Dict[str, Any]:
         """Detalha um dataset pelo ID"""

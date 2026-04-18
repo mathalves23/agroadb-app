@@ -6,25 +6,25 @@ Import único para todas as funcionalidades de User Analytics.
 
 # Funnel + Feature Adoption
 from app.analytics.user_analytics import (
-    FunnelAnalytics,
     FeatureAdoptionAnalytics,
-    FunnelStep,
-    FunnelAnalysis,
+    FeatureAdoptionStatus,
     FeatureUsage,
-    FeatureAdoptionStatus
+    FunnelAnalysis,
+    FunnelAnalytics,
+    FunnelStep,
 )
 
 # Heatmaps + Sessions + NPS
 from app.analytics.user_analytics_part2 import (
     HeatmapAnalytics,
-    SessionRecordingAnalytics,
-    NPSAnalytics,
-    HeatmapPoint,
     HeatmapData,
+    HeatmapPoint,
+    NPSAnalysis,
+    NPSAnalytics,
+    NPSResponse,
     SessionEvent,
     SessionRecording,
-    NPSResponse,
-    NPSAnalysis
+    SessionRecordingAnalytics,
 )
 
 __all__ = [
@@ -34,26 +34,21 @@ __all__ = [
     "HeatmapAnalytics",
     "SessionRecordingAnalytics",
     "NPSAnalytics",
-    
     # Models - Funnel
     "FunnelStep",
     "FunnelAnalysis",
-    
     # Models - Feature Adoption
     "FeatureUsage",
     "FeatureAdoptionStatus",
-    
     # Models - Heatmap
     "HeatmapPoint",
     "HeatmapData",
-    
     # Models - Session
     "SessionEvent",
     "SessionRecording",
-    
     # Models - NPS
     "NPSResponse",
-    "NPSAnalysis"
+    "NPSAnalysis",
 ]
 
 

@@ -1,7 +1,9 @@
 """
 Conecta gov.br - Integração SIGEF GEO
 """
+
 from typing import Any, Dict, Optional
+
 import httpx
 
 from app.core.config import settings

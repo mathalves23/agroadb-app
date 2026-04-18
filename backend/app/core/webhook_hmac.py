@@ -1,4 +1,5 @@
 """Verificação de assinaturas HMAC para webhooks (integrações genéricas)."""
+
 from __future__ import annotations
 
 import hashlib

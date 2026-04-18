@@ -1,4 +1,5 @@
 """API keys — armazena apenas hash SHA-256 da chave."""
+
 from __future__ import annotations
 
 import hashlib

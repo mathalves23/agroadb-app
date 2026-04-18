@@ -1,18 +1,20 @@
 """
 LGPD Compliance Endpoints
 """
-from fastapi import APIRouter, HTTPException, status, Request
+
+from typing import List, Optional
+
+from fastapi import APIRouter, HTTPException, Request, status
 from pydantic import BaseModel
-from typing import Optional, List
 from sqlalchemy import select
 
-from app.api.v1.deps import DatabaseSession, CurrentUser
+from app.api.v1.deps import CurrentUser, DatabaseSession
 from app.core.lgpd import (
-    LGPDService,
-    UserConsent,
-    DataDeletionRequest,
-    PersonalDataAccess,
     ConsentType,
+    DataDeletionRequest,
+    LGPDService,
+    PersonalDataAccess,
+    UserConsent,
 )
 
 router = APIRouter()
@@ -141,35 +143,35 @@ async def get_privacy_policy():
         "sections": [
             {
                 "title": "1. Dados Coletados",
-                "content": "Coletamos dados pessoais necessários para a prestação do serviço de inteligência patrimonial: nome completo, CPF/CNPJ, e-mail, organização e número da OAB (quando aplicável)."
+                "content": "Coletamos dados pessoais necessários para a prestação do serviço de inteligência patrimonial: nome completo, CPF/CNPJ, e-mail, organização e número da OAB (quando aplicável).",
             },
             {
                 "title": "2. Finalidade do Tratamento",
-                "content": "Os dados são tratados exclusivamente para (a) autenticação e controle de acesso; (b) realização de consultas em bases públicas governamentais; (c) geração de relatórios de investigação patrimonial."
+                "content": "Os dados são tratados exclusivamente para (a) autenticação e controle de acesso; (b) realização de consultas em bases públicas governamentais; (c) geração de relatórios de investigação patrimonial.",
             },
             {
                 "title": "3. Base Legal",
-                "content": "O tratamento é fundamentado no consentimento do titular (Art. 7, I da LGPD) e na execução de contrato (Art. 7, V da LGPD)."
+                "content": "O tratamento é fundamentado no consentimento do titular (Art. 7, I da LGPD) e na execução de contrato (Art. 7, V da LGPD).",
             },
             {
                 "title": "4. Compartilhamento",
-                "content": "Os dados não são compartilhados com terceiros. As consultas às bases governamentais são realizadas diretamente via APIs oficiais."
+                "content": "Os dados não são compartilhados com terceiros. As consultas às bases governamentais são realizadas diretamente via APIs oficiais.",
             },
             {
                 "title": "5. Retenção",
-                "content": "Dados de investigação são retidos por 5 anos. Logs de auditoria por 2 anos. Dados de usuários inativos são anonimizados após 1 ano."
+                "content": "Dados de investigação são retidos por 5 anos. Logs de auditoria por 2 anos. Dados de usuários inativos são anonimizados após 1 ano.",
             },
             {
                 "title": "6. Direitos do Titular (Art. 18)",
-                "content": "Você pode: solicitar acesso a seus dados (/data-report), revogar consentimento (/consents), solicitar exclusão (/data-deletion), e verificar acessos a seus dados (/data-access-log)."
+                "content": "Você pode: solicitar acesso a seus dados (/data-report), revogar consentimento (/consents), solicitar exclusão (/data-deletion), e verificar acessos a seus dados (/data-access-log).",
             },
             {
                 "title": "7. Segurança",
-                "content": "Dados sensíveis são criptografados em repouso (AES-256). A comunicação é protegida por TLS 1.2+. Autenticação de dois fatores (2FA) está disponível."
+                "content": "Dados sensíveis são criptografados em repouso (AES-256). A comunicação é protegida por TLS 1.2+. Autenticação de dois fatores (2FA) está disponível.",
             },
             {
                 "title": "8. Encarregado de Dados (DPO)",
-                "content": "Para exercer seus direitos ou esclarecer dúvidas, contate o encarregado de dados pelo e-mail dpo@agroadb.com.br."
+                "content": "Para exercer seus direitos ou esclarecer dúvidas, contate o encarregado de dados pelo e-mail dpo@agroadb.com.br.",
             },
         ],
     }

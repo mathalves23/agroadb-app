@@ -3,7 +3,8 @@ Investigation Repository
 """
 
 from typing import List
-from sqlalchemy import select, desc
+
+from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 

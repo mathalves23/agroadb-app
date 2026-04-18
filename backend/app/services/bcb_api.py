@@ -4,9 +4,11 @@ https://dadosabertos.bcb.gov.br/
 Consulta: PIX Participantes, Taxas de Câmbio, PTAX
 Sem autenticação. Gratuito.
 """
-from typing import Any, Dict, List, Optional
-import httpx
+
 from datetime import date
+from typing import Any, Dict, List, Optional
+
+import httpx
 
 
 class BCBService:
@@ -29,7 +31,9 @@ class BCBService:
         url = f"{self.OLINDA_URL}/Pix_DadosAbertos/versao/v1/odata/ParticipantesDoEcossistema?$format=json&$top=50"
         return await self._get(url)
 
-    async def consultar_taxa_cambio(self, moeda: str = "USD", data_ref: Optional[str] = None) -> Dict[str, Any]:
+    async def consultar_taxa_cambio(
+        self, moeda: str = "USD", data_ref: Optional[str] = None
+    ) -> Dict[str, Any]:
         """Consulta taxa de câmbio PTAX"""
         if not data_ref:
             data_ref = date.today().strftime("%m-%d-%Y")

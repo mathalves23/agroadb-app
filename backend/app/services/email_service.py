@@ -1,24 +1,26 @@
 """
 Email Service - Envio de emails com templates HTML
 """
-from typing import Optional, Dict, Any
+
+import logging
 import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
 from datetime import datetime
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 from pathlib import Path
+from typing import Any, Dict, Optional
+
 from jinja2 import Template
 
 from app.core.config import settings
 from app.domain.notification import NotificationType
-import logging
 
 logger = logging.getLogger(__name__)
 
 
 class EmailService:
     """Serviço para envio de emails"""
-    
+
     @staticmethod
     def _get_smtp_connection():
         """Cria conexão SMTP"""
@@ -27,11 +29,11 @@ class EmailService:
             smtp_port = settings.SMTP_PORT
             smtp_user = settings.SMTP_USER
             smtp_password = settings.SMTP_PASSWORD
-            
+
             if not smtp_user or not smtp_password:
                 logger.warning("SMTP credentials not configured")
                 return None
-            
+
             server = smtplib.SMTP(smtp_host, smtp_port)
             server.starttls()
             server.login(smtp_user, smtp_password)
@@ -39,37 +41,37 @@ class EmailService:
         except Exception as e:
             logger.error(f"Erro ao conectar SMTP: {e}")
             return None
-    
+
     @staticmethod
     def _load_template(template_name: str, context: Dict[str, Any]) -> str:
         """
         Carrega e renderiza template HTML
-        
+
         Args:
             template_name: Nome do arquivo de template (ex: 'investigation_completed.html')
             context: Dicionário com variáveis para o template
-            
+
         Returns:
             HTML renderizado
         """
         template_dir = Path(__file__).parent.parent / "templates" / "emails"
         template_path = template_dir / template_name
-        
+
         # Se template não existe, usar fallback inline
         if not template_path.exists():
             logger.warning(f"Template {template_name} não encontrado, usando fallback")
             return EmailService._get_fallback_template(context)
-        
+
         try:
-            with open(template_path, 'r', encoding='utf-8') as f:
+            with open(template_path, "r", encoding="utf-8") as f:
                 template_content = f.read()
-            
+
             template = Template(template_content)
             return template.render(**context)
         except Exception as e:
             logger.error(f"Erro ao carregar template {template_name}: {e}")
             return EmailService._get_fallback_template(context)
-    
+
     @staticmethod
     def _get_fallback_template(context: Dict[str, Any]) -> str:
         """Template HTML fallback caso o arquivo não exista"""
@@ -104,7 +106,7 @@ class EmailService:
 </body>
 </html>
         """
-    
+
     @staticmethod
     async def send_notification_email(
         to_email: str,
@@ -112,32 +114,32 @@ class EmailService:
         notification_type: NotificationType,
         title: str,
         message: str,
-        action_url: Optional[str] = None
+        action_url: Optional[str] = None,
     ):
         """Envia email de notificação com template HTML"""
-        
+
         # Obter template HTML
         html_content = EmailService._get_notification_template(
             user_name=user_name,
             title=title,
             message=message,
             action_url=action_url,
-            notification_type=notification_type
+            notification_type=notification_type,
         )
-        
+
         # Criar mensagem
-        msg = MIMEMultipart('alternative')
-        msg['Subject'] = f"AgroADB - {title}"
-        msg['From'] = f"{settings.SMTP_FROM_NAME} <{settings.SMTP_FROM}>"
-        msg['To'] = to_email
-        
+        msg = MIMEMultipart("alternative")
+        msg["Subject"] = f"AgroADB - {title}"
+        msg["From"] = f"{settings.SMTP_FROM_NAME} <{settings.SMTP_FROM}>"
+        msg["To"] = to_email
+
         # Texto simples (fallback)
-        text_part = MIMEText(f"{title}\n\n{message}", 'plain')
-        html_part = MIMEText(html_content, 'html')
-        
+        text_part = MIMEText(f"{title}\n\n{message}", "plain")
+        html_part = MIMEText(html_content, "html")
+
         msg.attach(text_part)
         msg.attach(html_part)
-        
+
         # Enviar
         try:
             server = EmailService._get_smtp_connection()
@@ -152,33 +154,33 @@ class EmailService:
         except Exception as e:
             logger.error(f"Erro ao enviar email: {e}")
             return False
-    
+
     @staticmethod
     def _get_notification_template(
         user_name: str,
         title: str,
         message: str,
         action_url: Optional[str],
-        notification_type: NotificationType
+        notification_type: NotificationType,
     ) -> str:
         """Gera template HTML para email de notificação"""
-        
+
         # Cores por tipo
         colors = {
             NotificationType.INVESTIGATION_CREATED: "#3B82F6",  # blue
-            NotificationType.INVESTIGATION_SHARED: "#8B5CF6",   # purple
+            NotificationType.INVESTIGATION_SHARED: "#8B5CF6",  # purple
             NotificationType.INVESTIGATION_COMMENT: "#10B981",  # green
-            NotificationType.REPORT_READY: "#059669",           # emerald
-            NotificationType.QUERY_COMPLETED: "#14B8A6",        # teal
-            NotificationType.ALERT: "#EF4444"                   # red
+            NotificationType.REPORT_READY: "#059669",  # emerald
+            NotificationType.QUERY_COMPLETED: "#14B8A6",  # teal
+            NotificationType.ALERT: "#EF4444",  # red
         }
         color = colors.get(notification_type, "#6B7280")
-        
+
         action_button = ""
         if action_url:
             base_url = settings.FRONTEND_URL
             full_url = f"{base_url}{action_url}"
-            action_button = f'''
+            action_button = f"""
             <tr>
                 <td style="padding: 20px 0;">
                     <a href="{full_url}" 
@@ -193,9 +195,9 @@ class EmailService:
                     </a>
                 </td>
             </tr>
-            '''
-        
-        return f'''
+            """
+
+        return f"""
 <!DOCTYPE html>
 <html>
 <head>
@@ -269,12 +271,12 @@ class EmailService:
     </table>
 </body>
 </html>
-        '''
-    
+        """
+
     @staticmethod
     async def send_welcome_email(to_email: str, user_name: str, username: str):
         """Envia email de boas-vindas"""
-        html_content = f'''
+        html_content = f"""
 <!DOCTYPE html>
 <html>
 <head>
@@ -306,15 +308,15 @@ class EmailService:
     </div>
 </body>
 </html>
-        '''
-        
-        msg = MIMEMultipart('alternative')
-        msg['Subject'] = "Bem-vindo ao AgroADB!"
-        msg['From'] = f"{settings.SMTP_FROM_NAME} <{settings.SMTP_FROM}>"
-        msg['To'] = to_email
-        
-        msg.attach(MIMEText(html_content, 'html'))
-        
+        """
+
+        msg = MIMEMultipart("alternative")
+        msg["Subject"] = "Bem-vindo ao AgroADB!"
+        msg["From"] = f"{settings.SMTP_FROM_NAME} <{settings.SMTP_FROM}>"
+        msg["To"] = to_email
+
+        msg.attach(MIMEText(html_content, "html"))
+
         try:
             server = EmailService._get_smtp_connection()
             if server:
@@ -323,45 +325,43 @@ class EmailService:
                 return True
         except Exception as e:
             logger.error(f"Erro ao enviar email de boas-vindas: {e}")
-        
+
         return False
-    
+
     @staticmethod
     async def send_investigation_completed(
-        user_email: str,
-        user_name: str,
-        investigation: Dict[str, Any]
+        user_email: str, user_name: str, investigation: Dict[str, Any]
     ) -> bool:
         """
         Envia email quando investigação é concluída
-        
+
         Args:
             user_email: Email do usuário
             user_name: Nome do usuário
             investigation: Dados da investigação (dict com id, target_name, properties_found, etc)
-            
+
         Returns:
             True se enviado com sucesso
         """
         try:
             context = {
-                'user_name': user_name,
-                'investigation_id': investigation.get('id'),
-                'target_name': investigation.get('target_name'),
-                'properties_found': investigation.get('properties_found', 0),
-                'companies_found': investigation.get('companies_found', 0),
-                'lease_contracts_found': investigation.get('lease_contracts_found', 0),
-                'frontend_url': settings.FRONTEND_URL,
-                'year': datetime.now().year
+                "user_name": user_name,
+                "investigation_id": investigation.get("id"),
+                "target_name": investigation.get("target_name"),
+                "properties_found": investigation.get("properties_found", 0),
+                "companies_found": investigation.get("companies_found", 0),
+                "lease_contracts_found": investigation.get("lease_contracts_found", 0),
+                "frontend_url": settings.FRONTEND_URL,
+                "year": datetime.now().year,
             }
-            
-            html_content = EmailService._load_template('investigation_completed.html', context)
-            
-            msg = MIMEMultipart('alternative')
-            msg['Subject'] = f"AgroADB - Investigação Concluída: {context['target_name']}"
-            msg['From'] = f"{settings.SMTP_FROM_NAME} <{settings.SMTP_FROM}>"
-            msg['To'] = user_email
-            
+
+            html_content = EmailService._load_template("investigation_completed.html", context)
+
+            msg = MIMEMultipart("alternative")
+            msg["Subject"] = f"AgroADB - Investigação Concluída: {context['target_name']}"
+            msg["From"] = f"{settings.SMTP_FROM_NAME} <{settings.SMTP_FROM}>"
+            msg["To"] = user_email
+
             # Fallback texto simples
             text_content = f"""
 Olá, {user_name}!
@@ -378,10 +378,10 @@ Acesse a plataforma para ver os detalhes completos:
 
 Equipe AgroADB
             """
-            
-            msg.attach(MIMEText(text_content, 'plain'))
-            msg.attach(MIMEText(html_content, 'html'))
-            
+
+            msg.attach(MIMEText(text_content, "plain"))
+            msg.attach(MIMEText(html_content, "html"))
+
             server = EmailService._get_smtp_connection()
             if server:
                 server.send_message(msg)
@@ -391,58 +391,58 @@ Equipe AgroADB
             else:
                 logger.warning(f"SMTP não configurado, email não enviado para {user_email}")
                 return False
-                
+
         except Exception as e:
             logger.error(f"Erro ao enviar email de investigação concluída: {e}")
             return False
-    
+
     @staticmethod
     async def send_investigation_shared(
         user_email: str,
         user_name: str,
         investigation: Dict[str, Any],
         shared_by_name: str,
-        permission_level: str
+        permission_level: str,
     ) -> bool:
         """
         Envia email quando investigação é compartilhada
-        
+
         Args:
             user_email: Email do usuário que receberá o compartilhamento
             user_name: Nome do usuário
             investigation: Dados da investigação
             shared_by_name: Nome de quem compartilhou
             permission_level: Nível de permissão (view, comment, edit, admin)
-            
+
         Returns:
             True se enviado com sucesso
         """
         try:
             permission_labels = {
-                'view': 'Visualização',
-                'comment': 'Visualização e Comentários',
-                'edit': 'Edição',
-                'admin': 'Administração completa'
+                "view": "Visualização",
+                "comment": "Visualização e Comentários",
+                "edit": "Edição",
+                "admin": "Administração completa",
             }
-            
+
             context = {
-                'user_name': user_name,
-                'shared_by_name': shared_by_name,
-                'investigation_id': investigation.get('id'),
-                'target_name': investigation.get('target_name'),
-                'permission_level': permission_level,
-                'permission_label': permission_labels.get(permission_level, permission_level),
-                'frontend_url': settings.FRONTEND_URL,
-                'year': datetime.now().year
+                "user_name": user_name,
+                "shared_by_name": shared_by_name,
+                "investigation_id": investigation.get("id"),
+                "target_name": investigation.get("target_name"),
+                "permission_level": permission_level,
+                "permission_label": permission_labels.get(permission_level, permission_level),
+                "frontend_url": settings.FRONTEND_URL,
+                "year": datetime.now().year,
             }
-            
-            html_content = EmailService._load_template('investigation_shared.html', context)
-            
-            msg = MIMEMultipart('alternative')
-            msg['Subject'] = f"AgroADB - Investigação Compartilhada: {context['target_name']}"
-            msg['From'] = f"{settings.SMTP_FROM_NAME} <{settings.SMTP_FROM}>"
-            msg['To'] = user_email
-            
+
+            html_content = EmailService._load_template("investigation_shared.html", context)
+
+            msg = MIMEMultipart("alternative")
+            msg["Subject"] = f"AgroADB - Investigação Compartilhada: {context['target_name']}"
+            msg["From"] = f"{settings.SMTP_FROM_NAME} <{settings.SMTP_FROM}>"
+            msg["To"] = user_email
+
             # Fallback texto simples
             text_content = f"""
 Olá, {user_name}!
@@ -457,10 +457,10 @@ Acesse a plataforma para visualizar:
 
 Equipe AgroADB
             """
-            
-            msg.attach(MIMEText(text_content, 'plain'))
-            msg.attach(MIMEText(html_content, 'html'))
-            
+
+            msg.attach(MIMEText(text_content, "plain"))
+            msg.attach(MIMEText(html_content, "html"))
+
             server = EmailService._get_smtp_connection()
             if server:
                 server.send_message(msg)
@@ -470,7 +470,7 @@ Equipe AgroADB
             else:
                 logger.warning(f"SMTP não configurado, email não enviado para {user_email}")
                 return False
-                
+
         except Exception as e:
             logger.error(f"Erro ao enviar email de compartilhamento: {e}")
             return False

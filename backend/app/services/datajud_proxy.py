@@ -3,6 +3,7 @@ Caso de uso: proxy DataJud + registo opcional em legal_queries + auditoria.
 
 Mantém o router `legal_integration` fino e concentra persistência/auditoria aqui.
 """
+
 from __future__ import annotations
 
 from typing import Any, Dict, Optional, Protocol
@@ -20,8 +21,7 @@ class _DataJudClient(Protocol):
         path: str,
         params: Optional[Dict[str, Any]] = None,
         payload: Optional[Dict[str, Any]] = None,
-    ) -> Any:
-        ...
+    ) -> Any: ...
 
 
 class _AuditLogSink(Protocol):
@@ -39,8 +39,7 @@ class _AuditLogSink(Protocol):
         endpoint: Optional[str] = None,
         success: bool = True,
         error_message: Optional[str] = None,
-    ) -> Any:
-        ...
+    ) -> Any: ...
 
 
 async def run_datajud_proxy(

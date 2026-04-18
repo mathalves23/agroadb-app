@@ -1,6 +1,7 @@
 """
 Análise de rede para investigações (NetworkX + dados reais da base).
 """
+
 from __future__ import annotations
 
 import re
@@ -48,9 +49,7 @@ class NetworkAnalysis:
     clusters: int = 0
     key_players: List[str] = field(default_factory=list)
     suspicious_patterns: List[str] = field(default_factory=list)
-    graph_data: Dict[str, Any] = field(
-        default_factory=lambda: {"nodes": [], "links": []}
-    )
+    graph_data: Dict[str, Any] = field(default_factory=lambda: {"nodes": [], "links": []})
 
 
 class NetworkAnalysisEngine:

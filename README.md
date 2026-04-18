@@ -19,6 +19,7 @@ Este repositório é **público**. Não inclua nele chaves API, passwords, URLs 
 | `docs/MAPEAMENTO_APIS_GOV.md` | Referência de **APIs e fontes públicas** (sem credenciais) |
 | `clients/` | Clientes de exemplo (Python / JS) para consumir a API **na sua instância** |
 | `postman/` | Coleção Postman para testar endpoints localmente |
+| `CONTRIBUTING.md` | Como contribuir, qualidade de código e pre-commit |
 
 ---
 

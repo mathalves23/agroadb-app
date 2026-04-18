@@ -1,16 +1,17 @@
 """
 Users Endpoints
 """
-from fastapi import APIRouter, HTTPException, status, Depends
-from sqlalchemy.ext.asyncio import AsyncSession
-from pydantic import BaseModel, EmailStr
 
-from app.api.v1.deps import DatabaseSession, CurrentUser, CurrentSuperuser, get_current_user
-from app.schemas.user import UserResponse, UserUpdate
+from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel, EmailStr
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.api.v1.deps import CurrentSuperuser, CurrentUser, DatabaseSession, get_current_user
+from app.core.database import get_db
+from app.core.security import get_password_hash, verify_password
 from app.repositories.user import UserRepository
 from app.repositories.user_settings import UserSettingsRepository
-from app.core.security import get_password_hash, verify_password
-from app.core.database import get_db
+from app.schemas.user import UserResponse, UserUpdate
 
 router = APIRouter()
 
@@ -41,13 +42,13 @@ async def update_current_user(
 ) -> UserResponse:
     """Update current user profile"""
     user_repo = UserRepository(db)
-    
+
     update_dict = user_data.model_dump(exclude_unset=True)
-    
+
     # Don't allow password update through this endpoint
     if "password" in update_dict:
         update_dict.pop("password")
-    
+
     updated_user = await user_repo.update(current_user.id, update_dict)
     return UserResponse.model_validate(updated_user)
 
@@ -60,19 +61,16 @@ async def change_password(
 ):
     """Change current user password"""
     user_repo = UserRepository(db)
-    
+
     # Verify current password
     user = await user_repo.get(current_user.id)
     if not user or not verify_password(data.current_password, user.hashed_password):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Senha atual incorreta"
-        )
-    
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Senha atual incorreta")
+
     # Update password
     new_hash = get_password_hash(data.new_password)
     await user_repo.update(current_user.id, {"hashed_password": new_hash})
-    
+
     return {"message": "Senha alterada com sucesso"}
 
 
@@ -83,18 +81,20 @@ async def get_notification_settings(
 ):
     """Get user notification preferences"""
     settings_repo = UserSettingsRepository(db)
-    
+
     # Get all notification settings
-    email_investigations = await settings_repo.get_config(current_user.id, "email_investigations") == "true"
+    email_investigations = (
+        await settings_repo.get_config(current_user.id, "email_investigations") == "true"
+    )
     email_reports = await settings_repo.get_config(current_user.id, "email_reports") == "true"
     email_updates = await settings_repo.get_config(current_user.id, "email_updates") == "true"
     email_marketing = await settings_repo.get_config(current_user.id, "email_marketing") == "true"
-    
+
     return {
         "email_investigations": email_investigations,
         "email_reports": email_reports,
         "email_updates": email_updates,
-        "email_marketing": email_marketing
+        "email_marketing": email_marketing,
     }
 
 
@@ -106,15 +106,18 @@ async def update_notification_settings(
 ):
     """Update user notification preferences"""
     settings_repo = UserSettingsRepository(db)
-    
+
     # Save each setting
-    await settings_repo.save_integration_configs(current_user.id, {
-        "email_investigations": "true" if settings.email_investigations else "false",
-        "email_reports": "true" if settings.email_reports else "false",
-        "email_updates": "true" if settings.email_updates else "false",
-        "email_marketing": "true" if settings.email_marketing else "false"
-    })
-    
+    await settings_repo.save_integration_configs(
+        current_user.id,
+        {
+            "email_investigations": "true" if settings.email_investigations else "false",
+            "email_reports": "true" if settings.email_reports else "false",
+            "email_updates": "true" if settings.email_updates else "false",
+            "email_marketing": "true" if settings.email_marketing else "false",
+        },
+    )
+
     return {"message": "Preferências de notificação atualizadas"}
 
 
@@ -127,11 +130,11 @@ async def get_user(
     """Get user by ID (superuser only)"""
     user_repo = UserRepository(db)
     user = await user_repo.get(user_id)
-    
+
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found",
         )
-    
+
     return UserResponse.model_validate(user)

@@ -4,6 +4,7 @@ Dados de demonstração após enriquecimento de investigação (MOCK_DEMO).
 Desligado em produção; noutros ambientes só corre se
 `ENABLE_INVESTIGATION_ENRICH_DEMO_SEED=true` na configuração.
 """
+
 from __future__ import annotations
 
 import random

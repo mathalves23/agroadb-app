@@ -11,10 +11,10 @@ Componentes:
 - OCRProcessor: Extração de texto de documentos
 """
 
-from app.ml.models.risk_analyzer import RiskAnalyzer
-from app.ml.models.pattern_detector import PatternDetector
 from app.ml.models.network_analyzer import NetworkAnalyzer
 from app.ml.models.ocr_processor import OCRProcessor
+from app.ml.models.pattern_detector import PatternDetector
+from app.ml.models.risk_analyzer import RiskAnalyzer
 
 __all__ = [
     "RiskAnalyzer",

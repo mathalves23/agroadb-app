@@ -5,7 +5,9 @@ https://consultacnpj.redesim.gov.br/
 Consulta: CNPJ dados públicos
 Sem autenticação. Gratuito (limitado).
 """
+
 from typing import Any, Dict
+
 import httpx
 
 

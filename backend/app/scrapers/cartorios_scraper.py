@@ -6,10 +6,11 @@ Integração com sistemas de Registro de Imóveis:
 - RI Digital
 - ONR (Operador Nacional do Registro)
 """
-from typing import List, Dict, Any, Optional
-from datetime import datetime, timedelta
+
 import logging
 import re
+from datetime import datetime, timedelta
+from typing import Any, Dict, List, Optional
 
 from app.scrapers.base import BaseScraper
 
@@ -19,7 +20,7 @@ logger = logging.getLogger(__name__)
 class CartoriosScraper(BaseScraper):
     """
     Scraper para dados de Cartórios de Registro de Imóveis
-    
+
     Funcionalidades:
     - Consulta de matrículas de imóveis
     - Busca por CPF/CNPJ do proprietário
@@ -27,19 +28,19 @@ class CartoriosScraper(BaseScraper):
     - Verificação de ônus e gravames
     - Histórico de proprietários
     """
-    
+
     def __init__(self):
         super().__init__()
-        
+
         # APIs disponíveis
         self.ri_brasil_api = "https://www.registrodeimoveis.org.br/api"
         self.ri_digital_api = "https://ridigital.org.br/api"
         self.onr_api = "https://registradores.onr.org.br/api"
-        
+
         # Cache de resultados
         self.cache: Dict[str, tuple[datetime, List[Dict[str, Any]]]] = {}
         self.cache_ttl = timedelta(hours=72)  # Cache de 72h para dados de cartório
-    
+
     def _get_from_cache(self, key: str) -> Optional[List[Dict[str, Any]]]:
         """Busca resultado do cache se ainda válido"""
         if key in self.cache:
@@ -47,11 +48,11 @@ class CartoriosScraper(BaseScraper):
             if datetime.now() - timestamp < self.cache_ttl:
                 return data
         return None
-    
+
     def _save_to_cache(self, key: str, data: List[Dict[str, Any]]) -> None:
         """Salva resultado no cache"""
         self.cache[key] = (datetime.now(), data)
-    
+
     async def search(
         self,
         name: Optional[str] = None,
@@ -62,14 +63,14 @@ class CartoriosScraper(BaseScraper):
     ) -> List[Dict[str, Any]]:
         """
         Busca geral em registros de imóveis
-        
+
         Args:
             name: Nome do proprietário
             cpf_cnpj: CPF ou CNPJ do proprietário
             matricula: Número da matrícula
             state: Estado (UF)
             city: Cidade
-        
+
         Returns:
             Lista de imóveis encontrados
         """
@@ -77,10 +78,10 @@ class CartoriosScraper(BaseScraper):
         if matricula:
             result = await self.search_by_matricula(matricula, state=state, city=city)
             return [result] if result else []
-        
+
         # Caso contrário, buscar por proprietário
         return await self.search_by_owner(name, cpf_cnpj, state, city)
-    
+
     async def search_by_matricula(
         self,
         matricula: str,
@@ -90,13 +91,13 @@ class CartoriosScraper(BaseScraper):
     ) -> Optional[Dict[str, Any]]:
         """
         Busca imóvel por número de matrícula
-        
+
         Args:
             matricula: Número da matrícula do imóvel
             cartorio: Nome ou código do cartório
             state: Estado (UF)
             city: Cidade
-        
+
         Returns:
             Dados da matrícula do imóvel
         """
@@ -105,11 +106,11 @@ class CartoriosScraper(BaseScraper):
         cached = self._get_from_cache(cache_key)
         if cached and len(cached) > 0:
             return cached[0]
-        
+
         try:
             # Consultar matrícula
             # TODO: Implementar chamada real à API após obter credenciais
-            
+
             # Estrutura esperada de retorno
             property_data = {
                 "matricula": matricula,
@@ -121,7 +122,6 @@ class CartoriosScraper(BaseScraper):
                     "state": state or "SP",
                     "phone": "(11) 3333-4444",
                 },
-                
                 # Dados do Imóvel
                 "imovel": {
                     "descricao": "Terreno urbano",
@@ -135,7 +135,6 @@ class CartoriosScraper(BaseScraper):
                     "inscricao_municipal": "123.456.789-0",
                     "inscricao_imobiliaria": "001.002.003.004",
                 },
-                
                 # Proprietários
                 "proprietarios": [
                     {
@@ -146,7 +145,6 @@ class CartoriosScraper(BaseScraper):
                         "data_aquisicao": "2020-01-15",
                     }
                 ],
-                
                 # Ônus e Gravames
                 "onus_gravames": [
                     {
@@ -157,7 +155,6 @@ class CartoriosScraper(BaseScraper):
                         "ativo": True,
                     }
                 ],
-                
                 # Averbações
                 "averbacoes": [
                     {
@@ -167,7 +164,6 @@ class CartoriosScraper(BaseScraper):
                         "data": "2021-06-10",
                     }
                 ],
-                
                 # Histórico
                 "historico_proprietarios": [
                     {
@@ -176,32 +172,29 @@ class CartoriosScraper(BaseScraper):
                         "forma_aquisicao": "Compra e venda",
                     }
                 ],
-                
                 # Situação
                 "situacao": "Regular",
                 "ultima_atualizacao": "2024-11-20",
-                
                 # Certidões
                 "certidoes_disponiveis": [
                     "Certidão de Inteiro Teor",
                     "Certidão de Ônus",
                     "Certidão de Vintenária",
                 ],
-                
                 # Metadados
                 "data_source": "Registro de Imóveis",
                 "consulted_at": datetime.now().isoformat(),
             }
-            
+
             # Salvar no cache
             self._save_to_cache(cache_key, [property_data])
-            
+
             return property_data
-        
+
         except Exception as e:
             logger.error(f"Error searching matrícula {matricula}: {str(e)}")
             return None
-    
+
     async def search_by_owner(
         self,
         name: Optional[str] = None,
@@ -211,13 +204,13 @@ class CartoriosScraper(BaseScraper):
     ) -> List[Dict[str, Any]]:
         """
         Busca imóveis por proprietário
-        
+
         Args:
             name: Nome do proprietário
             cpf_cnpj: CPF ou CNPJ do proprietário
             state: Estado (UF)
             city: Cidade
-        
+
         Returns:
             Lista de imóveis do proprietário
         """
@@ -226,17 +219,17 @@ class CartoriosScraper(BaseScraper):
         cached = self._get_from_cache(cache_key)
         if cached:
             return cached
-        
+
         results = []
-        
+
         try:
             # Limpar CPF/CNPJ se fornecido
             doc_clean = None
             if cpf_cnpj:
-                doc_clean = re.sub(r'[^\d]', '', cpf_cnpj)
-            
+                doc_clean = re.sub(r"[^\d]", "", cpf_cnpj)
+
             # TODO: Implementar busca real após obter credenciais
-            
+
             # Estrutura esperada de retorno
             property_summary = {
                 "matricula": "12345",
@@ -253,18 +246,18 @@ class CartoriosScraper(BaseScraper):
                 "data_aquisicao": "2020-01-15",
                 "data_source": "Registro de Imóveis",
             }
-            
+
             results.append(property_summary)
-            
+
             # Salvar no cache
             if results:
                 self._save_to_cache(cache_key, results)
-        
+
         except Exception as e:
             logger.error(f"Error searching by owner: {str(e)}")
-        
+
         return results
-    
+
     async def search_by_address(
         self,
         address: str,
@@ -273,12 +266,12 @@ class CartoriosScraper(BaseScraper):
     ) -> List[Dict[str, Any]]:
         """
         Busca imóveis por endereço
-        
+
         Args:
             address: Endereço completo ou parcial
             city: Cidade
             state: Estado (UF)
-        
+
         Returns:
             Lista de imóveis no endereço
         """
@@ -286,12 +279,12 @@ class CartoriosScraper(BaseScraper):
         cached = self._get_from_cache(cache_key)
         if cached:
             return cached
-        
+
         results = []
-        
+
         try:
             # TODO: Implementar busca real
-            
+
             property_summary = {
                 "matricula": "12345",
                 "cartorio": f"Cartório RI {city}",
@@ -302,17 +295,17 @@ class CartoriosScraper(BaseScraper):
                 "proprietarios_count": 1,
                 "onus_count": 1,
             }
-            
+
             results.append(property_summary)
-            
+
             if results:
                 self._save_to_cache(cache_key, results)
-        
+
         except Exception as e:
             logger.error(f"Error searching by address: {str(e)}")
-        
+
         return results
-    
+
     async def get_certidao(
         self,
         matricula: str,
@@ -321,18 +314,18 @@ class CartoriosScraper(BaseScraper):
     ) -> Optional[Dict[str, Any]]:
         """
         Solicita emissão de certidão
-        
+
         Args:
             matricula: Número da matrícula
             tipo_certidao: Tipo de certidão (inteiro_teor, onus, vintenaria)
             cartorio: Nome ou código do cartório
-        
+
         Returns:
             Informações sobre a certidão solicitada
         """
         try:
             # TODO: Implementar solicitação real
-            
+
             return {
                 "certidao_id": f"CERT-{matricula}-{datetime.now().timestamp()}",
                 "matricula": matricula,
@@ -344,11 +337,11 @@ class CartoriosScraper(BaseScraper):
                 "valor": 150.00,  # Exemplo
                 "forma_entrega": "Digital",
             }
-        
+
         except Exception as e:
             logger.error(f"Error requesting certidão: {str(e)}")
             return None
-    
+
     async def verify_onus(
         self,
         matricula: str,
@@ -356,17 +349,17 @@ class CartoriosScraper(BaseScraper):
     ) -> Dict[str, Any]:
         """
         Verifica ônus e gravames sobre imóvel
-        
+
         Args:
             matricula: Número da matrícula
             cartorio: Nome ou código do cartório
-        
+
         Returns:
             Lista de ônus e gravames
         """
         try:
             property_data = await self.search_by_matricula(matricula, cartorio)
-            
+
             if not property_data:
                 return {
                     "matricula": matricula,
@@ -374,9 +367,9 @@ class CartoriosScraper(BaseScraper):
                     "total_onus": 0,
                     "onus_list": [],
                 }
-            
+
             onus_list = property_data.get("onus_gravames", [])
-            
+
             return {
                 "matricula": matricula,
                 "onus_encontrados": len(onus_list) > 0,
@@ -385,7 +378,7 @@ class CartoriosScraper(BaseScraper):
                 "total_valor": sum(o.get("valor", 0) for o in onus_list),
                 "onus_ativos": [o for o in onus_list if o.get("ativo", False)],
             }
-        
+
         except Exception as e:
             logger.error(f"Error verifying ônus: {str(e)}")
             return {
@@ -394,7 +387,7 @@ class CartoriosScraper(BaseScraper):
                 "total_onus": 0,
                 "error": str(e),
             }
-    
+
     def get_cartorio_info(
         self,
         state: str,
@@ -402,11 +395,11 @@ class CartoriosScraper(BaseScraper):
     ) -> Dict[str, Any]:
         """
         Obtém informações sobre cartórios de uma cidade
-        
+
         Args:
             state: Estado (UF)
             city: Cidade
-        
+
         Returns:
             Informações dos cartórios
         """
@@ -431,19 +424,18 @@ class CartoriosScraper(BaseScraper):
                 }
             ],
         }
-    
+
     def clear_cache(self) -> None:
         """Limpa todo o cache de resultados"""
         self.cache.clear()
-    
+
     def get_cache_stats(self) -> Dict[str, Any]:
         """Retorna estatísticas do cache"""
         total_entries = len(self.cache)
         valid_entries = sum(
-            1 for timestamp, _ in self.cache.values()
-            if datetime.now() - timestamp < self.cache_ttl
+            1 for timestamp, _ in self.cache.values() if datetime.now() - timestamp < self.cache_ttl
         )
-        
+
         return {
             "total_entries": total_entries,
             "valid_entries": valid_entries,

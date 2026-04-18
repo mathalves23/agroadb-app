@@ -4,13 +4,15 @@ https://brasilapi.com.br/
 Consulta: CNPJ, CEP, Bancos, IBGE Municípios
 Sem autenticação. Sem limites declarados.
 """
-from typing import Any, Dict, Optional
+
 import logging
+from typing import Any, Dict, Optional
+
 import httpx
 
 from app.core.cache import cache_service
-from app.core.retry import retry_with_backoff
 from app.core.circuit_breaker import circuit_protected
+from app.core.retry import retry_with_backoff
 
 logger = logging.getLogger(__name__)
 

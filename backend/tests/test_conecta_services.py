@@ -1,6 +1,7 @@
 """
 Tests for Conecta auth helpers
 """
+
 import pytest
 
 from app.services.conecta_auth import ConectaAuthService, ConectaCredentials
@@ -40,7 +41,9 @@ async def test_conecta_auth_has_credentials():
         client_secret="",
         api_key="key",
     )
-    auth_key = ConectaAuthService(credentials_with_key, token_url="https://conecta.gov.br/oauth/token")
+    auth_key = ConectaAuthService(
+        credentials_with_key, token_url="https://conecta.gov.br/oauth/token"
+    )
     assert auth_key.has_credentials() is True
     assert auth_key.has_api_key() is True
 
@@ -50,7 +53,9 @@ async def test_conecta_auth_has_credentials():
         client_secret="",
         api_key="",
     )
-    auth_empty = ConectaAuthService(credentials_empty, token_url="https://conecta.gov.br/oauth/token")
+    auth_empty = ConectaAuthService(
+        credentials_empty, token_url="https://conecta.gov.br/oauth/token"
+    )
     assert auth_empty.has_credentials() is False
 
 

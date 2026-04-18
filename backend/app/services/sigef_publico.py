@@ -7,13 +7,15 @@ Paginação: até 5 páginas (acima disso o portal fica instável).
 Retorna: parcelas (area_ha, cns, codigo_parcela, detentor, matricula, nome).
 Gratuito, consulta pública.
 """
-from typing import Any, Dict, List, Optional
-import re
-import httpx
-import logging
 
-from app.core.retry import retry_with_backoff
+import logging
+import re
+from typing import Any, Dict, List, Optional
+
+import httpx
+
 from app.core.circuit_breaker import circuit_protected
+from app.core.retry import retry_with_backoff
 
 logger = logging.getLogger(__name__)
 
@@ -43,9 +45,7 @@ class SIGEFPublicoService:
         cleaned = cpf.replace(".", "").replace("-", "").strip()
         if len(cleaned) != 11:
             raise ValueError("CPF deve ter 11 dígitos")
-        return await self._consultar_multiplas_paginas(
-            {"cpf": cleaned}, paginas, {"cpf": cleaned}
-        )
+        return await self._consultar_multiplas_paginas({"cpf": cleaned}, paginas, {"cpf": cleaned})
 
     @retry_with_backoff(max_retries=2, base_delay=1.0)
     @circuit_protected(service_name="sigef_publico", failure_threshold=5, recovery_timeout=60.0)
@@ -171,12 +171,11 @@ class SIGEFPublicoService:
 
         return None
 
-    def _parse_html_parcelas(
-        self, html: str, params: Dict[str, str]
-    ) -> Dict[str, Any]:
+    def _parse_html_parcelas(self, html: str, params: Dict[str, str]) -> Dict[str, Any]:
         """Extrai dados de parcelas do HTML retornado pelo SIGEF usando BeautifulSoup."""
-        from bs4 import BeautifulSoup
         import re as _re
+
+        from bs4 import BeautifulSoup
 
         soup = BeautifulSoup(html, "lxml")
         parcelas: List[Dict[str, Any]] = []
@@ -194,9 +193,7 @@ class SIGEFPublicoService:
                         parcela["nome"] = clean[1]
                     if len(clean) > 2 and clean[2]:
                         try:
-                            parcela["area_ha"] = float(
-                                clean[2].replace(",", ".").replace(" ", "")
-                            )
+                            parcela["area_ha"] = float(clean[2].replace(",", ".").replace(" ", ""))
                         except ValueError:
                             parcela["area_ha"] = clean[2]
                     if len(clean) > 3 and clean[3]:
@@ -210,15 +207,15 @@ class SIGEFPublicoService:
 
         # Extract total results
         text = soup.get_text()
-        total_match = _re.search(r'(\d+)\s*resultado', text, _re.IGNORECASE)
+        total_match = _re.search(r"(\d+)\s*resultado", text, _re.IGNORECASE)
         total = int(total_match.group(1)) if total_match else len(parcelas)
 
         # Extract total pages
-        page_links = soup.find_all("a", href=_re.compile(r'pagina=\d+'))
+        page_links = soup.find_all("a", href=_re.compile(r"pagina=\d+"))
         paginas = 1
         for link in page_links:
             href = link.get("href", "")
-            page_match = _re.search(r'pagina=(\d+)', href)
+            page_match = _re.search(r"pagina=(\d+)", href)
             if page_match:
                 paginas = max(paginas, int(page_match.group(1)))
 
@@ -230,9 +227,7 @@ class SIGEFPublicoService:
 
     async def verificar_disponibilidade(self) -> Dict[str, Any]:
         """Verifica se o portal SIGEF está acessível."""
-        async with httpx.AsyncClient(
-            timeout=15.0, follow_redirects=True, verify=True
-        ) as client:
+        async with httpx.AsyncClient(timeout=15.0, follow_redirects=True, verify=True) as client:
             try:
                 resp = await client.head(self.CONSULTA_URL)
                 return {

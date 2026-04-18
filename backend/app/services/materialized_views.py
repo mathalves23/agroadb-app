@@ -2,6 +2,7 @@
 Materialized views PostgreSQL para agregações de dashboard.
 Em SQLite / testes, as operações são ignoradas com segurança.
 """
+
 from __future__ import annotations
 
 import logging
@@ -29,5 +30,3 @@ async def try_refresh_investigation_summary(db: AsyncSession) -> bool:
     except Exception as exc:
         logger.warning("Refresh MV ignorado ou falhou: %s", exc)
         return False
-
-

@@ -1,7 +1,9 @@
 """
 Conecta gov.br - Integração SNCCI
 """
+
 from typing import Any, Dict, Optional
+
 import httpx
 
 from app.core.config import settings
@@ -66,4 +68,6 @@ class ConectaSNCCIService:
 
     async def baixar_boleto(self, cd_plano_pagamento_parcela: str) -> httpx.Response:
         url = self._build_url(self.path_boletos)
-        return await self._get_bytes(url, params={"cdPlanoPagamentoParcela": cd_plano_pagamento_parcela})
+        return await self._get_bytes(
+            url, params={"cdPlanoPagamentoParcela": cd_plano_pagamento_parcela}
+        )

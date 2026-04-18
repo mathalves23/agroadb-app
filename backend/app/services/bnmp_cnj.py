@@ -6,11 +6,13 @@ Parâmetros: cpf, nome, nome_mae
 Retorna até 30 resultados.
 Gratuito, sem autenticação.
 """
+
 from typing import Any, Dict, List, Optional
+
 import httpx
 
-from app.core.retry import retry_with_backoff
 from app.core.circuit_breaker import circuit_protected
+from app.core.retry import retry_with_backoff
 
 
 class BNMPService:
@@ -53,9 +55,7 @@ class BNMPService:
 
     @retry_with_backoff(max_retries=2, base_delay=1.0)
     @circuit_protected(service_name="bnmp_cnj", failure_threshold=5, recovery_timeout=60.0)
-    async def consultar_por_nome(
-        self, nome: str, nome_mae: Optional[str] = None
-    ) -> Dict[str, Any]:
+    async def consultar_por_nome(self, nome: str, nome_mae: Optional[str] = None) -> Dict[str, Any]:
         """
         Consulta mandados de prisão vigentes por nome (e opcionalmente nome da mãe).
         """
@@ -95,7 +95,9 @@ class BNMPService:
                         mandados = data
 
                     return {
-                        "total": data.get("totalElements", len(mandados) if isinstance(mandados, list) else 0),
+                        "total": data.get(
+                            "totalElements", len(mandados) if isinstance(mandados, list) else 0
+                        ),
                         "mandados": mandados if isinstance(mandados, list) else [],
                         "fonte": "BNMP/CNJ",
                         "consulta": params_audit,
@@ -133,7 +135,9 @@ class BNMPService:
                     if isinstance(data, list):
                         mandados = data
                     return {
-                        "total": data.get("totalElements", len(mandados) if isinstance(mandados, list) else 0),
+                        "total": data.get(
+                            "totalElements", len(mandados) if isinstance(mandados, list) else 0
+                        ),
                         "mandados": mandados if isinstance(mandados, list) else [],
                         "fonte": "BNMP/CNJ",
                         "consulta": params_audit,
@@ -153,9 +157,7 @@ class BNMPService:
 
     async def verificar_disponibilidade(self) -> Dict[str, Any]:
         """Verifica se o portal BNMP está acessível"""
-        async with httpx.AsyncClient(
-            timeout=15.0, follow_redirects=True, verify=True
-        ) as client:
+        async with httpx.AsyncClient(timeout=15.0, follow_redirects=True, verify=True) as client:
             try:
                 resp = await client.head(f"{self.BASE_URL}/bnmpportal/api")
                 return {

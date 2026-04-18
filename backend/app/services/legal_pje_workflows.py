@@ -1,6 +1,7 @@
 """
 Casos de uso PJe + auditoria (evita repetir chamadas ao serviço + log_action no router).
 """
+
 from __future__ import annotations
 
 from typing import Any, List, Optional, Protocol
@@ -8,7 +9,7 @@ from typing import Any, List, Optional, Protocol
 from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.services.legal_integration import legal_integration_service, PJeCase
+from app.services.legal_integration import PJeCase, legal_integration_service
 
 
 class PJeAuditSink(Protocol):
@@ -26,8 +27,7 @@ class PJeAuditSink(Protocol):
         endpoint: Optional[str] = None,
         success: bool = True,
         error_message: Optional[str] = None,
-    ) -> Any:
-        ...
+    ) -> Any: ...
 
 
 async def consultar_processo_pje_com_audit(
@@ -39,7 +39,9 @@ async def consultar_processo_pje_com_audit(
     numero_processo: str,
     tribunal: str,
 ) -> PJeCase:
-    processo = await legal_integration_service.pje_service.consultar_processo(numero_processo, tribunal)
+    processo = await legal_integration_service.pje_service.consultar_processo(
+        numero_processo, tribunal
+    )
     await audit_logger.log_action(
         db=db,
         user_id=user_id,
@@ -67,7 +69,9 @@ async def consultar_processos_parte_com_audit(
     cpf_cnpj: str,
     tipo_parte: str,
 ) -> List[Any]:
-    processos = await legal_integration_service.pje_service.consultar_processos_parte(cpf_cnpj, tipo_parte)
+    processos = await legal_integration_service.pje_service.consultar_processos_parte(
+        cpf_cnpj, tipo_parte
+    )
     await audit_logger.log_action(
         db=db,
         user_id=user_id,

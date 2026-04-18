@@ -1,6 +1,7 @@
 """
 Test Investigation Endpoints
 """
+
 import pytest
 from httpx import AsyncClient
 
@@ -17,13 +18,13 @@ async def get_auth_token(async_client: AsyncClient) -> str:
             "password": "testpassword123",
         },
     )
-    
+
     # Login
     response = await async_client.post(
         "/api/v1/auth/login",
         data={"username": "testuser", "password": "testpassword123"},
     )
-    
+
     return response.json()["access_token"]
 
 
@@ -31,7 +32,7 @@ async def get_auth_token(async_client: AsyncClient) -> str:
 async def test_create_investigation(async_client: AsyncClient):
     """Test creating an investigation"""
     token = await get_auth_token(async_client)
-    
+
     response = await async_client.post(
         "/api/v1/investigations",
         json={
@@ -42,7 +43,7 @@ async def test_create_investigation(async_client: AsyncClient):
         },
         headers={"Authorization": f"Bearer {token}"},
     )
-    
+
     assert response.status_code == 201
     data = response.json()
     assert data["target_name"] == "João Silva"
@@ -53,7 +54,7 @@ async def test_create_investigation(async_client: AsyncClient):
 async def test_list_investigations(async_client: AsyncClient):
     """Test listing investigations"""
     token = await get_auth_token(async_client)
-    
+
     # Create an investigation
     await async_client.post(
         "/api/v1/investigations",
@@ -63,13 +64,13 @@ async def test_list_investigations(async_client: AsyncClient):
         },
         headers={"Authorization": f"Bearer {token}"},
     )
-    
+
     # List investigations
     response = await async_client.get(
         "/api/v1/investigations",
         headers={"Authorization": f"Bearer {token}"},
     )
-    
+
     assert response.status_code == 200
     data = response.json()
     assert "items" in data
@@ -81,7 +82,7 @@ async def test_list_investigations(async_client: AsyncClient):
 async def test_get_investigation(async_client: AsyncClient):
     """Test getting a specific investigation"""
     token = await get_auth_token(async_client)
-    
+
     # Create an investigation
     create_response = await async_client.post(
         "/api/v1/investigations",
@@ -91,15 +92,15 @@ async def test_get_investigation(async_client: AsyncClient):
         },
         headers={"Authorization": f"Bearer {token}"},
     )
-    
+
     investigation_id = create_response.json()["id"]
-    
+
     # Get investigation
     response = await async_client.get(
         f"/api/v1/investigations/{investigation_id}",
         headers={"Authorization": f"Bearer {token}"},
     )
-    
+
     assert response.status_code == 200
     data = response.json()
     assert data["id"] == investigation_id

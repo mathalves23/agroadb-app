@@ -1,6 +1,7 @@
 """
 Configuração pytest — BD async alinhada à app + sessão síncrona para ML legado.
 """
+
 from __future__ import annotations
 
 import base64
@@ -22,16 +23,16 @@ from typing import AsyncGenerator, Generator
 
 import pytest
 import pytest_asyncio
-from httpx import ASGITransport, AsyncClient
 from fastapi.testclient import TestClient
+from httpx import ASGITransport, AsyncClient
 from sqlalchemy import create_engine, pool
 from sqlalchemy.orm import Session, sessionmaker
 
-from app.main import app
-from app.core.database import Base, engine, AsyncSessionLocal
-from app.domain.user import User
-from app.domain.investigation import Investigation, InvestigationStatus
+from app.core.database import AsyncSessionLocal, Base, engine
 from app.core.security import get_password_hash
+from app.domain.investigation import Investigation, InvestigationStatus
+from app.domain.user import User
+from app.main import app
 
 
 @pytest_asyncio.fixture(autouse=True)

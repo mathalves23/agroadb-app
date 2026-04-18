@@ -1,4 +1,5 @@
 """Métricas Prometheus HTTP por endpoint (FastAPI)."""
+
 from __future__ import annotations
 
 import logging
@@ -20,7 +21,9 @@ def mount_prometheus_instrumentator(app) -> None:
             path = "/" + path
         Instrumentator(
             should_ignore_untemplated=True,
-        ).instrument(app).expose(app, endpoint=path, include_in_schema=False)
+        ).instrument(
+            app
+        ).expose(app, endpoint=path, include_in_schema=False)
         logger.info("Prometheus: métricas HTTP em %s", path)
     except Exception as exc:
         logger.warning("Prometheus instrumentador não montado: %s", exc)

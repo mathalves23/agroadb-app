@@ -1,4 +1,5 @@
 """Persistência de configurações de integração jurídica."""
+
 from __future__ import annotations
 
 from typing import List, Optional

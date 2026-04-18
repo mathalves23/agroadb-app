@@ -2,34 +2,36 @@
 API Endpoints - Integrações Jurídicas
 Endpoints para integração com sistemas processuais e exportação de due diligence
 """
-from typing import Optional, Dict, Any, Literal
+
 from datetime import datetime
-from fastapi import APIRouter, Depends, HTTPException, Request, Query
+from typing import Any, Dict, Literal, Optional
+
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.v1.deps import get_db, get_current_user
+from app.api.v1.deps import get_current_user, get_db
+from app.core.audit import AuditLogger
+from app.core.config import settings as app_settings
 from app.domain.user import User
-from app.services.legal_integration import (
-    legal_integration_service,
-    PJeCase,
-    DueDiligenceExport,
-    LegalSystemIntegration
-)
+from app.repositories.legal_integration_config import LegalIntegrationConfigRepository
 from app.repositories.legal_query import LegalQueryRepository
 from app.services.datajud_proxy import run_datajud_proxy
-from app.repositories.legal_integration_config import LegalIntegrationConfigRepository
 from app.services.investigation_access import (
     legal_queries_to_public_list,
     require_investigation_for_user,
+)
+from app.services.legal_integration import (
+    DueDiligenceExport,
+    LegalSystemIntegration,
+    PJeCase,
+    legal_integration_service,
 )
 from app.services.legal_pje_workflows import (
     consultar_processo_pje_com_audit,
     consultar_processos_parte_com_audit,
     obter_movimentacoes_com_audit,
 )
-from app.core.audit import AuditLogger
-from app.core.config import settings as app_settings
 
 # Inicializar o audit logger
 audit_logger = AuditLogger()
@@ -38,28 +40,38 @@ router = APIRouter()
 
 # ==================== Pydantic Models ====================
 
+
 class PJeConsultaRequest(BaseModel):
     """Request para consulta de processo no PJe"""
+
     numero_processo: str = Field(..., description="Número do processo CNJ")
     tribunal: str = Field(..., description="Código do tribunal")
 
+
 class PJePartConsultaRequest(BaseModel):
     """Request para consulta de processos por parte"""
+
     cpf_cnpj: str = Field(..., description="CPF ou CNPJ")
     tipo_parte: str = Field(default="qualquer", description="Tipo de participação")
 
+
 class SincronizarProcessosRequest(BaseModel):
     """Request para sincronização de processos"""
+
     cpf_cnpj: str = Field(..., description="CPF ou CNPJ")
     investigation_id: Optional[int] = Field(None, description="ID da investigação")
 
+
 class ExportDueDiligenceRequest(BaseModel):
     """Request para exportação de due diligence"""
+
     investigation_id: int = Field(..., description="ID da investigação")
     target_system: Optional[LegalSystemIntegration] = None
 
+
 class IntegrationConfigRequest(BaseModel):
     """Request para configurar integração"""
+
     system_name: str
     api_endpoint: str
     api_key: Optional[str] = None
@@ -69,26 +81,30 @@ class IntegrationConfigRequest(BaseModel):
 
 class DataJudProxyRequest(BaseModel):
     """Request genérico para DataJud"""
+
     path: str = Field(..., description="Path relativo da API DataJud (ex: /tribunais/TRT2/_search)")
     method: Literal["GET", "POST"] = "POST"
     params: Optional[Dict[str, Any]] = None
     payload: Optional[Dict[str, Any]] = None
     investigation_id: Optional[int] = Field(None, description="ID da investigação")
-    query_type: Optional[str] = Field(None, description="Tipo de consulta (ex: processos, movimentacoes)")
+    query_type: Optional[str] = Field(
+        None, description="Tipo de consulta (ex: processos, movimentacoes)"
+    )
 
 
 # ==================== Endpoints PJe ====================
+
 
 @router.post("/pje/consultar-processo", response_model=Optional[PJeCase])
 async def consultar_processo_pje(
     data: PJeConsultaRequest,
     request: Request,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """
     🔍 Consulta processo no PJe por número
-    
+
     Permite consultar um processo específico no sistema PJe
     """
     try:
@@ -105,16 +121,17 @@ async def consultar_processo_pje(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao consultar PJe: {str(e)}")
 
+
 @router.post("/pje/consultar-processos-parte")
 async def consultar_processos_parte(
     data: PJePartConsultaRequest,
     request: Request,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """
     👤 Consulta processos de uma parte (CPF/CNPJ)
-    
+
     Retorna todos os processos em que a pessoa/empresa é parte
     """
     try:
@@ -131,20 +148,21 @@ async def consultar_processos_parte(
             "total": len(processos),
             "processos": [p.model_dump() for p in processos],
         }
-    
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao consultar processos: {str(e)}")
+
 
 @router.get("/pje/movimentacoes/{numero_processo}")
 async def obter_movimentacoes(
     numero_processo: str,
     request: Request,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """
     📋 Obtém movimentações de um processo
-    
+
     Retorna todas as movimentações e andamentos do processo
     """
     try:
@@ -161,19 +179,20 @@ async def obter_movimentacoes(
             "total": len(movimentacoes),
             "movimentacoes": movimentacoes,
         }
-    
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao obter movimentações: {str(e)}")
 
 
 # ==================== DataJud (CNJ) ====================
 
+
 @router.post("/datajud/proxy")
 async def datajud_proxy(
     data: DataJudProxyRequest,
     request: Request,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """
     🔎 Proxy para API Pública do DataJud (CNJ)
@@ -229,18 +248,20 @@ async def list_legal_queries_by_investigation(
     queries = await repo.list_by_investigation(investigation_id)
     return legal_queries_to_public_list(queries)
 
+
 # ==================== Endpoints Due Diligence ====================
+
 
 @router.post("/due-diligence/gerar")
 async def gerar_due_diligence(
     investigation_id: int = Query(..., description="ID da investigação"),
     request: Request = None,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """
     📊 Gera relatório de due diligence
-    
+
     Cria um relatório completo de due diligence para a investigação
     """
     try:
@@ -267,16 +288,13 @@ async def gerar_due_diligence(
             details={
                 "investigation_id": investigation_id,
                 "target_name": report.target_name,
-                "risk_level": report.risk_analysis.get("overall_risk")
+                "risk_level": report.risk_analysis.get("overall_risk"),
             },
-            ip_address=request.client.host if request else None
+            ip_address=request.client.host if request else None,
         )
-        
-        return {
-            "success": True,
-            "report": report.model_dump()
-        }
-    
+
+        return {"success": True, "report": report.model_dump()}
+
     except HTTPException:
         raise
     except ValueError as e:
@@ -284,16 +302,17 @@ async def gerar_due_diligence(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao gerar due diligence: {str(e)}")
 
+
 @router.post("/due-diligence/exportar")
 async def exportar_due_diligence(
     data: ExportDueDiligenceRequest,
     request: Request,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """
     📤 Exporta due diligence para sistema externo
-    
+
     Envia relatório de due diligence para ferramenta jurídica integrada
     """
     try:
@@ -307,11 +326,9 @@ async def exportar_due_diligence(
         )
 
         result = await legal_integration_service.gerar_e_exportar_due_diligence(
-            db,
-            data.investigation_id,
-            data.target_system
+            db, data.investigation_id, data.target_system
         )
-        
+
         # Log de auditoria
         await audit_logger.log_action(
             db=db,
@@ -322,11 +339,11 @@ async def exportar_due_diligence(
             details={
                 "investigation_id": data.investigation_id,
                 "target_system": data.target_system.system_name if data.target_system else None,
-                "success": result.get("success", False)
+                "success": result.get("success", False),
             },
-            ip_address=request.client.host
+            ip_address=request.client.host,
         )
-        
+
         return result
 
     except HTTPException:
@@ -334,28 +351,28 @@ async def exportar_due_diligence(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao exportar: {str(e)}")
 
+
 # ==================== Endpoints de Sincronização ====================
+
 
 @router.post("/sincronizar-processos")
 async def sincronizar_processos(
     data: SincronizarProcessosRequest,
     request: Request,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """
     🔄 Sincroniza processos judiciais
-    
+
     Busca e sincroniza processos de uma parte no PJe com o banco de dados
     """
     try:
         # Sincronizar
         result = await legal_integration_service.sincronizar_processos(
-            db,
-            data.cpf_cnpj,
-            data.investigation_id
+            db, data.cpf_cnpj, data.investigation_id
         )
-        
+
         # Log de auditoria
         await audit_logger.log_action(
             db=db,
@@ -367,28 +384,30 @@ async def sincronizar_processos(
                 "cpf_cnpj": data.cpf_cnpj,
                 "investigation_id": data.investigation_id,
                 "total_processos": result.get("total_processos", 0),
-                "success": result.get("success", False)
+                "success": result.get("success", False),
             },
-            ip_address=request.client.host
+            ip_address=request.client.host,
         )
-        
+
         return result
-    
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao sincronizar: {str(e)}")
 
+
 # ==================== Endpoints de Configuração ====================
+
 
 @router.post("/integrations/configure")
 async def configurar_integracao(
     data: IntegrationConfigRequest,
     request: Request,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """
     ⚙️ Configura integração com sistema jurídico
-    
+
     Define configurações para integração com sistema externo
     """
     repo = LegalIntegrationConfigRepository(db)
@@ -420,11 +439,11 @@ async def configurar_integracao(
         details={
             "system_name": data.system_name,
             "api_endpoint": data.api_endpoint,
-            "enabled": data.enabled
+            "enabled": data.enabled,
         },
-        ip_address=request.client.host
+        ip_address=request.client.host,
     )
-    
+
     return {
         "success": True,
         "message": "Integração configurada com sucesso",
@@ -434,14 +453,14 @@ async def configurar_integracao(
         },
     }
 
+
 @router.get("/integrations/list")
 async def listar_integracoes(
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)
 ):
     """
     📋 Lista integrações configuradas
-    
+
     Retorna todas as integrações jurídicas configuradas pelo usuário
     """
     repo = LegalIntegrationConfigRepository(db)
@@ -456,8 +475,4 @@ async def listar_integracoes(
         for r in rows
     ]
 
-    return {
-        "success": True,
-        "total": len(integrations),
-        "integrations": integrations
-    }
+    return {"success": True, "total": len(integrations), "integrations": integrations}

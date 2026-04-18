@@ -1,7 +1,9 @@
 """
 Conecta gov.br - Integração CADIN Consulta/Contratante
 """
+
 from typing import Any, Dict
+
 import httpx
 
 from app.core.config import settings

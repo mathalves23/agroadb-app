@@ -4,6 +4,7 @@ Camada de aplicação async para analytics.
 Delega ao legado síncrono em `app.analytics` via `AsyncSession.run_sync`, evitando
 duplicar consultas SQL até uma migração completa para SQLAlchemy 2 async.
 """
+
 from __future__ import annotations
 
 from datetime import datetime

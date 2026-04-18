@@ -5,7 +5,9 @@ Consulta por: número do CAR
 Retorna: area, car, coordenadas, municipio, status, tipo
 Gratuito, sem autenticação.
 """
+
 from typing import Any, Dict, Optional
+
 import httpx
 
 
@@ -34,7 +36,12 @@ class SICARPublicoService:
                 return resp.json()
             return {"raw": resp.text[:3000], "status": resp.status_code}
 
-    async def _post(self, url: str, json_data: Optional[Dict[str, Any]] = None, form_data: Optional[Dict[str, Any]] = None) -> Any:
+    async def _post(
+        self,
+        url: str,
+        json_data: Optional[Dict[str, Any]] = None,
+        form_data: Optional[Dict[str, Any]] = None,
+    ) -> Any:
         async with httpx.AsyncClient(timeout=self.timeout, follow_redirects=True) as client:
             if json_data:
                 resp = await client.post(

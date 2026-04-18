@@ -3,6 +3,7 @@ Testes de contrato na API pública: rotas estáveis, códigos HTTP e forma míni
 
 Expandir CONTRACT_PATHS à medida que novos contratos forem acordados com clientes.
 """
+
 from __future__ import annotations
 
 import pytest
@@ -34,7 +35,9 @@ CONTRACT_PATHS: list[tuple[str, str, bool]] = [
 
 
 @pytest.mark.parametrize("method,path,auth_required", CONTRACT_PATHS)
-def test_public_routes_respond(client: TestClient, method: str, path: str, auth_required: bool) -> None:
+def test_public_routes_respond(
+    client: TestClient, method: str, path: str, auth_required: bool
+) -> None:
     r = client.request(method, path)
     if auth_required:
         assert r.status_code in (401, 403)

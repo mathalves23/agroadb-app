@@ -30,7 +30,9 @@ def test_metrics_endpoint_exposes_prometheus_text(client: TestClient) -> None:
     os.environ.get("AGROADB_CI_QUEUE_METRICS", "") != "1",
     reason="Defina AGROADB_CI_QUEUE_METRICS=1 quando Redis estiver disponível (smoke CI).",
 )
-def test_metrics_includes_agroadb_queue_tasks_when_ci_redis_smoke_enabled(client: TestClient) -> None:
+def test_metrics_includes_agroadb_queue_tasks_when_ci_redis_smoke_enabled(
+    client: TestClient,
+) -> None:
     """Gauges de fila Redis expostos após lifespan + refresh (ver queue_prometheus)."""
     r = client.get("/metrics")
     assert r.status_code == 200

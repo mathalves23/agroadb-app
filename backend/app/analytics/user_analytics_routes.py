@@ -8,14 +8,15 @@ Autor: AgroADB Team
 Data: 2026-02-05
 """
 
-from fastapi import APIRouter, Depends, Query, HTTPException
-from sqlalchemy.orm import Session
-from typing import Optional
 from datetime import datetime
+from typing import Optional
 
-from app.core.database import get_db
-from app.api.v1.deps import require_admin
+from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy.orm import Session
+
 from app.analytics.user_analytics_full import UserAnalytics
+from app.api.v1.deps import require_admin
+from app.core.database import get_db
 from app.domain.user import User
 
 router = APIRouter(prefix="/admin/user-analytics", tags=["User Analytics"])
@@ -26,7 +27,7 @@ async def get_usage_funnel(
     start_date: Optional[datetime] = Query(None),
     end_date: Optional[datetime] = Query(None),
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin)
+    current_user: User = Depends(require_admin),
 ):
     """Funnel de uso dos usuários"""
     try:
@@ -41,7 +42,7 @@ async def get_feature_adoption(
     start_date: Optional[datetime] = Query(None),
     end_date: Optional[datetime] = Query(None),
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin)
+    current_user: User = Depends(require_admin),
 ):
     """Adoção de features pelos usuários"""
     try:
@@ -57,7 +58,7 @@ async def get_navigation_heatmap(
     end_date: Optional[datetime] = Query(None),
     page: Optional[str] = Query(None),
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin)
+    current_user: User = Depends(require_admin),
 ):
     """Heatmap de navegação"""
     try:
@@ -72,7 +73,7 @@ async def get_nps_score(
     start_date: Optional[datetime] = Query(None),
     end_date: Optional[datetime] = Query(None),
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin)
+    current_user: User = Depends(require_admin),
 ):
     """Net Promoter Score (NPS)"""
     try:
@@ -87,7 +88,7 @@ async def get_complete_user_analytics(
     start_date: Optional[datetime] = Query(None),
     end_date: Optional[datetime] = Query(None),
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin)
+    current_user: User = Depends(require_admin),
 ):
     """Analytics completo de usuário"""
     try:

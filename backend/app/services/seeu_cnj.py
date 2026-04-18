@@ -6,11 +6,13 @@ Parâmetros: cpf, cnpj, nome_parte, nome_mae, numero_processo
 Retorna: processos encontrados, informações gerais, movimentações, partes.
 Gratuito, sem autenticação.
 """
+
 from typing import Any, Dict, Optional
+
 import httpx
 
-from app.core.retry import retry_with_backoff
 from app.core.circuit_breaker import circuit_protected
+from app.core.retry import retry_with_backoff
 
 
 class SEEUService:
@@ -29,9 +31,7 @@ class SEEUService:
 
     @retry_with_backoff(max_retries=2, base_delay=1.0)
     @circuit_protected(service_name="seeu_cnj", failure_threshold=5, recovery_timeout=60.0)
-    async def consultar_por_cpf(
-        self, cpf: str, nome_mae: Optional[str] = None
-    ) -> Dict[str, Any]:
+    async def consultar_por_cpf(self, cpf: str, nome_mae: Optional[str] = None) -> Dict[str, Any]:
         """Consulta processos de execução penal por CPF."""
         cleaned = cpf.replace(".", "").replace("-", "").strip()
         if len(cleaned) != 11:
@@ -92,9 +92,7 @@ class SEEUService:
         }
         return await self._consultar(params, {"numero_processo": numero_processo})
 
-    async def _consultar(
-        self, params: Dict[str, str], audit: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    async def _consultar(self, params: Dict[str, str], audit: Dict[str, Any]) -> Dict[str, Any]:
         """Executa a consulta no portal SEEU"""
         async with httpx.AsyncClient(
             timeout=self.timeout, follow_redirects=True, verify=True
@@ -131,8 +129,12 @@ class SEEUService:
 
                     if "Nenhum processo encontrado" in text or "nenhum resultado" in text.lower():
                         result["mensagem"] = "Nenhum processo encontrado"
-                    elif "processo" in text.lower() and ("número" in text.lower() or "classe" in text.lower()):
-                        result["mensagem"] = "Processos encontrados — consulta detalhada disponível via portal"
+                    elif "processo" in text.lower() and (
+                        "número" in text.lower() or "classe" in text.lower()
+                    ):
+                        result["mensagem"] = (
+                            "Processos encontrados — consulta detalhada disponível via portal"
+                        )
                         result["total"] = 1  # Indica existência
 
                     return result
@@ -176,9 +178,7 @@ class SEEUService:
     async def verificar_disponibilidade(self) -> Dict[str, Any]:
         """Verifica se o portal SEEU está acessível"""
         url = f"{self.CONSULTA_URL}?actionType=iniciar"
-        async with httpx.AsyncClient(
-            timeout=15.0, follow_redirects=True, verify=True
-        ) as client:
+        async with httpx.AsyncClient(timeout=15.0, follow_redirects=True, verify=True) as client:
             try:
                 resp = await client.head(url)
                 return {

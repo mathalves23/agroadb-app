@@ -1,16 +1,18 @@
 """
 Notifications API Endpoints
 """
-from fastapi import APIRouter, Depends, HTTPException, status, Query
-from sqlalchemy.ext.asyncio import AsyncSession
-from typing import List, Optional
-from pydantic import BaseModel
-from datetime import datetime
 
-from app.core.database import get_db
+from datetime import datetime
+from typing import List, Optional
+
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from pydantic import BaseModel
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.api.v1.deps import get_current_user
+from app.core.database import get_db
+from app.domain.notification import NotificationPriority, NotificationType
 from app.domain.user import User
-from app.domain.notification import NotificationType, NotificationPriority
 from app.repositories.notification import NotificationRepository
 
 router = APIRouter(prefix="/notifications", tags=["notifications"])
@@ -30,7 +32,7 @@ class NotificationResponse(BaseModel):
     is_archived: bool
     read_at: Optional[datetime]
     created_at: datetime
-    
+
     class Config:
         from_attributes = True
 
@@ -57,7 +59,7 @@ async def list_notifications(
         include_read=include_read,
         include_archived=include_archived,
         limit=limit,
-        offset=offset
+        offset=offset,
     )
     return notifications
 
@@ -93,13 +95,12 @@ async def get_notification(
     """Busca notificação por ID"""
     repo = NotificationRepository(db)
     notification = await repo.get_by_id(notification_id, current_user.id)
-    
+
     if not notification:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Notificação não encontrada"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Notificação não encontrada"
         )
-    
+
     return notification
 
 
@@ -112,13 +113,12 @@ async def mark_notification_as_read(
     """Marca notificação como lida"""
     repo = NotificationRepository(db)
     success = await repo.mark_as_read(notification_id, current_user.id)
-    
+
     if not success:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Notificação não encontrada"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Notificação não encontrada"
         )
-    
+
     await db.commit()
     return {"message": "Notificação marcada como lida"}
 
@@ -144,13 +144,12 @@ async def archive_notification(
     """Arquiva notificação"""
     repo = NotificationRepository(db)
     success = await repo.archive(notification_id, current_user.id)
-    
+
     if not success:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Notificação não encontrada"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Notificação não encontrada"
         )
-    
+
     await db.commit()
     return {"message": "Notificação arquivada"}
 
@@ -164,13 +163,12 @@ async def delete_notification(
     """Deleta notificação"""
     repo = NotificationRepository(db)
     success = await repo.delete_notification(notification_id, current_user.id)
-    
+
     if not success:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Notificação não encontrada"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Notificação não encontrada"
         )
-    
+
     await db.commit()
     return {"message": "Notificação deletada"}
 
@@ -183,7 +181,7 @@ async def create_test_notification(
 ):
     """Cria notificação de teste"""
     from app.services.notification_service import NotificationService
-    
+
     await NotificationService.create_notification(
         db=db,
         user_id=current_user.id,
@@ -192,9 +190,9 @@ async def create_test_notification(
         message="Esta é uma notificação de teste do sistema.",
         priority=NotificationPriority.NORMAL,
         action_url="/dashboard",
-        send_email=False
+        send_email=False,
     )
-    
+
     await db.commit()
     return {"message": "Notificação de teste criada"}
 
@@ -206,72 +204,71 @@ async def test_email_notification(
 ):
     """
     Testa envio de emails de notificação
-    
+
     Envia dois emails de teste para o usuário atual:
     - Um email de investigação concluída
     - Um email de investigação compartilhada
-    
+
     **Útil para**: Validar configuração SMTP
     """
     from app.services.email_service import EmailService
-    
+
     results = {
         "user_email": current_user.email,
         "investigation_completed": False,
         "investigation_shared": False,
-        "errors": []
+        "errors": [],
     }
-    
+
     try:
         # Testar email de investigação concluída
         completed_result = await EmailService.send_investigation_completed(
             user_email=current_user.email,
             user_name=current_user.full_name or current_user.username,
             investigation={
-                'id': 999,
-                'target_name': 'João da Silva (Teste)',
-                'properties_found': 5,
-                'companies_found': 2,
-                'lease_contracts_found': 3
-            }
+                "id": 999,
+                "target_name": "João da Silva (Teste)",
+                "properties_found": 5,
+                "companies_found": 2,
+                "lease_contracts_found": 3,
+            },
         )
         results["investigation_completed"] = completed_result
-        
+
         if not completed_result:
             results["errors"].append("Falha ao enviar email de investigação concluída")
-    
+
     except Exception as e:
         results["errors"].append(f"Erro ao enviar email de investigação concluída: {str(e)}")
-    
+
     try:
         # Testar email de investigação compartilhada
         shared_result = await EmailService.send_investigation_shared(
             user_email=current_user.email,
             user_name=current_user.full_name or current_user.username,
-            investigation={
-                'id': 999,
-                'target_name': 'Maria Santos (Teste)'
-            },
+            investigation={"id": 999, "target_name": "Maria Santos (Teste)"},
             shared_by_name="Administrador do Sistema",
-            permission_level="edit"
+            permission_level="edit",
         )
         results["investigation_shared"] = shared_result
-        
+
         if not shared_result:
             results["errors"].append("Falha ao enviar email de investigação compartilhada")
-    
+
     except Exception as e:
         results["errors"].append(f"Erro ao enviar email de investigação compartilhada: {str(e)}")
-    
+
     # Determinar status geral
     if results["investigation_completed"] and results["investigation_shared"]:
         results["status"] = "success"
         results["message"] = f"✅ Emails de teste enviados com sucesso para {current_user.email}"
     elif results["investigation_completed"] or results["investigation_shared"]:
         results["status"] = "partial"
-        results["message"] = f"⚠️ Alguns emails foram enviados para {current_user.email}, mas houve falhas"
+        results["message"] = (
+            f"⚠️ Alguns emails foram enviados para {current_user.email}, mas houve falhas"
+        )
     else:
         results["status"] = "error"
         results["message"] = "❌ Falha ao enviar emails. Verifique as configurações SMTP."
-    
+
     return results

@@ -1,11 +1,12 @@
 """
 FastAPI Application Entry Point
 """
-from contextlib import asynccontextmanager
-from typing import AsyncGenerator
+
 import asyncio
 import logging
 import traceback
+from contextlib import asynccontextmanager
+from typing import AsyncGenerator
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -13,17 +14,19 @@ from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from app.core.config import settings
-from app.api.v1.router import api_router
-from app.core.database import engine, Base
-
 import app.domain  # noqa: F401 — regista novos modelos no Base.metadata
-from app.core.rate_limiting import RateLimitMiddleware
+from app.api.v1.router import api_router
 from app.core.circuit_breaker import CircuitBreakerRegistry
+from app.core.config import settings
+from app.core.database import Base, engine
 from app.core.indexes import create_optimized_indexes
-from app.workers.scraper_workers import orchestrator
 from app.core.queue import queue_manager
-from app.core.queue_prometheus import prometheus_gauge_refresh_loop, refresh_queue_and_registry_gauges
+from app.core.queue_prometheus import (
+    prometheus_gauge_refresh_loop,
+    refresh_queue_and_registry_gauges,
+)
+from app.core.rate_limiting import RateLimitMiddleware
+from app.workers.scraper_workers import orchestrator
 
 logger = logging.getLogger(__name__)
 
@@ -33,14 +36,14 @@ async def lifespan(app: FastAPI) -> AsyncGenerator:
     """Lifecycle events for FastAPI application"""
     # Startup
     logger.info("🚀 Iniciando aplicação...")
-    
+
     # Criar tabelas do banco
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-    
+
     # Criar índices otimizados
     await create_optimized_indexes(engine)
-    
+
     # Iniciar workers apenas quando habilitado
     if settings.ENABLE_WORKERS:
         asyncio.create_task(orchestrator.start_all_workers())
@@ -56,7 +59,9 @@ async def lifespan(app: FastAPI) -> AsyncGenerator:
             _prom_gauge_task = asyncio.create_task(prometheus_gauge_refresh_loop(queue_manager))
             logger.info("✅ Métricas Prometheus de filas/circuitos: refresh periódico activo")
         except Exception as exc:
-            logger.warning("Métricas de fila/circuito: Redis indisponível (%s) — gauges omitidos", exc)
+            logger.warning(
+                "Métricas de fila/circuito: Redis indisponível (%s) — gauges omitidos", exc
+            )
 
     yield
 
@@ -89,11 +94,20 @@ app = FastAPI(
     openapi_url="/api/openapi.json",
     lifespan=lifespan,
     openapi_tags=[
-        {"name": "Platform — B2B & compliance", "description": "Proposta de valor, LGPD e exportações para RFPs e integradores."},
+        {
+            "name": "Platform — B2B & compliance",
+            "description": "Proposta de valor, LGPD e exportações para RFPs e integradores.",
+        },
         {"name": "Machine Learning", "description": "Risco, padrões, rede e exportação de grafos."},
         {"name": "Investigations", "description": "Ciclo de vida das investigações patrimoniais."},
-        {"name": "integrations", "description": "Integrações externas (Conecta, tribunais, birôs, dados abertos)."},
-        {"name": "Legal Integration", "description": "Consultas legais e proxies a tribunais/dados judiciais."},
+        {
+            "name": "integrations",
+            "description": "Integrações externas (Conecta, tribunais, birôs, dados abertos).",
+        },
+        {
+            "name": "Legal Integration",
+            "description": "Consultas legais e proxies a tribunais/dados judiciais.",
+        },
     ],
 )
 
@@ -110,7 +124,9 @@ instrument_fastapi(app)
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     """Captura qualquer exceção não tratada e devolve JSON com status 500."""
-    logger.error("Unhandled exception on %s %s: %s", request.method, request.url.path, exc, exc_info=True)
+    logger.error(
+        "Unhandled exception on %s %s: %s", request.method, request.url.path, exc, exc_info=True
+    )
     return JSONResponse(
         status_code=500,
         content={"detail": f"Erro interno: {str(exc)[:300]}"},
@@ -136,7 +152,11 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
             response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
         if settings.CSP_MODE and settings.CSP_MODE != "off":
             path = request.url.path
-            if path.startswith("/api/docs") or path.startswith("/api/redoc") or path.endswith("/openapi.json"):
+            if (
+                path.startswith("/api/docs")
+                or path.startswith("/api/redoc")
+                or path.endswith("/openapi.json")
+            ):
                 policy = settings.CSP_POLICY_SWAGGER
             else:
                 policy = settings.CSP_POLICY_API
@@ -145,6 +165,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
             elif settings.CSP_MODE == "enforce":
                 response.headers["Content-Security-Policy"] = policy
         return response
+
 
 app.add_middleware(SecurityHeadersMiddleware)
 
@@ -156,12 +177,16 @@ app.add_middleware(RateLimitMiddleware, redis_url=settings.REDIS_URL)
 
 # 4) CORS — DEVE SER O ÚLTIMO add_middleware para que seja o PRIMEIRO a processar
 # Em desenvolvimento: aceita localhost; em produção: usar CORS_ORIGINS do .env
-_cors_origins = settings.CORS_ORIGINS if settings.ENVIRONMENT == "production" else [
-    "http://localhost:5173",
-    "http://localhost:3000",
-    "http://127.0.0.1:5173",
-    "http://127.0.0.1:3000",
-]
+_cors_origins = (
+    settings.CORS_ORIGINS
+    if settings.ENVIRONMENT == "production"
+    else [
+        "http://localhost:5173",
+        "http://localhost:3000",
+        "http://127.0.0.1:5173",
+        "http://127.0.0.1:3000",
+    ]
+)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_cors_origins,
@@ -174,6 +199,7 @@ app.add_middleware(
 # 5) HTTPS Redirect (production only)
 if settings.FORCE_HTTPS:
     from starlette.middleware.httpsredirect import HTTPSRedirectMiddleware
+
     app.add_middleware(HTTPSRedirectMiddleware)
     logger.info("🔒 HTTPS redirect habilitado")
 

@@ -5,17 +5,18 @@ InvestigationShare, InvestigationComment, InvestigationChangeLog
 
 from datetime import datetime
 from enum import Enum
+
 from sqlalchemy import (
+    JSON,
+    Boolean,
     Column,
-    Integer,
-    String,
     DateTime,
     ForeignKey,
+    Integer,
+    String,
     Text,
-    Boolean,
     UniqueConstraint,
 )
-from sqlalchemy import JSON
 from sqlalchemy.orm import relationship
 
 from app.core.database import Base

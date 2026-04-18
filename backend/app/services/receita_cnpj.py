@@ -6,14 +6,16 @@ Retorna: razão social, nome fantasia, situação cadastral, atividade econômic
          endereço, capital social, QSA (sócios), natureza jurídica, porte, etc.
 Gratuito, consulta pública.
 """
-from typing import Any, Dict, List
+
 import logging
 import re
+from typing import Any, Dict, List
+
 import httpx
 
 from app.core.cache import cache_service
-from app.core.retry import retry_with_backoff
 from app.core.circuit_breaker import circuit_protected
+from app.core.retry import retry_with_backoff
 
 logger = logging.getLogger(__name__)
 
@@ -194,18 +196,22 @@ class ReceitaCNPJService:
     def _normalizar_brasilapi(self, data: Dict[str, Any], cnpj: str) -> Dict[str, Any]:
         qsa: List[Dict[str, Any]] = []
         for s in data.get("qsa", []):
-            qsa.append({
-                "nome": s.get("nome_socio"),
-                "qualificacao": s.get("qualificacao_socio"),
-                "pais_origem": s.get("pais_origem"),
-            })
+            qsa.append(
+                {
+                    "nome": s.get("nome_socio"),
+                    "qualificacao": s.get("qualificacao_socio"),
+                    "pais_origem": s.get("pais_origem"),
+                }
+            )
 
         atividades_sec: List[Dict[str, Any]] = []
         for a in data.get("cnaes_secundarios", []):
-            atividades_sec.append({
-                "codigo": a.get("codigo"),
-                "descricao": a.get("descricao"),
-            })
+            atividades_sec.append(
+                {
+                    "codigo": a.get("codigo"),
+                    "descricao": a.get("descricao"),
+                }
+            )
 
         return {
             "cnpj": cnpj,
@@ -241,18 +247,22 @@ class ReceitaCNPJService:
     def _normalizar_receitaws(self, data: Dict[str, Any], cnpj: str) -> Dict[str, Any]:
         qsa: List[Dict[str, Any]] = []
         for s in data.get("qsa", []):
-            qsa.append({
-                "nome": s.get("nome"),
-                "qualificacao": s.get("qual"),
-                "pais_origem": s.get("pais_origem"),
-            })
+            qsa.append(
+                {
+                    "nome": s.get("nome"),
+                    "qualificacao": s.get("qual"),
+                    "pais_origem": s.get("pais_origem"),
+                }
+            )
 
         atividades_sec: List[Dict[str, Any]] = []
         for a in data.get("atividades_secundarias", []):
-            atividades_sec.append({
-                "codigo": a.get("code"),
-                "descricao": a.get("text"),
-            })
+            atividades_sec.append(
+                {
+                    "codigo": a.get("code"),
+                    "descricao": a.get("text"),
+                }
+            )
 
         return {
             "cnpj": cnpj,
@@ -288,18 +298,22 @@ class ReceitaCNPJService:
     def _normalizar_minhareceita(self, data: Dict[str, Any], cnpj: str) -> Dict[str, Any]:
         qsa: List[Dict[str, Any]] = []
         for s in data.get("qsa", []):
-            qsa.append({
-                "nome": s.get("nome_socio"),
-                "qualificacao": s.get("qualificacao_socio"),
-                "pais_origem": s.get("pais_origem"),
-            })
+            qsa.append(
+                {
+                    "nome": s.get("nome_socio"),
+                    "qualificacao": s.get("qualificacao_socio"),
+                    "pais_origem": s.get("pais_origem"),
+                }
+            )
 
         atividades_sec: List[Dict[str, Any]] = []
         for a in data.get("cnaes_secundarios", []):
-            atividades_sec.append({
-                "codigo": a.get("codigo"),
-                "descricao": a.get("descricao"),
-            })
+            atividades_sec.append(
+                {
+                    "codigo": a.get("codigo"),
+                    "descricao": a.get("descricao"),
+                }
+            )
 
         return {
             "cnpj": cnpj,
@@ -385,8 +399,9 @@ class ReceitaCNPJService:
             # Fallback: try regex on plain text
             if field not in result:
                 import re as _re
+
                 for label in labels:
-                    pattern = _re.escape(label) + r'\s*[:\-]?\s*(.+?)(?:\n|$)'
+                    pattern = _re.escape(label) + r"\s*[:\-]?\s*(.+?)(?:\n|$)"
                     match = _re.search(pattern, text, _re.IGNORECASE)
                     if match:
                         value = match.group(1).strip()
@@ -398,9 +413,7 @@ class ReceitaCNPJService:
 
     async def verificar_disponibilidade(self) -> Dict[str, Any]:
         """Verifica se o portal da Receita Federal está acessível."""
-        async with httpx.AsyncClient(
-            timeout=15.0, follow_redirects=True, verify=True
-        ) as client:
+        async with httpx.AsyncClient(timeout=15.0, follow_redirects=True, verify=True) as client:
             try:
                 resp = await client.head(self.CONSULTA_URL)
                 return {

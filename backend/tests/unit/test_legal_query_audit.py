@@ -1,4 +1,5 @@
 """Testes do serviço de auditoria de consultas legais ligadas a investigações."""
+
 from __future__ import annotations
 
 from unittest.mock import AsyncMock, MagicMock, patch

@@ -2,17 +2,19 @@
 Sistema de Notificações por Email
 Envia notificações para usuários sobre eventos importantes
 """
-from typing import Optional, Dict, Any, List
-from datetime import datetime
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
-from email.mime.image import MIMEImage
+
+import logging
+import os
 import smtplib
 import ssl
+from datetime import datetime
+from email.mime.image import MIMEImage
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 from pathlib import Path
-import logging
+from typing import Any, Dict, List, Optional
+
 from jinja2 import Environment, FileSystemLoader, select_autoescape
-import os
 
 logger = logging.getLogger(__name__)
 
@@ -20,10 +22,10 @@ logger = logging.getLogger(__name__)
 class EmailService:
     """
     Serviço de Envio de Emails
-    
+
     Suporta templates HTML, anexos e notificações transacionais
     """
-    
+
     def __init__(
         self,
         smtp_host: str = None,
@@ -31,7 +33,7 @@ class EmailService:
         smtp_user: str = None,
         smtp_password: str = None,
         from_email: str = None,
-        from_name: str = "AgroADB"
+        from_name: str = "AgroADB",
     ):
         self.smtp_host = smtp_host or os.getenv("SMTP_HOST", "smtp.gmail.com")
         self.smtp_port = smtp_port or int(os.getenv("SMTP_PORT", "587"))
@@ -39,56 +41,56 @@ class EmailService:
         self.smtp_password = smtp_password or os.getenv("SMTP_PASSWORD")
         self.from_email = from_email or os.getenv("FROM_EMAIL", self.smtp_user)
         self.from_name = from_name
-        
+
         # Setup Jinja2 para templates
         template_dir = Path(__file__).parent.parent / "templates" / "emails"
         template_dir.mkdir(parents=True, exist_ok=True)
-        
+
         self.jinja_env = Environment(
             loader=FileSystemLoader(str(template_dir)),
-            autoescape=select_autoescape(['html', 'xml'])
+            autoescape=select_autoescape(["html", "xml"]),
         )
-    
+
     async def send_email(
         self,
         to_email: str,
         subject: str,
         html_content: str,
         text_content: Optional[str] = None,
-        attachments: Optional[List[Dict[str, Any]]] = None
+        attachments: Optional[List[Dict[str, Any]]] = None,
     ) -> bool:
         """
         Envia email
-        
+
         Args:
             to_email: Email do destinatário
             subject: Assunto do email
             html_content: Conteúdo HTML
             text_content: Conteúdo texto plano (fallback)
             attachments: Lista de anexos
-            
+
         Returns:
             True se enviado com sucesso
         """
         try:
             # Criar mensagem
-            msg = MIMEMultipart('alternative')
-            msg['Subject'] = subject
-            msg['From'] = f"{self.from_name} <{self.from_email}>"
-            msg['To'] = to_email
-            
+            msg = MIMEMultipart("alternative")
+            msg["Subject"] = subject
+            msg["From"] = f"{self.from_name} <{self.from_email}>"
+            msg["To"] = to_email
+
             # Adicionar conteúdo
             if text_content:
-                msg.attach(MIMEText(text_content, 'plain'))
-            
-            msg.attach(MIMEText(html_content, 'html'))
-            
+                msg.attach(MIMEText(text_content, "plain"))
+
+            msg.attach(MIMEText(html_content, "html"))
+
             # Adicionar anexos
             if attachments:
                 for attachment in attachments:
                     # TODO: Implementar anexos
                     pass
-            
+
             # Enviar
             context = ssl.create_default_context()
             with smtplib.SMTP(self.smtp_host, self.smtp_port) as server:
@@ -97,14 +99,14 @@ class EmailService:
                 server.ehlo()
                 server.login(self.smtp_user, self.smtp_password)
                 server.send_message(msg)
-            
+
             logger.info(f"✅ Email enviado para {to_email}: {subject}")
             return True
-            
+
         except Exception as e:
             logger.error(f"❌ Erro ao enviar email para {to_email}: {e}")
             return False
-    
+
     async def send_investigation_completed(
         self,
         to_email: str,
@@ -113,11 +115,11 @@ class EmailService:
         investigation_name: str,
         total_results: int,
         completed_at: datetime,
-        dashboard_url: str
+        dashboard_url: str,
     ) -> bool:
         """
         Envia notificação de investigação concluída
-        
+
         Args:
             to_email: Email do usuário
             user_name: Nome do usuário
@@ -126,12 +128,12 @@ class EmailService:
             total_results: Total de resultados encontrados
             completed_at: Data/hora de conclusão
             dashboard_url: URL para acessar resultados
-            
+
         Returns:
             True se enviado com sucesso
         """
         subject = f"✅ Investigação Concluída: {investigation_name}"
-        
+
         html_content = f"""
 <!DOCTYPE html>
 <html>
@@ -188,7 +190,7 @@ class EmailService:
 </body>
 </html>
         """
-        
+
         text_content = f"""
 Olá, {user_name}!
 
@@ -205,20 +207,20 @@ Acesse a plataforma para visualizar os resultados completos:
 ---
 AgroADB - Sistema de Inteligência Patrimonial
         """
-        
+
         return await self.send_email(to_email, subject, html_content, text_content)
-    
+
     async def send_investigation_failed(
         self,
         to_email: str,
         user_name: str,
         investigation_id: str,
         investigation_name: str,
-        error_message: str
+        error_message: str,
     ) -> bool:
         """Envia notificação de falha na investigação"""
         subject = f"❌ Erro na Investigação: {investigation_name}"
-        
+
         html_content = f"""
 <!DOCTYPE html>
 <html>
@@ -271,18 +273,13 @@ AgroADB - Sistema de Inteligência Patrimonial
 </body>
 </html>
         """
-        
+
         return await self.send_email(to_email, subject, html_content)
-    
-    async def send_welcome_email(
-        self,
-        to_email: str,
-        user_name: str,
-        dashboard_url: str
-    ) -> bool:
+
+    async def send_welcome_email(self, to_email: str, user_name: str, dashboard_url: str) -> bool:
         """Envia email de boas-vindas"""
         subject = "🎉 Bem-vindo ao AgroADB!"
-        
+
         html_content = f"""
 <!DOCTYPE html>
 <html>
@@ -331,17 +328,13 @@ AgroADB - Sistema de Inteligência Patrimonial
 </body>
 </html>
         """
-        
+
         return await self.send_email(to_email, subject, html_content)
-    
-    async def send_2fa_enabled_notification(
-        self,
-        to_email: str,
-        user_name: str
-    ) -> bool:
+
+    async def send_2fa_enabled_notification(self, to_email: str, user_name: str) -> bool:
         """Notifica usuário que 2FA foi habilitado"""
         subject = "🔒 Autenticação de Dois Fatores Ativada"
-        
+
         html_content = f"""
 <!DOCTYPE html>
 <html>
@@ -382,7 +375,7 @@ AgroADB - Sistema de Inteligência Patrimonial
 </body>
 </html>
         """
-        
+
         return await self.send_email(to_email, subject, html_content)
 
 

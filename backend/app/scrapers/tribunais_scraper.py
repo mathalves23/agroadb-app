@@ -9,11 +9,12 @@ Complementa a API DataJud com scraping das páginas de consulta pública dos tri
 Melhora a base de dados quando a API DataJud não está configurada ou para obter
 partes e movimentações diretamente do HTML.
 """
-from typing import List, Dict, Any, Optional
-from datetime import datetime
 
-from app.scrapers.base import BaseScraper
+from datetime import datetime
+from typing import Any, Dict, List, Optional
+
 from app.integrations.tribunais import TribunalConfig, TribunalIntegration
+from app.scrapers.base import BaseScraper
 
 
 class TribunaisScraper(BaseScraper):
@@ -29,10 +30,7 @@ class TribunaisScraper(BaseScraper):
         self.pje_url = TribunalConfig.PJE_URL
 
     async def search(
-        self,
-        process_number: Optional[str] = None,
-        state: Optional[str] = None,
-        **kwargs
+        self, process_number: Optional[str] = None, state: Optional[str] = None, **kwargs
     ) -> List[Dict[str, Any]]:
         """
         Busca processo por número nos tribunais (ESAJ, Projudi ou PJe).
@@ -71,15 +69,17 @@ class TribunaisScraper(BaseScraper):
             finally:
                 await integration.close()
         except Exception as e:
-            results.append({
-                "process_number": process_number,
-                "state": uf,
-                "system": "scraper",
-                "success": False,
-                "error": str(e),
-                "data_source": "tribunais_scraper",
-                "consulted_at": datetime.utcnow().isoformat(),
-            })
+            results.append(
+                {
+                    "process_number": process_number,
+                    "state": uf,
+                    "system": "scraper",
+                    "success": False,
+                    "error": str(e),
+                    "data_source": "tribunais_scraper",
+                    "consulted_at": datetime.utcnow().isoformat(),
+                }
+            )
         return results
 
     def _result_to_dict(self, result, system: str) -> Dict[str, Any]:

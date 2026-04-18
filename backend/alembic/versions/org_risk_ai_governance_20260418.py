@@ -5,9 +5,9 @@ Revises: guest_links_20260418
 Create Date: 2026-04-18
 """
 
-from alembic import op
 import sqlalchemy as sa
 
+from alembic import op
 
 revision = "org_risk_ai_gov_20260418"
 down_revision = "guest_links_20260418"

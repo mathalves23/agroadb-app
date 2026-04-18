@@ -1,4 +1,5 @@
 """Estatísticas agregadas para dashboards (sem dados sensíveis)."""
+
 from __future__ import annotations
 
 from pydantic import BaseModel, Field

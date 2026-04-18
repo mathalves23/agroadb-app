@@ -1,11 +1,13 @@
 """
 Conecta gov.br - Autenticação (OAuth2 ou APIKey)
 """
+
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Optional, Dict, Any
 import time
+from dataclasses import dataclass
+from typing import Any, Dict, Optional
+
 import httpx
 
 

@@ -3,16 +3,17 @@ Sistema de Machine Learning para Score de Risco
 Detecta padrões e calcula score de risco para investigações
 """
 
-import numpy as np
 import logging
-from typing import Any, Dict, List, Optional, Tuple
-from datetime import datetime, timedelta
 from dataclasses import dataclass, field
+from datetime import datetime, timedelta
+from typing import Any, Dict, List, Optional, Tuple
+
+import numpy as np
 
 from app.core.config import settings
 from app.services.ml.risk_calibration import apply_risk_calibration, load_calibration_config
-from app.services.ml.risk_shap import additive_shap_for_indicators
 from app.services.ml.risk_governance import build_risk_governance_context
+from app.services.ml.risk_shap import additive_shap_for_indicators
 
 logger = logging.getLogger(__name__)
 
@@ -75,6 +76,7 @@ class RiskScoringEngine:
         """
         try:
             from sqlalchemy import select
+
             from app.domain.investigation import Investigation
 
             # Buscar investigação
@@ -275,7 +277,8 @@ class RiskScoringEngine:
     @classmethod
     async def _analyze_property_concentration(cls, db, investigation) -> Tuple[float, List[str]]:
         """Analisa concentração de propriedades"""
-        from sqlalchemy import select, func
+        from sqlalchemy import func, select
+
         from app.domain.property import Property
 
         patterns = []
@@ -328,6 +331,7 @@ class RiskScoringEngine:
     async def _analyze_contract_values(cls, db, investigation) -> Tuple[float, List[str]]:
         """Analisa valores de contratos"""
         from sqlalchemy import select
+
         from app.domain.lease_contract import LeaseContract
 
         patterns = []
@@ -378,7 +382,8 @@ class RiskScoringEngine:
     @classmethod
     async def _analyze_legal_issues(cls, db, investigation) -> Tuple[float, List[str]]:
         """Analisa questões judiciais"""
-        from sqlalchemy import select, func
+        from sqlalchemy import func, select
+
         from app.domain.legal_query import LegalQuery
 
         patterns = []
@@ -440,6 +445,7 @@ class RiskScoringEngine:
     async def _analyze_company_network(cls, db, investigation) -> Tuple[float, List[str]]:
         """Analisa rede de empresas"""
         from sqlalchemy import select
+
         from app.domain.company import Company
 
         patterns = []
@@ -488,6 +494,7 @@ class RiskScoringEngine:
     async def _analyze_temporal_patterns(cls, db, investigation) -> Tuple[float, List[str]]:
         """Analisa padrões temporais suspeitos"""
         from sqlalchemy import select
+
         from app.domain.company import Company
         from app.domain.property import Property
 
@@ -544,6 +551,7 @@ class RiskScoringEngine:
     async def _analyze_geographic_dispersion(cls, db, investigation) -> Tuple[float, List[str]]:
         """Analisa dispersão geográfica"""
         from sqlalchemy import select
+
         from app.domain.property import Property
 
         patterns = []
@@ -587,8 +595,9 @@ class RiskScoringEngine:
     async def _analyze_data_quality(cls, db, investigation) -> float:
         """Analisa qualidade e completude dos dados"""
         from sqlalchemy import select
-        from app.domain.property import Property
+
         from app.domain.company import Company
+        from app.domain.property import Property
 
         score = 0.0
         total_fields = 0

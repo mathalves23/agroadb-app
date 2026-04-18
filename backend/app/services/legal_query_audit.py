@@ -4,6 +4,7 @@ Persistência de consultas legais/integrações ligadas a uma investigação (au
 Centraliza o padrão «se investigation_id, gravar em legal_queries» usado nos routers
 de integrações, alinhado ao estilo de `investigation_access` e `legal_pje_workflows`.
 """
+
 from __future__ import annotations
 
 from typing import Any, Dict, Optional

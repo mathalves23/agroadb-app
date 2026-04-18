@@ -1,6 +1,7 @@
 """
 Agregações para dashboards a partir da base real (por utilizador).
 """
+
 from __future__ import annotations
 
 import json
@@ -13,11 +14,11 @@ from typing import List
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.domain.investigation import Investigation, InvestigationStatus
 from app.domain.legal_query import LegalQuery
 from app.domain.property import Property
 from app.repositories.legal_query import LegalQueryRepository
-from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -177,9 +178,7 @@ async def get_dashboard_statistics_cached(
             db, user_id, is_superuser=is_superuser, months_back=months_back
         )
 
-    cache_key = (
-        f"dashboard:stats:v1:{user_id}:{'1' if is_superuser else '0'}:{months_back}"
-    )
+    cache_key = f"dashboard:stats:v1:{user_id}:{'1' if is_superuser else '0'}:{months_back}"
 
     try:
         import redis.asyncio as redis

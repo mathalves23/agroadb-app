@@ -1,4 +1,5 @@
 """Proposta de valor e pilares de conformidade (fonte única para API e documentação)."""
+
 from __future__ import annotations
 
 from typing import Any, Dict, List
@@ -62,9 +63,24 @@ def build_value_proposition() -> Dict[str, Any]:
 
 def build_compliance_summary() -> Dict[str, Any]:
     pillars: List[Dict[str, str]] = [
-        {"id": "lgpd", "name": "LGPD", "status": "supported", "note": "Endpoints dedicados em /api/v1/lgpd"},
-        {"id": "audit", "name": "Auditoria", "status": "supported", "note": "AuditLogger em fluxos de investigação e integrações legais"},
-        {"id": "exports", "name": "Exportação", "status": "supported", "note": "PDF, Excel, grafo JSON/GraphML"},
+        {
+            "id": "lgpd",
+            "name": "LGPD",
+            "status": "supported",
+            "note": "Endpoints dedicados em /api/v1/lgpd",
+        },
+        {
+            "id": "audit",
+            "name": "Auditoria",
+            "status": "supported",
+            "note": "AuditLogger em fluxos de investigação e integrações legais",
+        },
+        {
+            "id": "exports",
+            "name": "Exportação",
+            "status": "supported",
+            "note": "PDF, Excel, grafo JSON/GraphML",
+        },
     ]
     return {
         "pillars": pillars,

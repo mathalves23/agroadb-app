@@ -1,4 +1,5 @@
 """Serialização do grafo de investigação (GraphML / JSON)."""
+
 from __future__ import annotations
 
 import io

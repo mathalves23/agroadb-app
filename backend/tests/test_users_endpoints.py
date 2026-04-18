@@ -1,6 +1,7 @@
 """
 Integration Tests for Users Endpoints
 """
+
 import pytest
 from httpx import AsyncClient
 
@@ -25,20 +26,20 @@ async def test_get_current_user_success(async_client: AsyncClient):
             "password": "password123",
         },
     )
-    
+
     # Login
     login_response = await async_client.post(
         "/api/v1/auth/login",
         data={"username": "testuser", "password": "password123"},
     )
     token = login_response.json()["access_token"]
-    
+
     # Get current user
     response = await async_client.get(
         "/api/v1/users/me",
         headers={"Authorization": f"Bearer {token}"},
     )
-    
+
     assert response.status_code == 200
     data = response.json()
     assert data["username"] == "testuser"
@@ -58,20 +59,20 @@ async def test_update_current_user(async_client: AsyncClient):
             "password": "password123",
         },
     )
-    
+
     login_response = await async_client.post(
         "/api/v1/auth/login",
         data={"username": "testuser", "password": "password123"},
     )
     token = login_response.json()["access_token"]
-    
+
     # Update user
     response = await async_client.patch(
         "/api/v1/users/me",
         json={"full_name": "Updated Name"},
         headers={"Authorization": f"Bearer {token}"},
     )
-    
+
     assert response.status_code == 200
     data = response.json()
     assert data["full_name"] == "Updated Name"
@@ -90,22 +91,22 @@ async def test_update_current_user_password(async_client: AsyncClient):
             "password": "oldpassword",
         },
     )
-    
+
     login_response = await async_client.post(
         "/api/v1/auth/login",
         data={"username": "testuser", "password": "oldpassword"},
     )
     token = login_response.json()["access_token"]
-    
+
     # Alteração de senha via endpoint dedicado (PATCH /me ignora password)
     response = await async_client.post(
         "/api/v1/users/me/password",
         json={"current_password": "oldpassword", "new_password": "newpassword123"},
         headers={"Authorization": f"Bearer {token}"},
     )
-    
+
     assert response.status_code == 200
-    
+
     # Try login with new password
     new_login = await async_client.post(
         "/api/v1/auth/login",

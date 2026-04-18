@@ -9,9 +9,10 @@ Para este caso, os valores de Shapley com baseline fixa ``b`` coincidem com
 
 Referência: Lundberg & Lee, *A Unified Approach to Interpreting Model Predictions*, 2017.
 """
+
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 if TYPE_CHECKING:
     from app.services.ml.risk_scoring import RiskIndicator

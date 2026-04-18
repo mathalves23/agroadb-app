@@ -9,23 +9,24 @@ Testa:
 - Endpoints da API ML
 """
 
-import pytest
+import io
 from datetime import date, datetime, timedelta
-from sqlalchemy.orm import Session
+
+import pytest
 from fastapi.testclient import TestClient
 from PIL import Image
-import io
-from app.ml.models.risk_analyzer import RiskAnalyzer, RiskFactor
-from app.ml.models.pattern_detector import PatternDetector, Pattern
-from app.ml.models.network_analyzer import NetworkAnalyzer, Node, Edge
-from app.ml.models.ocr_processor import OCRProcessor, DocumentType
-from app.core.security import get_password_hash
-from app.domain.investigation import Investigation, InvestigationStatus
-from app.domain.property import Property
-from app.domain.company import Company
-from app.domain.lease_contract import LeaseContract
-from app.domain.user import User
+from sqlalchemy.orm import Session
 
+from app.core.security import get_password_hash
+from app.domain.company import Company
+from app.domain.investigation import Investigation, InvestigationStatus
+from app.domain.lease_contract import LeaseContract
+from app.domain.property import Property
+from app.domain.user import User
+from app.ml.models.network_analyzer import Edge, NetworkAnalyzer, Node
+from app.ml.models.ocr_processor import DocumentType, OCRProcessor
+from app.ml.models.pattern_detector import Pattern, PatternDetector
+from app.ml.models.risk_analyzer import RiskAnalyzer, RiskFactor
 
 # ========== Fixtures ==========
 

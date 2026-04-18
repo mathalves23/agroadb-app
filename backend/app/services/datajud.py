@@ -1,12 +1,14 @@
 """
 DataJud (CNJ) - Serviço de integração com API Pública
 """
+
 from typing import Any, Dict, Optional
+
 import httpx
 
+from app.core.circuit_breaker import circuit_protected
 from app.core.config import settings
 from app.core.retry import retry_with_backoff
-from app.core.circuit_breaker import circuit_protected
 
 
 def datajud_result_count(result: Any) -> int:

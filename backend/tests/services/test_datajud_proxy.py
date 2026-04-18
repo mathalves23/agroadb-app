@@ -1,4 +1,5 @@
 """Testes unitários do caso de uso proxy DataJud (sem HTTP externo nem DB real)."""
+
 from __future__ import annotations
 
 from unittest.mock import AsyncMock, MagicMock
@@ -23,7 +24,9 @@ def test_datajud_result_count_empty_or_non_dict() -> None:
     assert datajud_result_count("not-a-dict") == 0
 
 
-async def test_run_datajud_proxy_persists_when_investigation_id(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_run_datajud_proxy_persists_when_investigation_id(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     created: list[dict] = []
 
     class FakeRepo:
@@ -78,7 +81,9 @@ async def test_run_datajud_proxy_persists_when_investigation_id(monkeypatch: pyt
     assert call_kw["resource_id"] == "/tribunais/TRT2/_search"
 
 
-async def test_run_datajud_proxy_skips_repo_without_investigation_id(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_run_datajud_proxy_skips_repo_without_investigation_id(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     called: list[str] = []
 
     class FakeRepo:

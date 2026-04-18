@@ -6,13 +6,15 @@ Consulta 2ª instância via TJMG Jurisprudência (API pública):
   https://www5.tjmg.jus.br/jurisprudencia/
 Gestão de Acessos API: https://gestao-acessos-api.tjmg.jus.br/api-docs
 """
-from typing import Any, Dict, List, Optional
-import re
+
 import logging
+import re
+from typing import Any, Dict, List, Optional
+
 import httpx
 
-from app.core.retry import retry_with_backoff
 from app.core.circuit_breaker import circuit_protected
+from app.core.retry import retry_with_backoff
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +45,9 @@ class TJMGService:
 
     async def _get_json(self, url: str, params: Optional[Dict[str, Any]] = None) -> Any:
         """GET esperando JSON. Se vier HTML, extrai o que puder."""
-        async with httpx.AsyncClient(timeout=self.timeout, follow_redirects=True, verify=True) as client:
+        async with httpx.AsyncClient(
+            timeout=self.timeout, follow_redirects=True, verify=True
+        ) as client:
             resp = await client.get(url, params=params, headers=self.headers)
             ct = resp.headers.get("content-type", "")
             if resp.status_code >= 400:
@@ -57,8 +61,12 @@ class TJMGService:
             return self._parse_pje_html(resp.text)
 
     async def _post_json(self, url: str, data: Optional[Dict[str, Any]] = None) -> Any:
-        async with httpx.AsyncClient(timeout=self.timeout, follow_redirects=True, verify=True) as client:
-            resp = await client.post(url, json=data, headers={**self.headers, "Content-Type": "application/json"})
+        async with httpx.AsyncClient(
+            timeout=self.timeout, follow_redirects=True, verify=True
+        ) as client:
+            resp = await client.post(
+                url, json=data, headers={**self.headers, "Content-Type": "application/json"}
+            )
             ct = resp.headers.get("content-type", "")
             if resp.status_code >= 400:
                 if "html" in ct:
@@ -83,13 +91,15 @@ class TJMGService:
         """Extrai processos de HTML do PJe consulta pública (tabela de resultados)."""
         processos: List[Dict[str, str]] = []
         # O PJe exibe processos em uma tabela; cada <tr> tem número, última movimentação
-        rows = re.findall(r'<tr[^>]*class="[^"]*rich-table-row[^"]*"[^>]*>(.*?)</tr>', html, re.DOTALL)
+        rows = re.findall(
+            r'<tr[^>]*class="[^"]*rich-table-row[^"]*"[^>]*>(.*?)</tr>', html, re.DOTALL
+        )
         for row in rows:
-            cells = re.findall(r'<td[^>]*>(.*?)</td>', row, re.DOTALL)
+            cells = re.findall(r"<td[^>]*>(.*?)</td>", row, re.DOTALL)
             if len(cells) >= 2:
-                numero = re.sub(r'<[^>]+>', '', cells[0]).strip()
-                movimentacao = re.sub(r'<[^>]+>', '', cells[1]).strip()
-                if numero and re.search(r'\d{7}', numero):
+                numero = re.sub(r"<[^>]+>", "", cells[0]).strip()
+                movimentacao = re.sub(r"<[^>]+>", "", cells[1]).strip()
+                if numero and re.search(r"\d{7}", numero):
                     processos.append({"numero": numero, "ultima_movimentacao": movimentacao})
 
         return {
@@ -111,8 +121,12 @@ class TJMGService:
         # Tentar endpoint interno do PJe
         url = f"{self.PJE_BASE_URL}/pje/ConsultaPublica/listView.seam"
         try:
-            async with httpx.AsyncClient(timeout=self.timeout, follow_redirects=True, verify=True) as client:
-                resp = await client.get(url, params={"numeroProcesso": cleaned}, headers=self.headers)
+            async with httpx.AsyncClient(
+                timeout=self.timeout, follow_redirects=True, verify=True
+            ) as client:
+                resp = await client.get(
+                    url, params={"numeroProcesso": cleaned}, headers=self.headers
+                )
                 if resp.status_code == 200 and "rich-table-row" in resp.text:
                     return self._parse_pje_html(resp.text)
         except Exception as e:
@@ -127,7 +141,9 @@ class TJMGService:
         cleaned = cpf.replace(".", "").replace("-", "").strip()
         url = f"{self.PJE_BASE_URL}/pje/ConsultaPublica/listView.seam"
         try:
-            async with httpx.AsyncClient(timeout=self.timeout, follow_redirects=True, verify=True) as client:
+            async with httpx.AsyncClient(
+                timeout=self.timeout, follow_redirects=True, verify=True
+            ) as client:
                 resp = await client.get(url, params={"cpf": cleaned}, headers=self.headers)
                 if resp.status_code == 200 and "rich-table-row" in resp.text:
                     return self._parse_pje_html(resp.text)
@@ -147,7 +163,9 @@ class TJMGService:
         cleaned = cnpj.replace(".", "").replace("/", "").replace("-", "").strip()
         url = f"{self.PJE_BASE_URL}/pje/ConsultaPublica/listView.seam"
         try:
-            async with httpx.AsyncClient(timeout=self.timeout, follow_redirects=True, verify=True) as client:
+            async with httpx.AsyncClient(
+                timeout=self.timeout, follow_redirects=True, verify=True
+            ) as client:
                 resp = await client.get(url, params={"cnpj": cleaned}, headers=self.headers)
                 if resp.status_code == 200 and "rich-table-row" in resp.text:
                     return self._parse_pje_html(resp.text)
@@ -165,7 +183,9 @@ class TJMGService:
         """Consulta processos por nome da parte no PJe TJMG."""
         url = f"{self.PJE_BASE_URL}/pje/ConsultaPublica/listView.seam"
         try:
-            async with httpx.AsyncClient(timeout=self.timeout, follow_redirects=True, verify=True) as client:
+            async with httpx.AsyncClient(
+                timeout=self.timeout, follow_redirects=True, verify=True
+            ) as client:
                 resp = await client.get(url, params={"nomeParte": nome_parte}, headers=self.headers)
                 if resp.status_code == 200 and "rich-table-row" in resp.text:
                     return self._parse_pje_html(resp.text)
@@ -180,14 +200,20 @@ class TJMGService:
         """Consulta processos por nome do advogado no PJe TJMG."""
         url = f"{self.PJE_BASE_URL}/pje/ConsultaPublica/listView.seam"
         try:
-            async with httpx.AsyncClient(timeout=self.timeout, follow_redirects=True, verify=True) as client:
-                resp = await client.get(url, params={"nomeAdvogado": nome_advogado}, headers=self.headers)
+            async with httpx.AsyncClient(
+                timeout=self.timeout, follow_redirects=True, verify=True
+            ) as client:
+                resp = await client.get(
+                    url, params={"nomeAdvogado": nome_advogado}, headers=self.headers
+                )
                 if resp.status_code == 200 and "rich-table-row" in resp.text:
                     return self._parse_pje_html(resp.text)
         except Exception as e:
             logger.warning("TJMG PJe consulta por advogado falhou: %s", e)
 
-        return self._empty_result(f"Nenhum processo encontrado para advogado '{nome_advogado}' no TJMG")
+        return self._empty_result(
+            f"Nenhum processo encontrado para advogado '{nome_advogado}' no TJMG"
+        )
 
     @retry_with_backoff(max_retries=2, base_delay=1.0)
     @circuit_protected(service_name="tjmg", failure_threshold=5, recovery_timeout=60.0)
@@ -235,7 +261,9 @@ class TJMGService:
             "pesquisaTesauro": "true",
         }
         try:
-            async with httpx.AsyncClient(timeout=self.timeout, follow_redirects=True, verify=True) as client:
+            async with httpx.AsyncClient(
+                timeout=self.timeout, follow_redirects=True, verify=True
+            ) as client:
                 resp = await client.get(url, params=params, headers=self.headers)
                 if resp.status_code == 200:
                     # Extrair emendas da página de resultados
@@ -257,16 +285,19 @@ class TJMGService:
         resultados: List[Dict[str, str]] = []
         # Cada resultado tem número do processo e ementa
         blocos = re.findall(
-            r'Processo[:\s]*([\d.\-/]+).*?Ementa[:\s]*(.*?)(?=Processo[:\s]*[\d.\-/]+|$)',
-            html, re.DOTALL | re.IGNORECASE,
+            r"Processo[:\s]*([\d.\-/]+).*?Ementa[:\s]*(.*?)(?=Processo[:\s]*[\d.\-/]+|$)",
+            html,
+            re.DOTALL | re.IGNORECASE,
         )
         for numero, ementa in blocos[:10]:
-            ementa_limpa = re.sub(r'<[^>]+>', '', ementa).strip()[:500]
-            resultados.append({
-                "numero": numero.strip(),
-                "ementa": ementa_limpa,
-                "fonte": "TJMG/Jurisprudência",
-            })
+            ementa_limpa = re.sub(r"<[^>]+>", "", ementa).strip()[:500]
+            resultados.append(
+                {
+                    "numero": numero.strip(),
+                    "ementa": ementa_limpa,
+                    "fonte": "TJMG/Jurisprudência",
+                }
+            )
         return resultados
 
     # ─── Gestão de Acessos API ───
@@ -296,7 +327,9 @@ class TJMGService:
                 return self._empty_result(f"Gestão de Acessos erro {resp.status_code}")
             return resp.json()
 
-    async def gestao_usuario_ativo(self, username: str, token: Optional[str] = None) -> Dict[str, Any]:
+    async def gestao_usuario_ativo(
+        self, username: str, token: Optional[str] = None
+    ) -> Dict[str, Any]:
         """Verifica se um usuário está ativo."""
         url = f"{self.GESTAO_BASE_URL}/v1/usuarios/{username}/ativo"
         headers = {"Authorization": f"Bearer {token}"} if token else {}

@@ -1,6 +1,7 @@
 """
 Tests for Authentication API
 """
+
 import asyncio
 
 import pytest
