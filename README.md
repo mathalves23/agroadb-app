@@ -106,6 +106,13 @@ Um CI verde indica **qualidade mínima** e regressões óbvias evitadas nesse su
 
 ### Localmente
 
+Fluxo mínimo alinhado ao job **backend** do CI:
+
+1. Dependências Python: `pip install -r backend/requirements.txt` (ou `make install`, que inclui também o frontend).
+2. Serviços: o workflow usa **PostgreSQL 15** e **Redis 7** em `localhost` (portas `5432` e `6379`). Se os testes ou a app precisarem deles, suba instâncias equivalentes (por exemplo `docker compose up -d` com serviços `postgres`/`redis`, ou contentores avulsos com as mesmas credenciais que em `.github/workflows/ci.yml`).
+3. Variáveis de ambiente: replique as do passo **Pytest** do CI (`DATABASE_URL`, `REDIS_URL`, `SECRET_KEY`, `ENCRYPTION_KEY`, etc.) no seu `.env` ou no shell antes de correr os testes.
+4. Testes do subconjunto CI: na raiz, `make test` (equivale à lista de ficheiros `pytest` do workflow).
+
 ```bash
 make lint
 make test                    # backend: mesmo subconjunto que o job Pytest no CI

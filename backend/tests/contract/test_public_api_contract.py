@@ -20,7 +20,10 @@ def client() -> TestClient:
 # (method, path, auth_required)
 CONTRACT_PATHS: list[tuple[str, str, bool]] = [
     ("GET", "/health", False),
+    ("GET", "/", False),
+    ("GET", "/api/docs", False),
     ("GET", "/api/v1/ml/health", False),
+    ("GET", "/api/v1/integrations/health", False),
     ("GET", "/api/v1/platform/proposition", False),
     ("GET", "/api/v1/platform/compliance-summary", False),
     ("GET", "/api/openapi.json", False),
@@ -36,11 +39,16 @@ def test_public_routes_respond(client: TestClient, method: str, path: str, auth_
         assert r.status_code == 200, f"{method} {path} -> {r.status_code} {r.text[:200]}"
 
 
-def test_openapi_lists_platform_paths(client: TestClient) -> None:
+def test_openapi_lists_stable_public_paths(client: TestClient) -> None:
     schema = client.get("/api/openapi.json").json()
     paths = schema.get("paths") or {}
-    assert "/api/v1/platform/proposition" in paths
-    assert "/api/v1/platform/compliance-summary" in paths
+    for path in (
+        "/api/v1/platform/proposition",
+        "/api/v1/platform/compliance-summary",
+        "/api/v1/ml/health",
+        "/api/v1/integrations/health",
+    ):
+        assert path in paths, f"OpenAPI em falta: {path}"
 
 
 def test_platform_proposition_shape(client: TestClient) -> None:
@@ -60,3 +68,10 @@ def test_platform_compliance_shape(client: TestClient) -> None:
     ids = {p.get("id") for p in data["pillars"]}
     assert "lgpd" in ids
     assert "audit" in ids
+
+
+def test_integrations_health_shape(client: TestClient) -> None:
+    data = client.get("/api/v1/integrations/health").json()
+    assert "car" in data and isinstance(data["car"], dict)
+    assert data["car"].get("status")
+    assert "tribunais" in data

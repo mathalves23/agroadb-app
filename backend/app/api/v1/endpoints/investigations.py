@@ -23,6 +23,7 @@ from app.core.config import settings
 from app.core.audit import audit_logger, AuditAction
 from app.schemas.dashboard_statistics import DashboardStatisticsResponse
 from app.services.dashboard_statistics import get_dashboard_statistics_cached
+from app.services.investigation_access import require_investigation_for_user
 
 router = APIRouter()
 
@@ -498,20 +499,16 @@ async def export_investigation_excel(
     - Empresas: Companies found
     - Consultas Legais: Legal queries executed
     """
-    investigation_repo = InvestigationRepository(db)
-    investigation_service = InvestigationService(investigation_repo)
     legal_query_repo = LegalQueryRepository(db)
-    
-    # Get investigation with all relations loaded
-    investigation = await investigation_repo.get_with_relations(investigation_id)
-    if not investigation:
-        raise HTTPException(status_code=404, detail="Investigation not found")
-    
-    # Verify access
-    if investigation.user_id != current_user.id and not current_user.is_superuser:
-        raise HTTPException(status_code=403, detail="Not authorized to access this investigation")
-    
-    # Get legal queries separately
+
+    investigation = await require_investigation_for_user(
+        db,
+        investigation_id,
+        current_user.id,
+        is_superuser=current_user.is_superuser,
+        with_relations=True,
+    )
+
     legal_queries = await legal_query_repo.list_by_investigation(investigation_id)
     
     # Generate Excel file
@@ -546,21 +543,18 @@ async def export_investigation_csv(
     - Summary counts (properties, companies, legal queries)
     - Dates (created, updated)
     """
-    investigation_repo = InvestigationRepository(db)
     legal_query_repo = LegalQueryRepository(db)
-    
-    # Get investigation with all relations loaded
-    investigation = await investigation_repo.get_with_relations(investigation_id)
-    if not investigation:
-        raise HTTPException(status_code=404, detail="Investigation not found")
-    
-    # Verify access
-    if investigation.user_id != current_user.id and not current_user.is_superuser:
-        raise HTTPException(status_code=403, detail="Not authorized to access this investigation")
-    
-    # Get legal queries separately
+
+    investigation = await require_investigation_for_user(
+        db,
+        investigation_id,
+        current_user.id,
+        is_superuser=current_user.is_superuser,
+        with_relations=True,
+    )
+
     legal_queries = await legal_query_repo.list_by_investigation(investigation_id)
-    
+
     # Generate CSV file
     csv_file = ExcelExportService.generate_investigation_csv(
         investigation, investigation.properties, investigation.companies, legal_queries
@@ -598,18 +592,16 @@ async def export_investigation_pdf(
     - Legal queries performed
     - Visual charts and analysis
     """
-    investigation_repo = InvestigationRepository(db)
     legal_query_repo = LegalQueryRepository(db)
-    
-    # Get investigation with all relations loaded
-    investigation = await investigation_repo.get_with_relations(investigation_id)
-    if not investigation:
-        raise HTTPException(status_code=404, detail="Investigation not found")
-    
-    # Verify access
-    if investigation.user_id != current_user.id and not current_user.is_superuser:
-        raise HTTPException(status_code=403, detail="Not authorized to access this investigation")
-    
+
+    investigation = await require_investigation_for_user(
+        db,
+        investigation_id,
+        current_user.id,
+        is_superuser=current_user.is_superuser,
+        with_relations=True,
+    )
+
     # Get related data (already loaded from get_with_relations)
     properties = investigation.properties or []
     companies = investigation.companies or []

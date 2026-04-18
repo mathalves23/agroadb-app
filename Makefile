@@ -20,7 +20,7 @@ help: ## Mostra este menu de ajuda
 		}' $(MAKEFILE_LIST)
 
 ## Instalação e Setup
-install: ## Instala todas as dependências
+install: ## Instala todas as dependências (backend alinhado ao CI: requirements.txt)
 	@echo "📦 Instalando dependências do backend..."
 	cd backend && pip install -r requirements.txt
 	@echo "📦 Instalando dependências do frontend..."
@@ -80,10 +80,10 @@ create-superuser: ## Cria superutilizador (defina AGROADB_ADMIN_EMAIL e AGROADB_
 	docker-compose exec -e AGROADB_ADMIN_EMAIL -e AGROADB_ADMIN_PASSWORD -e AGROADB_ADMIN_USERNAME -e AGROADB_ADMIN_FULL_NAME backend python scripts/create_superuser.py
 
 ## Testes
-test: ## Mesmo subconjunto de pytest que `.github/workflows/ci.yml` (requer Redis se os testes o usarem)
+test: ## Mesmo subconjunto de pytest que `.github/workflows/ci.yml` (antes: pip install -r backend/requirements.txt; Postgres/Redis como no CI se aplicável)
 	@echo "🧪 Executando testes do backend (subconjunto CI)..."
 	cd backend && pytest tests/test_ci_smoke.py tests/test_observability.py tests/test_security.py tests/test_auth.py tests/test_ml.py \
-		tests/contract/test_public_api_contract.py tests/test_integrations_helpers.py -v
+		tests/contract/test_public_api_contract.py tests/test_integrations_helpers.py tests/services/test_investigation_access.py -v
 	@echo "✅ Testes concluídos! (suíte completa: cd backend && pytest tests/)"
 
 test-cov: ## Executa testes com cobertura

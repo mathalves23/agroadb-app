@@ -18,8 +18,11 @@ from app.services.legal_integration import (
 )
 from app.services.datajud import DataJudService
 from app.repositories.legal_query import LegalQueryRepository
-from app.repositories.investigation import InvestigationRepository
 from app.repositories.legal_integration_config import LegalIntegrationConfigRepository
+from app.services.investigation_access import (
+    legal_queries_to_public_list,
+    require_investigation_for_user,
+)
 from app.core.audit import AuditLogger
 from app.core.config import settings as app_settings
 
@@ -277,25 +280,18 @@ async def list_legal_queries_by_investigation(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    inv_repo = InvestigationRepository(db)
-    inv = await inv_repo.get(investigation_id)
-    if not inv or (inv.user_id != current_user.id and not current_user.is_superuser):
-        raise HTTPException(status_code=404, detail="Investigação não encontrada")
+    await require_investigation_for_user(
+        db,
+        investigation_id,
+        current_user.id,
+        is_superuser=current_user.is_superuser,
+        when_forbidden="404_not_found",
+        not_found_detail="Investigação não encontrada",
+    )
 
     repo = LegalQueryRepository(db)
     queries = await repo.list_by_investigation(investigation_id)
-    return [
-        {
-            "id": q.id,
-            "provider": q.provider,
-            "query_type": q.query_type,
-            "query_params": q.query_params,
-            "result_count": q.result_count,
-            "response": q.response,
-            "created_at": q.created_at.isoformat(),
-        }
-        for q in queries
-    ]
+    return legal_queries_to_public_list(queries)
 
 # ==================== Endpoints Due Diligence ====================
 
@@ -312,10 +308,14 @@ async def gerar_due_diligence(
     Cria um relatório completo de due diligence para a investigação
     """
     try:
-        inv_repo = InvestigationRepository(db)
-        inv = await inv_repo.get(investigation_id)
-        if not inv or (inv.user_id != current_user.id and not current_user.is_superuser):
-            raise HTTPException(status_code=404, detail="Investigação não encontrada")
+        await require_investigation_for_user(
+            db,
+            investigation_id,
+            current_user.id,
+            is_superuser=current_user.is_superuser,
+            when_forbidden="404_not_found",
+            not_found_detail="Investigação não encontrada",
+        )
 
         report = await legal_integration_service.due_diligence_service.gerar_relatorio_completo(
             db, investigation_id
@@ -361,10 +361,14 @@ async def exportar_due_diligence(
     Envia relatório de due diligence para ferramenta jurídica integrada
     """
     try:
-        inv_repo = InvestigationRepository(db)
-        inv = await inv_repo.get(data.investigation_id)
-        if not inv or (inv.user_id != current_user.id and not current_user.is_superuser):
-            raise HTTPException(status_code=404, detail="Investigação não encontrada")
+        await require_investigation_for_user(
+            db,
+            data.investigation_id,
+            current_user.id,
+            is_superuser=current_user.is_superuser,
+            when_forbidden="404_not_found",
+            not_found_detail="Investigação não encontrada",
+        )
 
         result = await legal_integration_service.gerar_e_exportar_due_diligence(
             db,
