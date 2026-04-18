@@ -46,8 +46,10 @@ jobs:
 
       - name: Validar regras Prometheus (promtool)
         run: |
-          docker run --rm -v "${GITHUB_WORKSPACE}/monitoring/alerts:/rules:ro" prom/prometheus:v2.53.3 \
-            promtool check rules /rules/agroadb.yml
+          docker run --rm --entrypoint promtool \
+            -v "${GITHUB_WORKSPACE}/monitoring/alerts:/rules:ro" \
+            prom/prometheus:v2.53.3 \
+            check rules /rules/agroadb.yml
 
       - uses: actions/setup-python@v5
         with:
