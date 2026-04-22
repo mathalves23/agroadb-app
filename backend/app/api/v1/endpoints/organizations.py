@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import List, Optional
 
 from fastapi import APIRouter, HTTPException, Request, status
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.api.v1.deps import CurrentUser, DatabaseSession
 from app.core.audit import AuditAction, audit_logger
@@ -21,16 +21,14 @@ class OrganizationCreate(BaseModel):
 
 
 class OrganizationOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     name: str
     slug: str
     description: Optional[str] = None
     risk_ai_human_review_required: bool = False
     risk_ai_governance_reference_url: Optional[str] = None
-
-    class Config:
-        from_attributes = True
-
 
 class OrganizationAIGovernancePatch(BaseModel):
     """Política de governança do score de risco automatizado (RIPD / diligência)."""

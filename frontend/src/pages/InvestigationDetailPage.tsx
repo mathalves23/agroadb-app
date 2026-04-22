@@ -7,9 +7,6 @@ import {
   Scale,
   Database,
   XCircle,
-  Network as NetworkIcon,
-  Brain,
-  Users,
   MessageSquare,
   History as HistoryIcon,
   Share2,
@@ -38,6 +35,15 @@ import ChangeLog from '@/components/ChangeLog'
 import { formatDate, formatDateTime, formatCPFCNPJ } from '@/lib/utils'
 import { PanelListLoader } from '@/components/Loading'
 import { EmptyState } from '@/components/EmptyState'
+import {
+  buildLegalCharts,
+  buildSummaryFields,
+  createSummarySources,
+} from '@/pages/investigationDetail/summary'
+import {
+  InvestigationTabs,
+  type InvestigationDetailTab,
+} from '@/pages/investigationDetail/InvestigationTabs'
 
 interface AxiosLikeError {
   response?: { data?: { detail?: string } }
@@ -48,7 +54,7 @@ export default function InvestigationDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
-  const [activeTab, setActiveTab] = useState<'summary' | 'legal' | 'network' | 'ml' | 'collaboration'>('summary')
+  const [activeTab, setActiveTab] = useState<InvestigationDetailTab>('summary')
   const [dataJudResult, setDataJudResult] = useState<Record<string, unknown> | null>(null)
   const [sigefResult, setSigefResult] = useState<Record<string, unknown> | null>(null)
   const [sncrResult, setSncrResult] = useState<Record<string, unknown> | null>(null)
@@ -130,69 +136,7 @@ export default function InvestigationDetailPage() {
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const user = useAuthStore((s) => s.user);
   const currentUserId = user?.id ?? null;
-
-  const formatSummaryValue = (value: unknown): string => {
-    if (value === null || value === undefined) {
-      return ''
-    }
-    if (typeof value === 'string') {
-      return value
-    }
-    if (typeof value === 'number' || typeof value === 'boolean') {
-      return String(value)
-    }
-    if (Array.isArray(value)) {
-      const preview: string[] = value
-        .slice(0, 3)
-        .map((item) => formatSummaryValue(item))
-        .filter((item) => Boolean(item))
-      return preview.length ? `${preview.join(' | ')}${value.length > 3 ? ' ...' : ''}` : ''
-    }
-    if (typeof value === 'object') {
-      const keys = Object.keys(value as Record<string, unknown>)
-      return keys.length ? `(${keys.slice(0, 4).join(', ')}${keys.length > 4 ? ', ...' : ''})` : ''
-    }
-    return String(value)
-  }
-
-  const findValueByKeys = (
-    payload: unknown,
-    keys: string[],
-    depth = 0,
-    visited = new Set<unknown>()
-  ): unknown => {
-    if (!payload || typeof payload !== 'object') {
-      return undefined
-    }
-    if (visited.has(payload)) {
-      return undefined
-    }
-    visited.add(payload)
-    const obj = payload as Record<string, unknown>
-    const lowerKeys = Object.keys(obj).reduce<Record<string, string>>((acc, key) => {
-      acc[key.toLowerCase()] = key
-      return acc
-    }, {})
-    for (const key of keys) {
-      const normalized = key.toLowerCase()
-      const realKey = lowerKeys[normalized]
-      if (realKey !== undefined) {
-        return obj[realKey]
-      }
-    }
-    if (depth > 4) {
-      return undefined
-    }
-    for (const value of Object.values(obj)) {
-      if (typeof value === 'object' && value !== null) {
-        const found = findValueByKeys(value, keys, depth + 1, visited)
-        if (found !== undefined) {
-          return found
-        }
-      }
-    }
-    return undefined
-  }
+  const isDevMode = process.env.NODE_ENV !== 'production'
 
   const { data: investigation, isLoading } = useQuery({
     queryKey: ['investigation', id],
@@ -311,105 +255,28 @@ export default function InvestigationDetailPage() {
     defaultCpfCnpj,
   ])
 
-  const buildSummaryFields = (
-    result: Record<string, unknown> | null,
-    fields: Array<{ label: string; keys: string[] }>
-  ) => {
-    if (!result) {
-      return []
-    }
-    return fields
-      .map((field) => {
-        const value = findValueByKeys(result, field.keys)
-        const formatted = formatSummaryValue(value)
-        return formatted ? { label: field.label, value: formatted } : null
-      })
-      .filter(Boolean) as Array<{ label: string; value: string }>
-  }
-
   const summarySources = useMemo(
-    () => [
-      {
-        label: 'DataJud',
-        result: dataJudResult,
-        fields: [
-          { label: 'Processos', keys: ['hits', 'processos'] },
-          { label: 'Total', keys: ['total'] },
-        ],
-      },
-      {
-        label: 'CNPJ (Conecta)',
-        result: cnpjResult,
-        fields: [
-          { label: 'Razão social', keys: ['razaoSocial', 'razao_social', 'nomeEmpresarial', 'nome'] },
-          { label: 'Nome fantasia', keys: ['nomeFantasia', 'nome_fantasia'] },
-          { label: 'Situação', keys: ['situacao', 'situacaoCadastral', 'status'] },
-          { label: 'Atividade', keys: ['atividadePrincipal', 'cnaePrincipal', 'cnae'] },
-          { label: 'Endereço', keys: ['endereco', 'logradouro', 'enderecoCompleto'] },
-          { label: 'Municipio/UF', keys: ['municipio', 'cidade', 'uf', 'estado'] },
-        ],
-      },
-      {
-        label: 'CADIN (Conecta)',
-        result: cadinResult,
-        fields: [
-          { label: 'Situação', keys: ['situacao', 'status', 'possuiRestricao'] },
-          { label: 'Órgão', keys: ['orgao', 'orgaoResponsavel'] },
-          { label: 'Data', keys: ['data', 'dataRegistro', 'dataAtualizacao'] },
-          { label: 'Descrição', keys: ['descricao', 'motivo'] },
-        ],
-      },
-      {
-        label: 'SNCR (Conecta)',
-        result: sncrResult,
-        fields: [
-          { label: 'Código imóvel', keys: ['codigoImovel', 'codigo_imovel', 'imovel'] },
-          { label: 'Nome imóvel', keys: ['nomeImovel', 'nome_imovel'] },
-          { label: 'Situação', keys: ['situacao', 'status'] },
-          { label: 'Área (ha)', keys: ['areaHa', 'area_ha', 'area'] },
-          { label: 'Município/UF', keys: ['municipio', 'uf', 'estado'] },
-        ],
-      },
-      {
-        label: 'SIGEF Parcelas',
-        result: sigefResult,
-        fields: [
-          { label: 'Resultado', keys: ['resultados', 'resultados_retornados'] },
-          { label: 'Área (ha)', keys: ['area_ha', 'areaHa', 'area'] },
-          { label: 'Matrícula', keys: ['matricula'] },
-          { label: 'Detentor', keys: ['detentor', 'nome'] },
-        ],
-      },
-      {
-        label: 'SIGEF GEO (Conecta)',
-        result: sigefGeoResult,
-        fields: [
-          { label: 'Código parcela', keys: ['parcelaCodigo', 'codigo_parcela'] },
-          { label: 'Código imóvel', keys: ['codigoImovel', 'codigo_imovel'] },
-          { label: 'Situação', keys: ['status', 'situacao'] },
-          { label: 'Área (ha)', keys: ['areaHa', 'area_ha', 'area'] },
-        ],
-      },
-      {
-        label: 'SICAR (Conecta)',
-        result: sicarResult,
-        fields: [
-          { label: 'Situação', keys: ['situacao', 'status'] },
-          { label: 'Imóvel', keys: ['imovel', 'codigoImovel', 'codigo_imovel'] },
-          { label: 'Município/UF', keys: ['municipio', 'uf', 'estado'] },
-        ],
-      },
-      {
-        label: 'CND (Conecta)',
-        result: cndResult,
-        fields: [
-          { label: 'Situação', keys: ['situacao', 'status', 'resultado'] },
-          { label: 'Validade', keys: ['validade', 'dataValidade'] },
-          { label: 'Emitente', keys: ['orgao', 'emissor'] },
-        ],
-      },
-    ],
-    [dataJudResult, cnpjResult, cadinResult, sncrResult, sigefResult, sigefGeoResult, sicarResult, cndResult]
+    () =>
+      createSummarySources({
+        dataJudResult,
+        cnpjResult,
+        cadinResult,
+        sncrResult,
+        sigefResult,
+        sigefGeoResult,
+        sicarResult,
+        cndResult,
+      }),
+    [
+      dataJudResult,
+      cnpjResult,
+      cadinResult,
+      sncrResult,
+      sigefResult,
+      sigefGeoResult,
+      sicarResult,
+      cndResult,
+    ]
   )
 
   const summarySourcesWithData = useMemo(
@@ -679,41 +546,10 @@ export default function InvestigationDetailPage() {
   }, [defaultCpfCnpj, quickScanRunning, id, queryClient, investigation])
 
   // ─── Chart Data ───
-  const chartByProvider = useMemo(() => {
-    if (!legalQueries || legalQueries.length === 0) return []
-    const grouped: Record<string, { queries: number; results: number }> = {}
-    for (const q of legalQueries) {
-      if (!grouped[q.provider]) grouped[q.provider] = { queries: 0, results: 0 }
-      grouped[q.provider].queries += 1
-      grouped[q.provider].results += q.result_count || 0
-    }
-    return Object.entries(grouped).map(([provider, data]) => ({
-      name: provider,
-      consultas: data.queries,
-      resultados: data.results,
-    }))
-  }, [legalQueries])
-
-  const chartByDate = useMemo(() => {
-    if (!legalQueries || legalQueries.length === 0) return []
-    const grouped: Record<string, number> = {}
-    for (const q of legalQueries) {
-      const day = new Date(q.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
-      grouped[day] = (grouped[day] || 0) + 1
-    }
-    return Object.entries(grouped)
-      .slice(-14)
-      .map(([date, count]) => ({ date, consultas: count }))
-  }, [legalQueries])
-
-  const pieData = useMemo(() => {
-    if (!legalQueries || legalQueries.length === 0) return []
-    const grouped: Record<string, number> = {}
-    for (const q of legalQueries) {
-      grouped[q.provider] = (grouped[q.provider] || 0) + 1
-    }
-    return Object.entries(grouped).map(([name, value]) => ({ name, value }))
-  }, [legalQueries])
+  const { chartByProvider, chartByDate, pieData } = useMemo(
+    () => buildLegalCharts(legalQueries),
+    [legalQueries]
+  )
 
   // ─── PDF Export ───
   const summaryRef = useRef<HTMLDivElement>(null)
@@ -1194,74 +1030,7 @@ export default function InvestigationDetailPage() {
 
       <EnrichedDataCard targetDescription={investigation.target_description} />
 
-      {/* Tabs */}
-      <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-xl w-fit">
-        <button
-          onClick={() => setActiveTab('summary')}
-          className={`px-5 py-2 rounded-lg text-sm font-medium transition ${
-            activeTab === 'summary'
-              ? 'bg-white text-gray-900 shadow-sm'
-              : 'text-gray-500 hover:text-gray-700'
-          }`}
-        >
-          <span className="flex items-center gap-2">
-            <Database className="h-4 w-4" />
-            Resumo
-          </span>
-        </button>
-        <button
-          onClick={() => setActiveTab('legal')}
-          className={`px-5 py-2 rounded-lg text-sm font-medium transition ${
-            activeTab === 'legal'
-              ? 'bg-white text-gray-900 shadow-sm'
-              : 'text-gray-500 hover:text-gray-700'
-          }`}
-        >
-          <span className="flex items-center gap-2">
-            <Scale className="h-4 w-4" />
-            Consultas Legais
-          </span>
-        </button>
-        <button
-          onClick={() => setActiveTab('network')}
-          className={`px-5 py-2 rounded-lg text-sm font-medium transition ${
-            activeTab === 'network'
-              ? 'bg-white text-gray-900 shadow-sm'
-              : 'text-gray-500 hover:text-gray-700'
-          }`}
-        >
-          <span className="flex items-center gap-2">
-            <NetworkIcon className="h-4 w-4" />
-            Rede
-          </span>
-        </button>
-        <button
-          onClick={() => setActiveTab('ml')}
-          className={`px-5 py-2 rounded-lg text-sm font-medium transition ${
-            activeTab === 'ml'
-              ? 'bg-white text-gray-900 shadow-sm'
-              : 'text-gray-500 hover:text-gray-700'
-          }`}
-        >
-          <span className="flex items-center gap-2">
-            <Brain className="h-4 w-4" />
-            Análise ML
-          </span>
-        </button>
-        <button
-          onClick={() => setActiveTab('collaboration')}
-          className={`px-5 py-2 rounded-lg text-sm font-medium transition ${
-            activeTab === 'collaboration'
-              ? 'bg-white text-gray-900 shadow-sm'
-              : 'text-gray-500 hover:text-gray-700'
-          }`}
-        >
-          <span className="flex items-center gap-2">
-            <Users className="h-4 w-4" />
-            Colaboração
-          </span>
-        </button>
-      </div>
+      <InvestigationTabs activeTab={activeTab} onChange={setActiveTab} />
 
       {activeTab === 'summary' && (
         <div className="space-y-6" ref={summaryRef}>
@@ -1281,7 +1050,7 @@ export default function InvestigationDetailPage() {
           <p className="text-xs text-gray-500 max-w-3xl leading-relaxed">
             A consulta rápida e o passo de dados cadastrais usam integrações e fontes públicas. Em ambiente de
             produção não são criados registos fictícios de propriedades ou empresas após o enriquecimento.
-            {import.meta.env.DEV && (
+            {isDevMode && (
               <span className="block mt-1 text-gray-400">
                 Modo desenvolvimento: para permitir dados de demonstração (etiqueta MOCK_DEMO) no servidor,
                 defina <code className="text-[11px] bg-gray-100 px-1 rounded">ENABLE_INVESTIGATION_ENRICH_DEMO_SEED=true</code> no{' '}

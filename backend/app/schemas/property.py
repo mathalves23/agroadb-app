@@ -5,7 +5,7 @@ Property Schemas
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class PropertyBase(BaseModel):
@@ -35,15 +35,13 @@ class PropertyCreate(PropertyBase):
 class PropertyResponse(PropertyBase):
     """Schema for property response"""
 
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     investigation_id: int
     data_source: str
     created_at: datetime
     updated_at: datetime
-
-    class Config:
-        from_attributes = True
-
 
 class LeaseContractBase(BaseModel):
     """Base lease contract schema"""
@@ -67,15 +65,13 @@ class LeaseContractCreate(LeaseContractBase):
 class LeaseContractResponse(LeaseContractBase):
     """Schema for lease contract response"""
 
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     investigation_id: int
     data_source: str
     created_at: datetime
     updated_at: datetime
-
-    class Config:
-        from_attributes = True
-
 
 class CompanyBase(BaseModel):
     """Base company schema"""
@@ -100,12 +96,11 @@ class CompanyCreate(CompanyBase):
 class CompanyResponse(CompanyBase):
     """Schema for company response"""
 
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     investigation_id: int
     data_source: str
     partners: Optional[dict]
     created_at: datetime
     updated_at: datetime
-
-    class Config:
-        from_attributes = True

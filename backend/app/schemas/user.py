@@ -5,7 +5,7 @@ User Schemas
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 
 class UserBase(BaseModel):
@@ -37,15 +37,13 @@ class UserUpdate(BaseModel):
 class UserResponse(UserBase):
     """Schema for user response"""
 
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     is_active: bool
     is_superuser: bool
     created_at: datetime
     updated_at: datetime
-
-    class Config:
-        from_attributes = True
-
 
 class UserLogin(BaseModel):
     """Schema for user login"""

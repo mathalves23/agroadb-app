@@ -36,6 +36,9 @@ class Settings(BaseSettings):
     ENABLE_INVESTIGATION_ENRICH_DEMO_SEED: bool = False
     ENABLE_WORKERS: bool = False
     ENABLE_HEAVY_INVESTIGATION_QUEUE: bool = False
+    AUTO_CREATE_SCHEMA: bool = True
+    AUTO_CREATE_INDEXES: bool = True
+    CONNECT_QUEUE_ON_STARTUP: bool = True
     DASHBOARD_STATS_CACHE_ENABLED: bool = True
     DASHBOARD_STATS_CACHE_TTL_SECONDS: int = 120
 

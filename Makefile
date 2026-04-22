@@ -10,6 +10,8 @@ RESET  := $(shell tput -Txterm sgr0)
 
 # Preferir pytest do venv do repo (evita plugins globais quebrados no PATH do sistema)
 BACKEND_PYTEST := $(shell if test -x backend/.venv-agroadb/bin/pytest; then echo '.venv-agroadb/bin/pytest'; else echo 'pytest'; fi)
+BACKEND_PYTEST_SAFE := PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 $(BACKEND_PYTEST) -p pytest_asyncio.plugin
+BACKEND_PYTEST_COV_SAFE := PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 $(BACKEND_PYTEST) -p pytest_asyncio.plugin -p pytest_cov
 
 help: ## Mostra este menu de ajuda
 	@echo ''
@@ -85,13 +87,13 @@ create-superuser: ## Cria superutilizador (defina AGROADB_ADMIN_EMAIL e AGROADB_
 ## Testes
 test: ## Mesmo subconjunto de pytest que `.github/workflows/ci.yml` (antes: pip install -r backend/requirements.txt; Postgres/Redis como no CI se aplicável)
 	@echo "🧪 Executando testes do backend (subconjunto CI)..."
-	cd backend && $(BACKEND_PYTEST) tests/test_ci_smoke.py tests/test_observability.py tests/test_security.py tests/test_auth.py tests/test_ml.py \
+	cd backend && $(BACKEND_PYTEST_SAFE) tests/test_ci_smoke.py tests/test_observability.py tests/test_security.py tests/test_auth.py tests/test_ml.py \
 		tests/contract/test_public_api_contract.py tests/test_integrations_helpers.py tests/unit/test_legal_query_audit.py tests/services/test_investigation_access.py tests/services/test_datajud_proxy.py tests/services/test_investigation_enrich_demo.py -v
 	@echo "✅ Testes concluídos! (suíte completa: cd backend && pytest tests/)"
 
 test-cov: ## Executa testes com cobertura
 	@echo "🧪 Executando testes com cobertura..."
-	cd backend && pytest --cov=app --cov-report=html --cov-report=term
+	cd backend && $(BACKEND_PYTEST_COV_SAFE) --cov=app --cov-report=html --cov-report=term
 	@echo "✅ Relatório de cobertura gerado em backend/htmlcov/index.html"
 
 ## Observabilidade

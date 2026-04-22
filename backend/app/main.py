@@ -2,7 +2,6 @@
 FastAPI Application Entry Point
 """
 
-import asyncio
 import logging
 import traceback
 from contextlib import asynccontextmanager
@@ -16,17 +15,10 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 import app.domain  # noqa: F401 — regista novos modelos no Base.metadata
 from app.api.v1.router import api_router
-from app.core.circuit_breaker import CircuitBreakerRegistry
+from app.bootstrap import shutdown_application, startup_application
 from app.core.config import settings
-from app.core.database import Base, engine
-from app.core.indexes import create_optimized_indexes
-from app.core.queue import queue_manager
-from app.core.queue_prometheus import (
-    prometheus_gauge_refresh_loop,
-    refresh_queue_and_registry_gauges,
-)
+from app.core.database import engine
 from app.core.rate_limiting import RateLimitMiddleware
-from app.workers.scraper_workers import orchestrator
 
 logger = logging.getLogger(__name__)
 
@@ -34,54 +26,14 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator:
     """Lifecycle events for FastAPI application"""
-    # Startup
-    logger.info("🚀 Iniciando aplicação...")
-
-    # Criar tabelas do banco
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-
-    # Criar índices otimizados
-    await create_optimized_indexes(engine)
-
-    # Iniciar workers apenas quando habilitado
-    if settings.ENABLE_WORKERS:
-        asyncio.create_task(orchestrator.start_all_workers())
-        logger.info("✅ Workers iniciados em background")
-    else:
-        logger.info("⚠️  Workers desabilitados (ENABLE_WORKERS=false)")
-
-    _prom_gauge_task: asyncio.Task | None = None
-    if settings.PROMETHEUS_ENABLED:
-        try:
-            await queue_manager.connect()
-            await refresh_queue_and_registry_gauges(queue_manager)
-            _prom_gauge_task = asyncio.create_task(prometheus_gauge_refresh_loop(queue_manager))
-            logger.info("✅ Métricas Prometheus de filas/circuitos: refresh periódico activo")
-        except Exception as exc:
-            logger.warning(
-                "Métricas de fila/circuito: Redis indisponível (%s) — gauges omitidos", exc
-            )
+    logger.info("Iniciando aplicacao...")
+    state = await startup_application(engine)
 
     yield
 
-    from app.core.telemetry import shutdown_trace_provider
-
-    shutdown_trace_provider()
-
-    if _prom_gauge_task is not None:
-        _prom_gauge_task.cancel()
-        try:
-            await _prom_gauge_task
-        except asyncio.CancelledError:
-            pass
-
-    # Shutdown
-    logger.info("🛑 Encerrando aplicação...")
-    if settings.ENVIRONMENT == "production":
-        await orchestrator.stop_all_workers()
-    await engine.dispose()
-    logger.info("✅ Aplicação encerrada")
+    logger.info("Encerrando aplicacao...")
+    await shutdown_application(engine, state)
+    logger.info("Aplicacao encerrada")
 
 
 # Create FastAPI application
@@ -231,4 +183,6 @@ async def root() -> dict:
 @app.get("/api/v1/circuit-breakers")
 async def get_circuit_breaker_status():
     """Circuit breaker status for all registered services."""
-    return CircuitBreakerRegistry.get_all_status()
+    from app.bootstrap import get_circuit_breaker_status as _get_circuit_breaker_status
+
+    return await _get_circuit_breaker_status()

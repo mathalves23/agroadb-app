@@ -6,7 +6,7 @@ from datetime import datetime
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.deps import get_current_user
@@ -19,6 +19,8 @@ router = APIRouter(prefix="/notifications", tags=["notifications"])
 
 
 class NotificationResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     type: str
     title: str
@@ -32,10 +34,6 @@ class NotificationResponse(BaseModel):
     is_archived: bool
     read_at: Optional[datetime]
     created_at: datetime
-
-    class Config:
-        from_attributes = True
-
 
 class NotificationStatsResponse(BaseModel):
     total: int

@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import base64
 import os
+import warnings
 
 os.environ.setdefault("DATABASE_URL", "sqlite+aiosqlite:///:memory:")
 os.environ.setdefault("SECRET_KEY", "pytest-secret-key-at-least-32-characters!")
@@ -17,6 +18,11 @@ os.environ.setdefault(
 os.environ.setdefault("REDIS_URL", os.environ.get("REDIS_URL", "redis://127.0.0.1:6379/0"))
 os.environ.setdefault("ENABLE_WORKERS", "false")
 os.environ.setdefault("ENVIRONMENT", "test")
+
+warnings.filterwarnings(
+    "ignore",
+    message=r".*logfire-plugin.*",
+)
 
 import asyncio
 from typing import AsyncGenerator, Generator

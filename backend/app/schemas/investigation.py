@@ -5,7 +5,7 @@ Investigation Schemas
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from app.core.validators import limpar_documento, validar_cnpj, validar_cpf
 from app.domain.investigation import InvestigationStatus
@@ -68,6 +68,8 @@ class InvestigationUpdate(BaseModel):
 class InvestigationResponse(BaseModel):
     """Schema for investigation response"""
 
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     user_id: int
     target_name: str
@@ -86,10 +88,6 @@ class InvestigationResponse(BaseModel):
     risk_score_reviewed_by_id: Optional[int] = None
     risk_score_reviewer_name: Optional[str] = None
     can_acknowledge_risk_score_review: bool = False
-
-    class Config:
-        from_attributes = True
-
 
 class InvestigationListResponse(BaseModel):
     """Schema for paginated investigation list"""
