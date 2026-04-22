@@ -15,7 +15,10 @@ jest.mock('@/components/IntegrationRetryBanner', () => ({
 describe('Layout', () => {
   it('expõe skip link, landmark principal e sidebar identificável', () => {
     render(
-      <MemoryRouter initialEntries={['/dashboard']}>
+      <MemoryRouter
+        initialEntries={['/dashboard']}
+        future={{ v7_relativeSplatPath: true, v7_startTransition: true }}
+      >
         <Routes>
           <Route element={<Layout />}>
             <Route path="dashboard" element={<div>Página</div>} />

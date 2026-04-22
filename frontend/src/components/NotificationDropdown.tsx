@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useEffect, useRef } from 'react'
+import { Link } from 'react-router-dom'
 import {
   Bell,
   Check,
@@ -12,28 +12,14 @@ import {
   FileCheck,
   CheckCircle,
   AlertTriangle,
-} from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
-import { PanelListLoader } from '@/components/Loading';
-import { NoNotificationsEmpty } from '@/components/EmptyState';
-
-interface Notification {
-  id: number;
-  type: string;
-  title: string;
-  message: string;
-  priority: string;
-  action_url?: string;
-  icon?: string;
-  color?: string;
-  investigation_id?: number;
-  is_read: boolean;
-  is_archived: boolean;
-  read_at?: string;
-  created_at: string;
-}
+} from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
+import { formatDistanceToNow } from 'date-fns'
+import { ptBR } from 'date-fns/locale'
+import { PanelListLoader } from '@/components/Loading'
+import { NoNotificationsEmpty } from '@/components/EmptyState'
+import logger from '@/lib/logger'
+import { notificationService, type NotificationItem } from '@/services/notificationService'
 
 const iconMap: Record<string, LucideIcon> = {
   FileText: FileText,
@@ -44,7 +30,7 @@ const iconMap: Record<string, LucideIcon> = {
   CheckCircle: CheckCircle,
   Bell: Bell,
   AlertTriangle: AlertTriangle
-};
+}
 
 const colorMap: Record<string, string> = {
   blue: 'bg-blue-100 text-blue-600',
@@ -55,151 +41,113 @@ const colorMap: Record<string, string> = {
   teal: 'bg-teal-100 text-teal-600',
   gray: 'bg-gray-100 text-gray-600',
   red: 'bg-red-100 text-red-600'
-};
+}
 
 export default function NotificationDropdown() {
-  const [isOpen, setIsOpen] = useState(false);
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
-  const [loading, setLoading] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const [isOpen, setIsOpen] = useState(false)
+  const [notifications, setNotifications] = useState<NotificationItem[]>([])
+  const [unreadCount, setUnreadCount] = useState(0)
+  const [loading, setLoading] = useState(false)
+  const dropdownRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    loadUnreadCount();
-    
+    void loadUnreadCount()
+
     // Poll for new notifications every 30 seconds
-    const interval = setInterval(loadUnreadCount, 30000);
-    
-    return () => clearInterval(interval);
-  }, []);
+    const interval = window.setInterval(() => {
+      void loadUnreadCount()
+    }, 30000)
+
+    return () => window.clearInterval(interval)
+  }, [])
 
   useEffect(() => {
     if (isOpen) {
-      loadNotifications();
+      void loadNotifications()
     }
-  }, [isOpen]);
+  }, [isOpen])
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
+        setIsOpen(false)
       }
     }
-    
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   const loadUnreadCount = async () => {
     try {
-      const response = await fetch('/api/v1/notifications/unread/count', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setUnreadCount(data.count);
-      }
+      const count = await notificationService.getUnreadCount()
+      setUnreadCount(count)
     } catch (error) {
-      // silenced for production
+      logger.warn('Falha ao carregar contador de notificacoes', error, 'NotificationDropdown')
     }
-  };
+  }
 
   const loadNotifications = async () => {
-    setLoading(true);
+    setLoading(true)
     try {
-      const response = await fetch('/api/v1/notifications/?limit=10&include_read=true', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setNotifications(data);
-      }
+      const data = await notificationService.list({ limit: 10, includeRead: true })
+      setNotifications(data)
     } catch (error) {
-      // silenced for production
+      logger.warn('Falha ao carregar notificacoes', error, 'NotificationDropdown')
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   const markAsRead = async (notificationId: number) => {
     try {
-      const response = await fetch(`/api/v1/notifications/${notificationId}/read`, {
-        method: 'PATCH',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      
-      if (response.ok) {
-        setNotifications(prev =>
-          prev.map(n => n.id === notificationId ? { ...n, is_read: true } : n)
-        );
-        loadUnreadCount();
-      }
+      await notificationService.markAsRead(notificationId)
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === notificationId ? { ...n, is_read: true } : n))
+      )
+      await loadUnreadCount()
     } catch (error) {
-      // silenced for production
+      logger.warn('Falha ao marcar notificacao como lida', error, 'NotificationDropdown')
     }
-  };
+  }
 
   const markAllAsRead = async () => {
     try {
-      const response = await fetch('/api/v1/notifications/read-all', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      
-      if (response.ok) {
-        setNotifications(prev =>
-          prev.map(n => ({ ...n, is_read: true }))
-        );
-        setUnreadCount(0);
-      }
+      await notificationService.markAllAsRead()
+      setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })))
+      setUnreadCount(0)
     } catch (error) {
-      // silenced for production
+      logger.warn('Falha ao marcar todas notificacoes como lidas', error, 'NotificationDropdown')
     }
-  };
+  }
 
   const deleteNotification = async (notificationId: number) => {
     try {
-      const response = await fetch(`/api/v1/notifications/${notificationId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      
-      if (response.ok) {
-        setNotifications(prev => prev.filter(n => n.id !== notificationId));
-        loadUnreadCount();
-      }
+      await notificationService.delete(notificationId)
+      setNotifications((prev) => prev.filter((n) => n.id !== notificationId))
+      await loadUnreadCount()
     } catch (error) {
-      // silenced for production
+      logger.warn('Falha ao deletar notificacao', error, 'NotificationDropdown')
     }
-  };
+  }
 
-  const getIcon = (notification: Notification) => {
-    const IconComponent = iconMap[notification.icon || 'Bell'];
-    return IconComponent || Bell;
-  };
+  const getIcon = (notification: NotificationItem) => {
+    const IconComponent = iconMap[notification.icon || 'Bell']
+    return IconComponent || Bell
+  }
 
-  const getColorClass = (notification: Notification) => {
-    return colorMap[notification.color || 'gray'] || colorMap.gray;
-  };
+  const getColorClass = (notification: NotificationItem) => {
+    return colorMap[notification.color || 'gray'] || colorMap.gray
+  }
 
-  const handleNotificationClick = (notification: Notification) => {
+  const handleNotificationClick = (notification: NotificationItem) => {
     if (!notification.is_read) {
-      markAsRead(notification.id);
+      void markAsRead(notification.id)
     }
     if (notification.action_url) {
-      setIsOpen(false);
+      setIsOpen(false)
     }
-  };
+  }
 
   return (
     <div className="relative" ref={dropdownRef}>
@@ -251,9 +199,9 @@ export default function NotificationDropdown() {
             ) : (
               <div className="divide-y divide-gray-100">
                 {notifications.map((notification) => {
-                  const Icon = getIcon(notification);
-                  const colorClass = getColorClass(notification);
-                  
+                  const Icon = getIcon(notification)
+                  const colorClass = getColorClass(notification)
+
                   return (
                     <div
                       key={notification.id}
@@ -320,8 +268,8 @@ export default function NotificationDropdown() {
                             {!notification.is_read && (
                               <button
                                 onClick={(e) => {
-                                  e.preventDefault();
-                                  markAsRead(notification.id);
+                                  e.preventDefault()
+                                  void markAsRead(notification.id)
                                 }}
                                 className="text-xs text-gray-500 hover:text-indigo-600 flex items-center gap-1"
                                 title="Marcar como lida"
@@ -331,8 +279,8 @@ export default function NotificationDropdown() {
                             )}
                             <button
                               onClick={(e) => {
-                                e.preventDefault();
-                                deleteNotification(notification.id);
+                                e.preventDefault()
+                                void deleteNotification(notification.id)
                               }}
                               className="text-xs text-gray-500 hover:text-red-600 flex items-center gap-1"
                               title="Deletar"
@@ -364,5 +312,5 @@ export default function NotificationDropdown() {
         </div>
       )}
     </div>
-  );
+  )
 }

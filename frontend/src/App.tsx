@@ -75,7 +75,12 @@ const router = createBrowserRouter(
       ],
     },
   ],
-  { basename: routerBasename() },
+  {
+    basename: routerBasename(),
+    future: {
+      v7_relativeSplatPath: true,
+    },
+  },
 )
 
 function App() {

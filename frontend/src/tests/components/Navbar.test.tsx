@@ -8,6 +8,11 @@ jest.mock('@/stores/authStore', () => ({
   useAuthStore: jest.fn(),
 }))
 
+jest.mock('@/components/NotificationDropdown', () => ({
+  __esModule: true,
+  default: () => <div data-testid="mock-notifications" />,
+}))
+
 describe('Navbar Component', () => {
   it('should render logo and app name', () => {
     jest.mocked(useAuthStore).mockReturnValue({

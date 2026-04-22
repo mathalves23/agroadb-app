@@ -37,6 +37,34 @@ beforeEach(() => {
   localStorageMock.clear()
 })
 
+const originalConsoleWarn = console.warn
+const originalConsoleError = console.error
+beforeAll(() => {
+  jest.spyOn(console, 'warn').mockImplementation((...args: unknown[]) => {
+    const message = String(args[0] ?? '')
+    if (message.includes('React Router Future Flag Warning')) {
+      return
+    }
+    originalConsoleWarn(...args)
+  })
+
+  jest.spyOn(console, 'error').mockImplementation((...args: unknown[]) => {
+    const message = String(args[0] ?? '')
+    if (
+      message.includes('not wrapped in act') ||
+      message.includes('Not implemented: window.scrollTo')
+    ) {
+      return
+    }
+    originalConsoleError(...args)
+  })
+})
+
+afterAll(() => {
+  (console.warn as jest.MockedFunction<typeof console.warn>).mockRestore?.()
+  ;(console.error as jest.MockedFunction<typeof console.error>).mockRestore?.()
+})
+
 // Mock window.matchMedia
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
@@ -50,6 +78,11 @@ Object.defineProperty(window, 'matchMedia', {
     removeEventListener: jest.fn(),
     dispatchEvent: jest.fn(),
   }),
+})
+
+Object.defineProperty(window, 'scrollTo', {
+  writable: true,
+  value: jest.fn(),
 })
 
 // Mock IntersectionObserver

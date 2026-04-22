@@ -5,6 +5,8 @@ import Sidebar from './Sidebar'
 import IntegrationRetryBanner from './IntegrationRetryBanner'
 import SkipToMainLink from './SkipToMainLink'
 import Breadcrumbs from './Breadcrumbs'
+import ConnectionStatus from './ConnectionStatus'
+import PwaInstallBanner from './PwaInstallBanner'
 
 export default function Layout() {
   const location = useLocation()
@@ -46,6 +48,8 @@ export default function Layout() {
           aria-label="Conteúdo principal"
         >
           <Breadcrumbs />
+          <ConnectionStatus />
+          <PwaInstallBanner />
           <IntegrationRetryBanner />
           <Outlet />
         </main>

@@ -31,11 +31,11 @@ function isDevEnvironment(): boolean {
   if (typeof process !== 'undefined' && process.env.NODE_ENV === 'production') {
     return false
   }
-  try {
-    return Boolean(import.meta.env?.DEV)
-  } catch {
-    return true
+  if (typeof window !== 'undefined') {
+    const host = window.location.hostname
+    return host === 'localhost' || host === '127.0.0.1' || host.endsWith('.local')
   }
+  return true
 }
 
 class Logger {

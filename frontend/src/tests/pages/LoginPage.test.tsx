@@ -38,7 +38,7 @@ describe('LoginPage Component', () => {
 
   it('should render login form', () => {
     render(
-      <BrowserRouter>
+      <BrowserRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
         <LoginPage />
       </BrowserRouter>
     )
@@ -51,7 +51,7 @@ describe('LoginPage Component', () => {
 
   it('should have link to register page', () => {
     render(
-      <BrowserRouter>
+      <BrowserRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
         <LoginPage />
       </BrowserRouter>
     )
@@ -64,7 +64,7 @@ describe('LoginPage Component', () => {
     const user = userEvent.setup()
 
     render(
-      <BrowserRouter>
+      <BrowserRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
         <LoginPage />
       </BrowserRouter>
     )
@@ -82,7 +82,7 @@ describe('LoginPage Component', () => {
     const user = userEvent.setup()
 
     render(
-      <BrowserRouter>
+      <BrowserRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
         <LoginPage />
       </BrowserRouter>
     )
@@ -105,7 +105,7 @@ describe('LoginPage Component', () => {
     const user = userEvent.setup()
 
     render(
-      <BrowserRouter>
+      <BrowserRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
         <LoginPage />
       </BrowserRouter>
     )
@@ -128,7 +128,7 @@ describe('LoginPage Component', () => {
     const user = userEvent.setup()
 
     render(
-      <BrowserRouter>
+      <BrowserRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
         <LoginPage />
       </BrowserRouter>
     )

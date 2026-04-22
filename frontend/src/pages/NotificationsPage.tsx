@@ -5,49 +5,31 @@ import { formatDistanceToNow } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { PanelListLoader } from '@/components/Loading'
 import { EmptyState } from '@/components/EmptyState'
-
-interface Notification {
-  id: number;
-  type: string;
-  title: string;
-  message: string;
-  priority: string;
-  action_url?: string;
-  icon?: string;
-  color?: string;
-  is_read: boolean;
-  created_at: string;
-}
+import logger from '@/lib/logger'
+import {
+  notificationService,
+  type NotificationItem as Notification,
+} from '@/services/notificationService'
 
 export default function NotificationsPage() {
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [filter, setFilter] = useState<'all' | 'unread' | 'read'>('all');
-  const [loading, setLoading] = useState(true);
+  const [notifications, setNotifications] = useState<Notification[]>([])
+  const [filter, setFilter] = useState<'all' | 'unread' | 'read'>('all')
+  const [loading, setLoading] = useState(true)
 
   const loadNotifications = useCallback(async () => {
     setLoading(true)
     try {
       const includeRead = filter !== 'unread'
-      const response = await fetch(
-        `/api/v1/notifications/?limit=100&include_read=${includeRead}`,
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`,
-          },
-        }
-      )
-      if (response.ok) {
-        const data = await response.json()
-        let filtered = data
-        if (filter === 'read') {
-          filtered = data.filter((n: Notification) => n.is_read)
-        } else if (filter === 'unread') {
-          filtered = data.filter((n: Notification) => !n.is_read)
-        }
-        setNotifications(filtered)
+      const data = await notificationService.list({ limit: 100, includeRead })
+      let filtered = data
+      if (filter === 'read') {
+        filtered = data.filter((n) => n.is_read)
+      } else if (filter === 'unread') {
+        filtered = data.filter((n) => !n.is_read)
       }
-    } catch {
-      // silenciado
+      setNotifications(filtered)
+    } catch (error) {
+      logger.warn('Falha ao carregar pagina de notificacoes', error, 'NotificationsPage')
     } finally {
       setLoading(false)
     }
@@ -59,51 +41,30 @@ export default function NotificationsPage() {
 
   const markAsRead = async (id: number) => {
     try {
-      const response = await fetch(`/api/v1/notifications/${id}/read`, {
-        method: 'PATCH',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      if (response.ok) {
-        loadNotifications();
-      }
+      await notificationService.markAsRead(id)
+      await loadNotifications()
     } catch (error) {
-      // silenced for production
+      logger.warn('Falha ao marcar notificacao como lida', error, 'NotificationsPage')
     }
-  };
+  }
 
   const markAllAsRead = async () => {
     try {
-      const response = await fetch('/api/v1/notifications/read-all', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      if (response.ok) {
-        loadNotifications();
-      }
+      await notificationService.markAllAsRead()
+      await loadNotifications()
     } catch (error) {
-      // silenced for production
+      logger.warn('Falha ao marcar todas notificacoes como lidas', error, 'NotificationsPage')
     }
-  };
+  }
 
   const deleteNotification = async (id: number) => {
     try {
-      const response = await fetch(`/api/v1/notifications/${id}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      if (response.ok) {
-        loadNotifications();
-      }
+      await notificationService.delete(id)
+      await loadNotifications()
     } catch (error) {
-      // silenced for production
+      logger.warn('Falha ao deletar notificacao', error, 'NotificationsPage')
     }
-  };
+  }
 
   const getColorClass = (color: string) => {
     const colorMap: Record<string, string> = {
@@ -113,11 +74,11 @@ export default function NotificationsPage() {
       indigo: 'bg-indigo-100 text-indigo-600',
       emerald: 'bg-emerald-100 text-emerald-600',
       red: 'bg-red-100 text-red-600'
-    };
-    return colorMap[color] || 'bg-gray-100 text-gray-600';
-  };
+    }
+    return colorMap[color] || 'bg-gray-100 text-gray-600'
+  }
 
-  const unreadCount = notifications.filter(n => !n.is_read).length;
+  const unreadCount = notifications.filter((n) => !n.is_read).length
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -236,7 +197,7 @@ export default function NotificationsPage() {
                       {notification.action_url ? (
                         <Link
                           to={notification.action_url}
-                          onClick={() => !notification.is_read && markAsRead(notification.id)}
+                          onClick={() => !notification.is_read && void markAsRead(notification.id)}
                           className="block"
                         >
                           <h3 className="text-base font-semibold text-gray-900 group-hover:text-indigo-600 transition">
@@ -275,7 +236,7 @@ export default function NotificationsPage() {
                       <div className="flex items-center gap-2 mt-3">
                         {!notification.is_read && (
                           <button
-                            onClick={() => markAsRead(notification.id)}
+                              onClick={() => void markAsRead(notification.id)}
                             className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-indigo-600 hover:bg-indigo-50 rounded transition"
                           >
                             <Check className="h-3 w-3" />
@@ -283,7 +244,7 @@ export default function NotificationsPage() {
                           </button>
                         )}
                         <button
-                          onClick={() => deleteNotification(notification.id)}
+                            onClick={() => void deleteNotification(notification.id)}
                           className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50 rounded transition"
                         >
                           <Trash2 className="h-3 w-3" />
@@ -299,5 +260,5 @@ export default function NotificationsPage() {
         )}
       </div>
     </div>
-  );
+  )
 }
