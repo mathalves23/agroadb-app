@@ -87,7 +87,7 @@ jobs:
           make backend-check
 
       - name: Upload cobertura (opcional)
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v6
         continue-on-error: true
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
