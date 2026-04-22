@@ -23,7 +23,7 @@ websockets==12.0
 # Authentication & Security
 python-jose[cryptography]==3.3.0
 bcrypt==5.0.0
-python-dotenv==1.0.0
+python-dotenv==1.2.2
 cryptography==42.0.0
 pyotp==2.9.0
 qrcode[pil]==7.4.2
