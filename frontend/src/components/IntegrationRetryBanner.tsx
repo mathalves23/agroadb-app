@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { RefreshCw } from 'lucide-react'
+import { NoticeBanner } from '@/components/feedback'
 import {
   AGROADB_API_RETRY_CLEAR,
   AGROADB_API_RETRY_WAIT,
@@ -41,17 +42,15 @@ export default function IntegrationRetryBanner() {
   const isWaiting = remainingMs > 0
 
   return (
-    <div
-      className="mb-4 flex items-center justify-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm text-amber-950 shadow-sm"
-      role="status"
-      aria-live="polite"
-      aria-atomic="true"
-    >
-      <RefreshCw className={`h-4 w-4 shrink-0 text-amber-700 ${isWaiting ? '' : 'animate-spin'}`} />
-      <span>
-        {isWaiting ? (
+    <NoticeBanner
+      title="Servidor ou integração instável"
+      tone="warning"
+      icon={RefreshCw}
+      iconClassName={!isWaiting ? '[&>svg]:animate-spin' : ''}
+      description={
+        isWaiting ? (
           <>
-            Servidor ou integração instável — nova tentativa em{' '}
+            Nova tentativa em{' '}
             <strong className="tabular-nums">{remainingSec}s</strong> (tentativa{' '}
             {payload.attempt}/{payload.maxAttempts}).
           </>
@@ -63,8 +62,8 @@ export default function IntegrationRetryBanner() {
             </span>
             …
           </>
-        )}
-      </span>
-    </div>
+        )
+      }
+    />
   )
 }

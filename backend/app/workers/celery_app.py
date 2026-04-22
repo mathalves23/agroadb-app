@@ -8,8 +8,8 @@ from app.core.config import settings
 
 celery_app = Celery(
     "agroadb_workers",
-    broker=str(settings.REDIS_URL),
-    backend=str(settings.REDIS_URL),
+    broker=str(settings.CELERY_BROKER_URL),
+    backend=str(settings.CELERY_RESULT_BACKEND),
 )
 
 celery_app.conf.update(

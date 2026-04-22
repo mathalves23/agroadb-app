@@ -1,70 +1,27 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState } from 'react'
 import { Bell, Check, CheckCheck, Trash2, Filter, RefreshCw } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { formatDistanceToNow } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { PanelListLoader } from '@/components/Loading'
 import { EmptyState } from '@/components/EmptyState'
-import logger from '@/lib/logger'
-import {
-  notificationService,
-  type NotificationItem as Notification,
-} from '@/services/notificationService'
+import { useNotifications } from '@/hooks/useNotifications'
 
 export default function NotificationsPage() {
-  const [notifications, setNotifications] = useState<Notification[]>([])
   const [filter, setFilter] = useState<'all' | 'unread' | 'read'>('all')
-  const [loading, setLoading] = useState(true)
-
-  const loadNotifications = useCallback(async () => {
-    setLoading(true)
-    try {
-      const includeRead = filter !== 'unread'
-      const data = await notificationService.list({ limit: 100, includeRead })
-      let filtered = data
-      if (filter === 'read') {
-        filtered = data.filter((n) => n.is_read)
-      } else if (filter === 'unread') {
-        filtered = data.filter((n) => !n.is_read)
-      }
-      setNotifications(filtered)
-    } catch (error) {
-      logger.warn('Falha ao carregar pagina de notificacoes', error, 'NotificationsPage')
-    } finally {
-      setLoading(false)
-    }
-  }, [filter])
-
-  useEffect(() => {
-    void loadNotifications()
-  }, [loadNotifications])
-
-  const markAsRead = async (id: number) => {
-    try {
-      await notificationService.markAsRead(id)
-      await loadNotifications()
-    } catch (error) {
-      logger.warn('Falha ao marcar notificacao como lida', error, 'NotificationsPage')
-    }
-  }
-
-  const markAllAsRead = async () => {
-    try {
-      await notificationService.markAllAsRead()
-      await loadNotifications()
-    } catch (error) {
-      logger.warn('Falha ao marcar todas notificacoes como lidas', error, 'NotificationsPage')
-    }
-  }
-
-  const deleteNotification = async (id: number) => {
-    try {
-      await notificationService.delete(id)
-      await loadNotifications()
-    } catch (error) {
-      logger.warn('Falha ao deletar notificacao', error, 'NotificationsPage')
-    }
-  }
+  const {
+    notifications,
+    unreadCount,
+    isLoading,
+    isRefreshing,
+    refresh,
+    markAsRead,
+    markAllAsRead,
+    deleteNotification,
+  } = useNotifications({
+    limit: 100,
+    filter,
+  })
 
   const getColorClass = (color: string) => {
     const colorMap: Record<string, string> = {
@@ -77,8 +34,6 @@ export default function NotificationsPage() {
     }
     return colorMap[color] || 'bg-gray-100 text-gray-600'
   }
-
-  const unreadCount = notifications.filter((n) => !n.is_read).length
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -109,11 +64,11 @@ export default function NotificationsPage() {
                 </button>
               )}
               <button
-                onClick={loadNotifications}
+                onClick={refresh}
                 className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition"
                 title="Atualizar"
               >
-                <RefreshCw className={`h-5 w-5 ${loading ? 'animate-spin' : ''}`} />
+                <RefreshCw className={`h-5 w-5 ${isRefreshing ? 'animate-spin' : ''}`} />
               </button>
             </div>
           </div>
@@ -155,7 +110,7 @@ export default function NotificationsPage() {
         </div>
 
         {/* Notifications List */}
-        {loading ? (
+        {isLoading ? (
           <div className="bg-white rounded-xl shadow-sm border border-gray-200">
             <PanelListLoader message="Carregando..." subMessage="A sincronizar com a API de notificações." />
           </div>

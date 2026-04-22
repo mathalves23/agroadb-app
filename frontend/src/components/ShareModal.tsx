@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useId, useRef } from 'react';
 import {
   X,
   Share2,
@@ -18,8 +18,8 @@ import {
   Clock,
   Download,
 } from 'lucide-react';
-import { useAuthStore } from '@/stores/authStore';
-import { investigationService, type GuestLinkPublic } from '@/services/investigationService';
+import { useInvestigationSharing } from '@/hooks/useInvestigationSharing';
+import { collaborationService, type SharedInvestigationUser } from '@/services/collaborationService';
 
 interface ShareModalProps {
   investigationId: number;
@@ -30,32 +30,6 @@ interface ShareModalProps {
   canManageGuestLinks?: boolean;
 }
 
-function authHeaders(): HeadersInit {
-  const token = useAuthStore.getState().accessToken;
-  return token ? { Authorization: `Bearer ${token}` } : {};
-}
-
-function appBasePrefix(): string {
-  const base = (import.meta.env.BASE_URL || '/').replace(/\/+/g, '/');
-  if (base === '/' || base === '') return '';
-  return base.endsWith('/') ? base.slice(0, -1) : base;
-}
-
-function absoluteGuestUrl(guestViewPath: string): string {
-  const prefix = appBasePrefix();
-  const path = guestViewPath.startsWith('/') ? guestViewPath : `/${guestViewPath}`;
-  return `${window.location.origin}${prefix}${path}`;
-}
-
-interface SharedUser {
-  id: number;
-  shared_with_id: number;
-  shared_with_email: string;
-  shared_with_name: string;
-  permission: 'view' | 'comment' | 'edit' | 'admin';
-  created_at: string;
-}
-
 export default function ShareModal({
   investigationId,
   investigationName,
@@ -63,55 +37,83 @@ export default function ShareModal({
   onClose,
   canManageGuestLinks = false,
 }: ShareModalProps) {
+  const titleId = useId();
+  const descriptionId = useId();
+  const emailInputRef = useRef<HTMLInputElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const lastActiveRef = useRef<HTMLElement | null>(null);
   const [email, setEmail] = useState('');
   const [permission, setPermission] = useState<'view' | 'comment' | 'edit' | 'admin'>('view');
-  const [sharedUsers, setSharedUsers] = useState<SharedUser[]>([]);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
-
-  const [guestLinks, setGuestLinks] = useState<GuestLinkPublic[]>([]);
   const [guestLabel, setGuestLabel] = useState('');
   const [guestExpiryPreset, setGuestExpiryPreset] = useState<'none' | '7d' | '30d' | 'custom'>('30d');
   const [guestCustomExpires, setGuestCustomExpires] = useState('');
   const [guestAllowDownloads, setGuestAllowDownloads] = useState(false);
-  const [guestLoading, setGuestLoading] = useState(false);
   const [guestCreatedUrl, setGuestCreatedUrl] = useState<string | null>(null);
   const [guestCreatedToken, setGuestCreatedToken] = useState<string | null>(null);
-
-  const loadSharedUsers = useCallback(async () => {
-    try {
-      const response = await fetch(`/api/v1/collaboration/investigations/${investigationId}/shares`, {
-        headers: {
-          ...authHeaders(),
-        },
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setSharedUsers(data.shares || []);
-      }
-    } catch (error) {
-      // silenced for production
-    }
-  }, [investigationId]);
-
-  const loadGuestLinks = useCallback(async () => {
-    if (!canManageGuestLinks) return;
-    try {
-      const data = await investigationService.listGuestLinks(investigationId);
-      setGuestLinks(data.items || []);
-    } catch {
-      setGuestLinks([]);
-    }
-  }, [canManageGuestLinks, investigationId]);
+  const {
+    sharedUsers,
+    guestLinks,
+    isLoading,
+    shareInvestigation,
+    revokeShare,
+    createGuestLink,
+    revokeGuestLink,
+    refresh,
+  } = useInvestigationSharing(investigationId, canManageGuestLinks, isOpen);
 
   useEffect(() => {
     if (isOpen) {
-      void loadSharedUsers();
-      void loadGuestLinks();
+      lastActiveRef.current = document.activeElement as HTMLElement | null;
+      refresh();
     }
-  }, [isOpen, loadSharedUsers, loadGuestLinks]);
+  }, [isOpen, refresh]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      lastActiveRef.current?.focus();
+      return;
+    }
+
+    const frame = window.requestAnimationFrame(() => {
+      emailInputRef.current?.focus();
+    });
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        onClose();
+        return;
+      }
+
+      if (event.key !== 'Tab' || !dialogRef.current) return;
+
+      const focusable = dialogRef.current.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      );
+
+      if (focusable.length === 0) return;
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen, onClose]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -130,34 +132,19 @@ export default function ShareModal({
       return;
     }
 
-    setLoading(true);
     setError('');
     setSuccess('');
 
     try {
-      const response = await fetch(`/api/v1/collaboration/investigations/${investigationId}/share`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...authHeaders(),
-        },
-        body: JSON.stringify({ email, permission })
-      });
-
-      if (response.ok) {
-        setSuccess('Investigação compartilhada com sucesso!');
-        setEmail('');
-        setPermission('view');
-        loadSharedUsers();
-        setTimeout(() => setSuccess(''), 3000);
-      } else {
-        const data = await response.json();
-        setError(data.detail || 'Erro ao compartilhar');
-      }
-    } catch (error) {
-      setError('Erro ao compartilhar investigação');
-    } finally {
-      setLoading(false);
+      await shareInvestigation({ email: email.trim(), permission });
+      setSuccess('Investigação compartilhada com sucesso!');
+      setEmail('');
+      setPermission('view');
+      window.setTimeout(() => setSuccess(''), 3000);
+    } catch (error: unknown) {
+      const ax = error as { response?: { data?: { detail?: string } } };
+      const detail = ax.response?.data?.detail;
+      setError(typeof detail === 'string' ? detail : 'Erro ao compartilhar investigação');
     }
   };
 
@@ -165,18 +152,9 @@ export default function ShareModal({
     if (!confirm('Tem certeza que deseja revogar o acesso?')) return;
 
     try {
-      const response = await fetch(`/api/v1/collaboration/investigations/${investigationId}/shares/${sharedWithId}`, {
-        method: 'DELETE',
-        headers: {
-          ...authHeaders(),
-        },
-      });
-
-      if (response.ok) {
-        setSuccess('Acesso removido com sucesso');
-        loadSharedUsers();
-        setTimeout(() => setSuccess(''), 3000);
-      }
+      await revokeShare(sharedWithId);
+      setSuccess('Acesso removido com sucesso');
+      window.setTimeout(() => setSuccess(''), 3000);
     } catch (error) {
       setError('Erro ao revogar acesso');
     }
@@ -237,7 +215,7 @@ export default function ShareModal({
     return colors[index];
   };
 
-  const filteredUsers = sharedUsers.filter((user) =>
+  const filteredUsers = sharedUsers.filter((user: SharedInvestigationUser) =>
     user.shared_with_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     user.shared_with_email.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -254,26 +232,22 @@ export default function ShareModal({
   };
 
   const handleCreateGuestLink = async () => {
-    setGuestLoading(true);
-    setError('');
-    setSuccess('');
-    try {
+      setError('');
+      setSuccess('');
+      try {
       const expiresAt = computeGuestExpiresIso();
-      const res = await investigationService.createGuestLink(investigationId, {
+      const res = await createGuestLink({
         label: guestLabel.trim() ? guestLabel.trim() : null,
         expires_at: expiresAt ?? null,
         allow_downloads: guestAllowDownloads,
       });
-      setGuestCreatedUrl(absoluteGuestUrl(res.guest_view_path));
+      setGuestCreatedUrl(collaborationService.buildAbsoluteGuestUrl(res.guest_view_path));
       setGuestCreatedToken(res.token);
       setSuccess('Link de convidado criado. Copie o URL agora — o token secreto não volta a ser mostrado.');
-      await loadGuestLinks();
     } catch (err: unknown) {
       const ax = err as { response?: { data?: { detail?: string } } };
       const detail = ax.response?.data?.detail;
       setError(typeof detail === 'string' ? detail : 'Erro ao criar link de convidado');
-    } finally {
-      setGuestLoading(false);
     }
   };
 
@@ -281,9 +255,8 @@ export default function ShareModal({
     if (!confirm('Revogar este link? Quem tiver o URL deixará de conseguir aceder.')) return;
     setError('');
     try {
-      await investigationService.revokeGuestLink(investigationId, linkId);
+      await revokeGuestLink(linkId);
       setSuccess('Link revogado.');
-      await loadGuestLinks();
     } catch {
       setError('Erro ao revogar link');
     }
@@ -303,19 +276,27 @@ export default function ShareModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+      <div
+        ref={dialogRef}
+        className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        aria-describedby={descriptionId}
+      >
         {/* Header */}
         <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
           <div>
-            <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+            <h2 id={titleId} className="text-xl font-bold text-gray-900 flex items-center gap-2">
               <Share2 className="h-5 w-5 text-indigo-600" />
               Compartilhar Investigação
             </h2>
-            <p className="text-sm text-gray-600 mt-1">{investigationName}</p>
+            <p id={descriptionId} className="text-sm text-gray-600 mt-1">{investigationName}</p>
           </div>
           <button
             onClick={onClose}
             className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition"
+            aria-label="Fechar modal de compartilhamento"
           >
             <X className="h-5 w-5" />
           </button>
@@ -325,14 +306,14 @@ export default function ShareModal({
         <div className="flex-1 overflow-y-auto px-6 py-4">
           {/* Success/Error Messages */}
           {success && (
-            <div className="mb-4 bg-green-50 border border-green-200 rounded-lg p-3 flex items-center gap-2">
+            <div className="mb-4 bg-green-50 border border-green-200 rounded-lg p-3 flex items-center gap-2" role="status" aria-live="polite">
               <Check className="h-4 w-4 text-green-600" />
               <p className="text-sm text-green-800">{success}</p>
             </div>
           )}
 
           {error && (
-            <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-3 flex items-center gap-2">
+            <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-3 flex items-center gap-2" role="alert" aria-live="assertive">
               <X className="h-4 w-4 text-red-600" />
               <p className="text-sm text-red-800">{error}</p>
             </div>
@@ -347,11 +328,13 @@ export default function ShareModal({
               <div className="flex-1 relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <input
+                  ref={emailInputRef}
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleShare()}
                   placeholder="Digite o email do usuário"
+                  aria-label="Email do usuário para compartilhamento"
                   className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                 />
               </div>
@@ -370,7 +353,8 @@ export default function ShareModal({
               </select>
               <button
                 onClick={handleShare}
-                disabled={loading || !email.trim()}
+                disabled={isLoading || !email.trim()}
+                aria-disabled={isLoading || !email.trim()}
                 className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
                 <UserPlus className="h-4 w-4" />
@@ -496,10 +480,11 @@ export default function ShareModal({
               <button
                 type="button"
                 onClick={() => void handleCreateGuestLink()}
-                disabled={guestLoading}
+                disabled={isLoading}
+                aria-disabled={isLoading}
                 className="mt-3 px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700 disabled:opacity-50"
               >
-                {guestLoading ? 'A criar…' : 'Gerar link de convidado'}
+                {isLoading ? 'A criar…' : 'Gerar link de convidado'}
               </button>
 
               <div className="mt-6 border-t border-indigo-100 pt-4">

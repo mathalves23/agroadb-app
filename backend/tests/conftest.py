@@ -22,6 +22,8 @@ os.environ.setdefault("ENVIRONMENT", "test")
 warnings.filterwarnings(
     "ignore",
     message=r".*logfire-plugin.*",
+    category=UserWarning,
+    module=r"pydantic\.plugin\._loader",
 )
 
 import asyncio

@@ -13,6 +13,8 @@ from app.core.config import settings
 logger = logging.getLogger(__name__)
 
 _tracer_provider: Optional[object] = None
+_fastapi_apps_instrumented: set[int] = set()
+_celery_apps_instrumented: set[int] = set()
 
 
 def ensure_trace_provider() -> None:
@@ -65,6 +67,9 @@ def instrument_fastapi(app) -> None:
     """Instrumentação automática de pedidos HTTP."""
     if not settings.OTEL_ENABLED:
         return
+    app_id = id(app)
+    if app_id in _fastapi_apps_instrumented:
+        return
     ensure_trace_provider()
     from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 
@@ -72,17 +77,22 @@ def instrument_fastapi(app) -> None:
         app,
         excluded_urls="/health,/metrics,/favicon.ico",
     )
+    _fastapi_apps_instrumented.add(app_id)
 
 
 def instrument_celery(celery_app) -> None:
     """Spans por tarefa Celery (requer TracerProvider inicializado no worker)."""
     if not settings.OTEL_ENABLED:
         return
+    app_id = id(celery_app)
+    if app_id in _celery_apps_instrumented:
+        return
     ensure_trace_provider()
     try:
         from opentelemetry.instrumentation.celery import CeleryInstrumentor
 
         CeleryInstrumentor().instrument(celery_app)
+        _celery_apps_instrumented.add(app_id)
         logger.info("OpenTelemetry: Celery instrumentado")
     except Exception as exc:
         logger.warning("OpenTelemetry Celery instrumentation falhou: %s", exc)

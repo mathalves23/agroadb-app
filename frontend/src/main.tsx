@@ -5,7 +5,9 @@ import { Toaster } from 'react-hot-toast'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { ThemeProvider } from './contexts/ThemeContext'
 import App from './App'
+import { initializeOfflineQueueSync } from './lib/offlineQueue'
 import { registerServiceWorker } from './lib/pwa'
+import { registerOfflineProcessors } from './lib/registerOfflineProcessors'
 import './index.css'
 
 const queryClient = new QueryClient({
@@ -19,6 +21,8 @@ const queryClient = new QueryClient({
   },
 })
 
+registerOfflineProcessors()
+initializeOfflineQueueSync()
 void registerServiceWorker()
 
 ReactDOM.createRoot(document.getElementById('root')!).render(

@@ -181,14 +181,32 @@ describe('NewInvestigationPage Integration Tests', () => {
 
     expect(screen.getByText(/tipo de pesquisa/i)).toBeInTheDocument()
     expect(screen.getByText(/bases que serão consultadas/i)).toBeInTheDocument()
+    expect(screen.getByRole('radiogroup', { name: /tipo de pesquisa/i })).toBeInTheDocument()
   })
 
   it('should have all priority level buttons', () => {
     render(<NewInvestigationPage />, { wrapper: createWrapper() })
 
     expect(screen.getByText('Prioridade')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /baixa/i })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /média/i })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /urgente/i })).toBeInTheDocument()
+    expect(screen.getByRole('radio', { name: /baixa/i })).toBeInTheDocument()
+    expect(screen.getByRole('radio', { name: /média/i })).toBeInTheDocument()
+    expect(screen.getByRole('radio', { name: /urgente/i })).toBeInTheDocument()
+    expect(
+      screen.getByRole('radiogroup', { name: /prioridade da investigação/i })
+    ).toBeInTheDocument()
+  })
+
+  it('supports keyboard navigation for search type cards', async () => {
+    const user = userEvent.setup()
+    render(<NewInvestigationPage />, { wrapper: createWrapper() })
+
+    const cpfButton = screen.getByRole('radio', { name: /por cpf/i })
+    cpfButton.focus()
+    await user.keyboard('{ArrowRight}')
+
+    expect(screen.getByRole('radio', { name: /por cnpj/i })).toHaveAttribute(
+      'aria-checked',
+      'true'
+    )
   })
 })

@@ -46,6 +46,62 @@ Este documento define **o que significa “arquitetura limpa” neste repositór
 - Páginas **não** importam outras páginas.
 - Lógica de API concentrada em **services**; `axios` configurado em `lib/axios.ts`.
 - Preferir **componentes pequenos** e listas de dependências de hooks corretas (avisos ESLint tratados por ficheiro ao refatorar).
+- Páginas grandes devem ser quebradas em cinco tipos de módulo, sempre que o tamanho ou acoplamento crescer:
+  - **composição visual** na própria página;
+  - **hooks de dados** em `src/pages/<contexto>/use*.ts`;
+  - **regras puras** em `analysis.ts`, `summary.ts`, `utils.ts`;
+  - **componentes de seção/aba** em `src/pages/<contexto>/`;
+  - **efeitos transversais** em `src/services/` ou `src/lib/`.
+- Componentes visuais não devem fazer `fetch`/`axios` direto; chamadas remotas ficam em `services/` e coordenação com browser state em hooks dedicados.
+- Estado compartilhado do app shell deve privilegiar `hooks + services + eventos` antes de crescer a store global.
+- Recursos de resiliência como PWA, offline queue, snapshots, conectividade e sessão devem ser tratados como **infra cliente**, não espalhados por páginas.
+
+## Convenções por tipo de artefacto
+
+### Páginas
+
+- Arquivos de rota em `src/pages/`.
+- Páginas devem orquestrar layout, estado derivado e navegação, mas evitar regras longas e mutações inline.
+- Quando uma página passar de um único fluxo claro, extrair para pasta própria com `hook + componentes + utilitários`.
+
+### Hooks
+
+- Hooks de domínio e de UI devem ficar próximos do contexto (`src/hooks/` para transversais, `src/pages/<contexto>/` para específicos).
+- Hooks devem expor estado e ações; detalhes de transporte, cache e side effects ficam encapsulados.
+- Hooks com temporizadores, listeners globais ou browser APIs precisam de limpeza explícita (`removeEventListener`, `clearInterval`, etc.).
+
+### Services
+
+- Todo acesso HTTP parte de `src/services/` ou `backend/app/services/`.
+- Services devem ser o ponto único para chamadas remotas, retries, sincronização offline e mapeamento DTO.
+- Componentes e páginas não devem reconstruir URLs, headers de autenticação ou lógica de fallback já existente.
+
+### Schemas e contratos
+
+- Backend: schemas Pydantic ficam na fronteira HTTP e models de domínio ficam desacoplados de FastAPI.
+- Frontend: tipos de API em `src/types/` e utilitários puros recebem tipos explícitos; evitar `any` novo sem justificativa.
+- Mudanças de contrato estável devem vir com teste de contrato, smoke ou teste de integração equivalente.
+
+### Testes
+
+- Testes unitários cobrem utilitários, hooks e componentes com regra relevante.
+- Testes de integração cobrem páginas grandes, fluxos críticos e side effects entre camadas.
+- E2E cobrem jornadas de valor: autenticação, navegação principal, PWA/offline, resiliência e regressões visíveis.
+- Para frontend, qualquer mudança em app shell, sessão, PWA, conectividade ou offline queue deve vir com teste direcionado.
+- Para backend, alterações em startup/bootstrap, segurança, contrato público ou integrações devem ampliar cobertura correspondente.
+
+### Bootstrap e startup (backend)
+
+- `app/main.py` deve permanecer como entrypoint fino: app factory, middlewares, routers e health endpoints.
+- Qualquer side effect de startup deve ir para `app/bootstrap.py` ou módulos equivalentes, com flags de ambiente e testes dedicados.
+- Workers, fila, telemetria e métricas devem poder ser habilitados/desabilitados sem quebrar o boot HTTP.
+
+## Fluxo de mudança recomendado
+
+1. Alterar primeiro o artefacto mais interno possível: utilitário, service ou hook.
+2. Subir a mudança para página/componente apenas depois de a regra estar isolada.
+3. Validar impacto em offline/PWA, acessibilidade, telemetria e cobertura antes de considerar a entrega pronta.
+4. Registrar decisões maiores em ADR quando a mudança criar uma convenção nova ou tradeoff duradouro.
 
 **ESLint** (`.eslintrc.cjs`): regras alinhadas a TypeScript moderno; `any` só como aviso até a suíte de tipos estabilizar.
 

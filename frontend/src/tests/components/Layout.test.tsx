@@ -12,6 +12,21 @@ jest.mock('@/components/IntegrationRetryBanner', () => ({
   default: () => null,
 }))
 
+jest.mock('@/components/PwaUpdatePrompt', () => ({
+  __esModule: true,
+  default: () => null,
+}))
+
+jest.mock('@/components/GlobalCommandPalette', () => ({
+  __esModule: true,
+  default: () => null,
+}))
+
+jest.mock('@/components/SessionExpiryBanner', () => ({
+  __esModule: true,
+  default: () => null,
+}))
+
 describe('Layout', () => {
   it('expõe skip link, landmark principal e sidebar identificável', () => {
     render(

@@ -45,6 +45,7 @@ class UserResponse(UserBase):
     created_at: datetime
     updated_at: datetime
 
+
 class UserLogin(BaseModel):
     """Schema for user login"""
 

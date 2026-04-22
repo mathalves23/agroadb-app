@@ -1,6 +1,6 @@
 # Makefile para AgroADB
 
-.PHONY: help install dev-up dev-down migrate test lint format clean promtool-check product-manual-check
+.PHONY: help install dev-up dev-down migrate test lint format clean promtool-check product-manual-check backend-lint backend-format-check backend-test-ci backend-check frontend-check frontend-coverage-critical
 
 # Cores para output
 GREEN  := $(shell tput -Txterm setaf 2)
@@ -12,6 +12,8 @@ RESET  := $(shell tput -Txterm sgr0)
 BACKEND_PYTEST := $(shell if test -x backend/.venv-agroadb/bin/pytest; then echo '.venv-agroadb/bin/pytest'; else echo 'pytest'; fi)
 BACKEND_PYTEST_SAFE := PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 $(BACKEND_PYTEST) -p pytest_asyncio.plugin
 BACKEND_PYTEST_COV_SAFE := PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 $(BACKEND_PYTEST) -p pytest_asyncio.plugin -p pytest_cov
+BACKEND_TEST_CI_ARGS := tests/test_ci_smoke.py tests/test_observability.py tests/test_security.py tests/test_auth.py tests/test_ml.py \
+	tests/contract/test_public_api_contract.py tests/test_integrations_helpers.py tests/unit/test_legal_query_audit.py tests/services/test_investigation_access.py tests/services/test_datajud_proxy.py tests/services/test_investigation_enrich_demo.py
 
 help: ## Mostra este menu de ajuda
 	@echo ''
@@ -87,8 +89,7 @@ create-superuser: ## Cria superutilizador (defina AGROADB_ADMIN_EMAIL e AGROADB_
 ## Testes
 test: ## Mesmo subconjunto de pytest que `.github/workflows/ci.yml` (antes: pip install -r backend/requirements.txt; Postgres/Redis como no CI se aplicável)
 	@echo "🧪 Executando testes do backend (subconjunto CI)..."
-	cd backend && $(BACKEND_PYTEST_SAFE) tests/test_ci_smoke.py tests/test_observability.py tests/test_security.py tests/test_auth.py tests/test_ml.py \
-		tests/contract/test_public_api_contract.py tests/test_integrations_helpers.py tests/unit/test_legal_query_audit.py tests/services/test_investigation_access.py tests/services/test_datajud_proxy.py tests/services/test_investigation_enrich_demo.py -v
+	cd backend && $(BACKEND_PYTEST_SAFE) $(BACKEND_TEST_CI_ARGS) -v
 	@echo "✅ Testes concluídos! (suíte completa: cd backend && pytest tests/)"
 
 test-cov: ## Executa testes com cobertura
@@ -113,9 +114,35 @@ promtool-check: ## Valida monitoring/alerts/agroadb.yml (Docker + promtool ou bi
 ## Code Quality
 lint: ## Executa linters (backend: erros críticos; frontend: ESLint)
 	@echo "🔍 Executando linters..."
-	cd backend && flake8 app --count --select=E9,F63,F7,F82 --show-source --statistics
+	$(MAKE) backend-lint
 	cd frontend && npm run lint
 	@echo "✅ Linting concluído!"
+
+backend-lint: ## Backend: flake8 crítico + black/isort em modo check
+	cd backend && flake8 app tests --count --select=E9,F63,F7,F82 --show-source --statistics
+	cd backend && black --check app tests alembic
+	cd backend && isort --check-only app tests alembic --profile black
+
+backend-format-check: ## Backend: apenas verificação de formatação
+	cd backend && black --check app tests alembic
+	cd backend && isort --check-only app tests alembic --profile black
+
+backend-test-ci: ## Backend: mesmo subconjunto de testes usado no CI
+	cd backend && $(BACKEND_PYTEST_COV_SAFE) $(BACKEND_TEST_CI_ARGS) -v --cov=app --cov-report=xml --cov-report=term-missing
+	cd backend && python scripts/check_critical_coverage.py
+
+backend-check: backend-lint backend-test-ci ## Backend: validação completa equivalente ao CI
+
+frontend-coverage-critical: ## Frontend: valida cobertura mínima das áreas críticas do app shell
+	cd frontend && npm run coverage:critical
+
+frontend-check: ## Frontend: validação alinhada ao CI
+	cd frontend && npm run lint
+	cd frontend && npm run type-check
+	cd frontend && npm run check-product-manual
+	cd frontend && npm run build
+	cd frontend && npm run test:ci
+	cd frontend && npm run coverage:critical
 
 format: ## Formata código Python (Black + isort; perfis em backend/pyproject.toml)
 	@echo "✨ Formatando código Python..."

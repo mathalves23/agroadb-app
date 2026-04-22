@@ -1,311 +1,120 @@
 # 6. Testes - AgroADB
 
-## 🧪 Visão Geral
+## Visão geral
 
-O AgroADB possui uma suíte de testes completa com **156 testes** e **60%+ de cobertura** garantida.
+O AgroADB usa três camadas complementares de validação:
 
----
+- **backend**: pytest para serviços, contrato público, segurança, observabilidade e bootstrap;
+- **frontend**: Jest + Testing Library para componentes, hooks, utilitários e páginas;
+- **E2E**: Playwright para fluxos críticos, PWA/offline e resiliência do app shell.
 
-## 📊 Estatísticas
+Os números exatos de testes variam ao longo do tempo; a referência operacional é sempre o CI e os comandos abaixo.
 
-- **Total**: 156 testes
-- **Backend**: 66 testes (60%+ cobertura)
-- **Frontend**: 90 testes (60%+ cobertura)
-- **Tempo de Execução**: ~2 minutos
-- **CI/CD**: Integrado
-
----
-
-## 🐍 Backend Tests
-
-### Configuração (pyproject.toml)
-
-```toml
-[tool.pytest.ini_options]
-testpaths = ["tests"]
-addopts = [
-    "-v",
-    "--cov=app",
-    "--cov-fail-under=60",
-]
-```
-
-### Fixtures (conftest.py)
-
-```python
-@pytest.fixture
-def db() -> Session:
-    """Database de teste"""
-    Base.metadata.create_all(bind=engine)
-    session = TestingSessionLocal()
-    yield session
-    Base.metadata.drop_all(bind=engine)
-
-@pytest.fixture
-def test_user(db: Session) -> User:
-    """Usuário de teste"""
-    user = User(email="test@example.com", ...)
-    db.add(user)
-    db.commit()
-    return user
-```
-
-### Executar
-
-```bash
-cd backend
-
-# Todos os testes
-pytest tests/ -v
-
-# Com cobertura
-pytest tests/ --cov=app --cov-report=html
-
-# Teste específico
-pytest tests/test_auth.py::TestAuthEndpoints::test_login_success -v
-
-# Watch mode
-ptw tests/
-```
-
-### Categorias
-
-**test_auth.py** (25 testes):
-- Registro de usuário
-- Login/Logout
-- JWT tokens
-- Refresh tokens
-- Mudança de senha
-- Segurança
-
-**test_investigation_service.py** (18 testes):
-- CRUD completo
-- Validações
-- Filtros
-- Paginação
-- Busca
-
-**test_cache.py** (13 testes):
-- Set/Get
-- TTL
-- Delete patterns
-- Performance
-
-**test_legal_integration.py** (10 testes):
-- PJe integration
-- Due diligence
-- Mocks de API externa
-
----
-
-## ⚛️ Frontend Tests
-
-### Configuração (package.json)
-
-```json
-{
-  "jest": {
-    "preset": "ts-jest",
-    "testEnvironment": "jsdom",
-    "coverageThreshold": {
-      "global": {
-        "branches": 60,
-        "functions": 60,
-        "lines": 60,
-        "statements": 60
-      }
-    }
-  }
-}
-```
-
-### Setup (setupTests.ts)
-
-```typescript
-import '@testing-library/jest-dom';
-
-// Mocks globais
-global.IntersectionObserver = class {...};
-global.ResizeObserver = class {...};
-window.matchMedia = jest.fn();
-```
-
-### Executar
-
-```bash
-cd frontend
-
-# Todos os testes
-npm test
-
-# Com cobertura
-npm run test:ci
-
-# Watch mode
-npm run test:watch
-
-# Teste específico
-npm test -- Controls.test.tsx
-```
-
-### Exemplo de Teste
-
-```typescript
-import { render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import { Button } from '../Controls';
-
-describe('Button Component', () => {
-  it('handles click events', async () => {
-    const handleClick = jest.fn();
-    render(<Button onClick={handleClick}>Click</Button>);
-    
-    await userEvent.click(screen.getByText('Click'));
-    
-    expect(handleClick).toHaveBeenCalledTimes(1);
-  });
-});
-```
-
-### Categorias
-
-**Controls.test.tsx** (35 testes):
-- Button (7)
-- Input (6)
-- Badge (4)
-- Avatar (4)
-- Progress (5)
-
-**Cards.test.tsx** (16 testes):
-- Card (4)
-- StatsCard (5)
-- AlertCard (4)
-- EmptyState (3)
-
-**Overlays.test.tsx** (22 testes):
-- Modal (6)
-- Tabs (5)
-- Accordion (5)
-- Dropdown (6)
-
-**DataTable.test.tsx** (17 testes):
-- Rendering
-- Sorting
-- Filtering
-- Pagination
-- Selection
-
----
-
-## 🎯 Boas Práticas
-
-### AAA Pattern
-
-```python
-def test_example():
-    # Arrange
-    user = create_test_user()
-    
-    # Act
-    result = login_user(user.email, "password")
-    
-    # Assert
-    assert result.success is True
-```
-
-### Mock de APIs
-
-```python
-@patch('httpx.AsyncClient.get')
-async def test_external_api(mock_get):
-    mock_response = MagicMock()
-    mock_response.status_code = 200
-    mock_response.json.return_value = {"data": "test"}
-    mock_get.return_value = mock_response
-    
-    result = await fetch_external_data()
-    
-    assert result["data"] == "test"
-```
-
-### Test Isolation
-
-```python
-@pytest.fixture(scope="function")
-def db():
-    # Setup
-    Base.metadata.create_all()
-    yield session
-    # Teardown
-    Base.metadata.drop_all()
-```
-
----
-
-## 📊 Coverage Reports
+## Comandos oficiais
 
 ### Backend
 
 ```bash
-cd backend
-pytest tests/ --cov=app --cov-report=html
+make backend-check
+```
 
-# Abrir report
-open htmlcov/index.html
+Esse comando roda:
+- lint crítico Python;
+- subset de testes alinhado ao CI;
+- cobertura XML;
+- verificação de cobertura crítica por arquivo.
+
+Execução manual equivalente:
+
+```bash
+cd backend
+PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 pytest -p pytest_asyncio.plugin tests/ -q
 ```
 
 ### Frontend
 
 ```bash
+make frontend-check
+```
+
+Esse comando roda:
+- `npm run lint`
+- `npm run type-check`
+- `npm run check-product-manual`
+- `npm run build`
+- `npm run test:ci`
+- `npm run coverage:critical`
+
+### E2E
+
+```bash
 cd frontend
-npm run test:ci
-
-# Abrir report
-open coverage/index.html
+npm run test:e2e:ci
 ```
 
----
+## Onde colocar cada tipo de teste
 
-## 🔄 CI/CD Integration
+### Backend
 
-Os testes são executados automaticamente no GitHub Actions:
+- `tests/services/`: regras de negócio e serviços de aplicação
+- `tests/contract/`: endpoints e contratos públicos estáveis
+- `tests/test_bootstrap.py`, `tests/test_main_application.py`: startup, app factory e side effects de infraestrutura
+- `tests/test_security.py`, `tests/test_auth.py`: autenticação, sessão e segurança
 
-```yaml
-jobs:
-  backend-tests:
-    steps:
-      - name: Run tests
-        run: pytest tests/ --cov=app --cov-fail-under=60
-  
-  frontend-tests:
-    steps:
-      - name: Run tests
-        run: npm run test:ci
-```
+### Frontend
 
----
+- `src/tests/lib/`: utilitários puros e infraestrutura cliente
+- `src/tests/hooks/`: hooks com timers, browser APIs, sessão, PWA e conectividade
+- `src/tests/components/`: componentes compartilhados e app shell
+- `src/tests/pages/`: páginas e fluxos por rota
+- `src/tests/integration/`: jornadas maiores que cruzam várias camadas
 
-## ✅ Checklist de Testes
+### E2E
 
-Antes de fazer commit:
+- `frontend/e2e/critical-flows.spec.ts`: fluxos centrais de navegação/autenticação
+- `frontend/e2e/pwa-offline-resilience.spec.ts`: PWA, offline, reconexão, snapshots e sessão persistida
 
-- [ ] Todos os testes passam localmente
-- [ ] Cobertura >= 60%
-- [ ] Nenhum teste skipped sem justificativa
-- [ ] Novos recursos têm testes
-- [ ] Edge cases cobertos
-- [ ] Mocks apropriados
-- [ ] Assertions claras
+## Cobertura mínima contínua
 
----
+O projeto mantém dois níveis de controlo:
 
-## 📞 Suporte
+### 1. Threshold global da suíte frontend
 
-Problemas com testes?
+Definido no `package.json` do frontend para evitar regressões muito grandes na base como um todo.
 
-- 📧 Email: dev@agroadb.com
-- 💬 Slack: #dev-tests
+### 2. Threshold por área crítica
 
----
+Aplicado automaticamente no CI e localmente pelos scripts:
 
-**Atualizado**: 05/02/2026
+- frontend: `frontend/scripts/check-critical-coverage.mjs`
+- backend: `backend/scripts/check_critical_coverage.py`
+
+Arquivos críticos atualmente monitorados:
+
+### Frontend
+
+- `src/components/ConnectionStatus.tsx`
+- `src/components/GlobalCommandPalette.tsx`
+- `src/hooks/useSessionGuard.ts`
+- `src/hooks/usePwaUpdatePrompt.ts`
+- `src/lib/offlineQueue.ts`
+
+### Backend
+
+- `app/bootstrap.py`
+- `app/main.py`
+- `app/core/security.py`
+
+## Regras práticas
+
+- Mudou regra de negócio: adicionar ou ajustar teste unitário/integrado.
+- Mudou shell, sessão, PWA, offline ou conectividade: adicionar teste focado no componente/hook e rever E2E quando necessário.
+- Mudou startup, workers, fila, telemetria ou health checks: ampliar teste de bootstrap/app factory.
+- Evitar testes frágeis dependentes de detalhes de implementação quando um comportamento observável resolve melhor.
+
+## Critérios mínimos antes de subir PR
+
+- Comandos oficiais passaram localmente nas áreas afetadas.
+- Cobertura crítica continua verde.
+- Não houve regressão de acessibilidade básica nos fluxos alterados.
+- Impacto em offline/PWA e telemetria foi avaliado quando aplicável.

@@ -2,10 +2,9 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import NotificationDropdown from '@/components/NotificationDropdown'
 
-jest.mock('@/services/notificationService', () => ({
-  notificationService: {
-    getUnreadCount: jest.fn().mockResolvedValue(2),
-    list: jest.fn().mockResolvedValue([
+jest.mock('@/hooks/useNotifications', () => ({
+  useNotifications: () => ({
+    notifications: [
       {
         id: 1,
         type: 'system',
@@ -16,11 +15,14 @@ jest.mock('@/services/notificationService', () => ({
         created_at: '2026-04-22T10:00:00Z',
         action_url: '/notifications',
       },
-    ]),
-    markAsRead: jest.fn().mockResolvedValue(undefined),
-    markAllAsRead: jest.fn().mockResolvedValue(undefined),
-    delete: jest.fn().mockResolvedValue(undefined),
-  },
+    ],
+    unreadCount: 2,
+    isLoading: false,
+    refresh: jest.fn(),
+    markAsRead: jest.fn(),
+    markAllAsRead: jest.fn(),
+    deleteNotification: jest.fn(),
+  }),
 }))
 
 describe('NotificationDropdown', () => {

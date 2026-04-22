@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect, useMemo, useRef, type KeyboardEvent as ReactKeyboardEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -62,12 +62,14 @@ export default function NewInvestigationPage() {
   const navigate = useNavigate()
   const [error, setError] = useState<string>('')
   const [docType, setDocType] = useState<'none' | 'cpf' | 'cnpj'>('none')
+  const errorRef = useRef<HTMLDivElement>(null)
 
   const {
     register,
     handleSubmit,
     watch,
     setValue,
+    setFocus,
     formState: { errors },
   } = useForm<InvestigationFormData>({
     resolver: zodResolver(investigationSchema),
@@ -81,6 +83,41 @@ export default function NewInvestigationPage() {
 
   const watchCpfCnpj = watch('target_cpf_cnpj')
   const watchSearchType = watch('search_type') as SearchType
+  const searchTypeOptions = useMemo(
+    () => [
+      { value: 'all' as SearchType, label: 'Todas as bases', icon: Zap, desc: 'Nome + documento' },
+      { value: 'cpf' as SearchType, label: 'Por CPF', icon: User, desc: 'Apenas CPF' },
+      { value: 'cnpj' as SearchType, label: 'Por CNPJ', icon: Building2, desc: 'Apenas CNPJ' },
+      { value: 'nome' as SearchType, label: 'Por nome', icon: FileText, desc: 'Apenas nome' },
+    ],
+    []
+  )
+  const priorityOptions = useMemo(
+    () => [
+      { value: 1, label: 'Baixa', color: 'bg-gray-200' },
+      { value: 2, label: 'Normal', color: 'bg-blue-300' },
+      { value: 3, label: 'Média', color: 'bg-amber-300' },
+      { value: 4, label: 'Alta', color: 'bg-orange-400' },
+      { value: 5, label: 'Urgente', color: 'bg-red-500' },
+    ],
+    []
+  )
+
+  useEffect(() => {
+    if (errors.target_cpf_cnpj) {
+      setFocus('target_cpf_cnpj')
+      return
+    }
+    if (errors.target_name) {
+      setFocus('target_name')
+    }
+  }, [errors.target_cpf_cnpj, errors.target_name, setFocus])
+
+  useEffect(() => {
+    if (error) {
+      errorRef.current?.focus()
+    }
+  }, [error])
 
   const handleDocChange = useCallback(
     (value: string) => {
@@ -141,7 +178,27 @@ export default function NewInvestigationPage() {
       ? 'CPF'
       : watchSearchType === 'cnpj'
         ? 'CNPJ'
-        : 'CPF ou CNPJ'
+      : 'CPF ou CNPJ'
+
+  const handleSearchTypeKeyDown = (event: ReactKeyboardEvent<HTMLButtonElement>, index: number) => {
+    if (event.key !== 'ArrowRight' && event.key !== 'ArrowLeft') return
+    event.preventDefault()
+    const nextIndex =
+      event.key === 'ArrowRight'
+        ? (index + 1) % searchTypeOptions.length
+        : (index - 1 + searchTypeOptions.length) % searchTypeOptions.length
+    setValue('search_type', searchTypeOptions[nextIndex].value)
+  }
+
+  const handlePriorityKeyDown = (event: ReactKeyboardEvent<HTMLButtonElement>, index: number) => {
+    if (event.key !== 'ArrowRight' && event.key !== 'ArrowLeft') return
+    event.preventDefault()
+    const nextIndex =
+      event.key === 'ArrowRight'
+        ? (index + 1) % priorityOptions.length
+        : (index - 1 + priorityOptions.length) % priorityOptions.length
+    setValue('priority', priorityOptions[nextIndex].value)
+  }
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
@@ -165,9 +222,15 @@ export default function NewInvestigationPage() {
         </div>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6" aria-busy={mutation.isPending}>
         {error && (
-          <div className="flex items-center gap-3 bg-red-50 border border-red-200 rounded-xl p-4">
+          <div
+            ref={errorRef}
+            className="flex items-center gap-3 bg-red-50 border border-red-200 rounded-xl p-4"
+            role="alert"
+            aria-live="assertive"
+            tabIndex={-1}
+          >
             <AlertTriangle className="h-5 w-5 text-red-500 shrink-0" />
             <p className="text-sm text-red-800">{error}</p>
           </div>
@@ -176,17 +239,15 @@ export default function NewInvestigationPage() {
         {/* Tipo de busca */}
         <div className="bg-white rounded-xl border border-gray-200/60 p-6">
           <h2 className="text-sm font-semibold text-gray-700 mb-4">Tipo de pesquisa</h2>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            {([
-              { value: 'all' as SearchType, label: 'Todas as bases', icon: Zap, desc: 'Nome + documento' },
-              { value: 'cpf' as SearchType, label: 'Por CPF', icon: User, desc: 'Apenas CPF' },
-              { value: 'cnpj' as SearchType, label: 'Por CNPJ', icon: Building2, desc: 'Apenas CNPJ' },
-              { value: 'nome' as SearchType, label: 'Por nome', icon: FileText, desc: 'Apenas nome' },
-            ]).map((type) => (
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4" role="radiogroup" aria-label="Tipo de pesquisa">
+            {searchTypeOptions.map((type, index) => (
               <button
                 key={type.value}
                 type="button"
                 onClick={() => setValue('search_type', type.value)}
+                onKeyDown={(event) => handleSearchTypeKeyDown(event, index)}
+                role="radio"
+                aria-checked={watchSearchType === type.value}
                 className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition ${
                   watchSearchType === type.value
                     ? 'border-emerald-500 bg-emerald-50/50'
@@ -235,17 +296,21 @@ export default function NewInvestigationPage() {
                   value={watchCpfCnpj || ''}
                   onChange={(e) => handleDocChange(e.target.value)}
                   placeholder={docPlaceholder}
+                  aria-invalid={errors.target_cpf_cnpj ? true : undefined}
+                  aria-describedby={
+                    errors.target_cpf_cnpj ? 'target-cpf-cnpj-error' : 'target-cpf-cnpj-help'
+                  }
                   className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-gray-200 bg-white text-gray-900 placeholder-gray-400 font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition"
                   maxLength={18}
                 />
               </div>
               {errors.target_cpf_cnpj && (
-                <p className="mt-1.5 text-xs text-red-600 flex items-center gap-1">
+                <p id="target-cpf-cnpj-error" className="mt-1.5 text-xs text-red-600 flex items-center gap-1">
                   <AlertTriangle className="h-3 w-3" />
                   {errors.target_cpf_cnpj.message}
                 </p>
               )}
-              <p className="mt-1.5 text-xs text-gray-400">
+              <p id="target-cpf-cnpj-help" className="mt-1.5 text-xs text-gray-400">
                 O CPF/CNPJ será usado para pesquisar em SNCR, SIGEF, SICAR, DataJud, Transparência, BrasilAPI, CVM e outras bases.
               </p>
             </div>
@@ -265,11 +330,13 @@ export default function NewInvestigationPage() {
                   id="target_name"
                   type="text"
                   placeholder={watchSearchType === 'nome' ? 'Ex: João da Silva' : 'Nome do investigado (opcional)'}
+                  aria-invalid={errors.target_name ? true : undefined}
+                  aria-describedby={errors.target_name ? 'target-name-error' : undefined}
                   className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-gray-200 bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition"
                 />
               </div>
               {errors.target_name && (
-                <p className="mt-1.5 text-xs text-red-600 flex items-center gap-1">
+                <p id="target-name-error" className="mt-1.5 text-xs text-red-600 flex items-center gap-1">
                   <AlertTriangle className="h-3 w-3" />
                   {errors.target_name.message}
                 </p>
@@ -316,18 +383,15 @@ export default function NewInvestigationPage() {
           {/* Prioridade */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-3">Prioridade</label>
-            <div className="flex items-center gap-3">
-              {[
-                { value: 1, label: 'Baixa', color: 'bg-gray-200' },
-                { value: 2, label: 'Normal', color: 'bg-blue-300' },
-                { value: 3, label: 'Média', color: 'bg-amber-300' },
-                { value: 4, label: 'Alta', color: 'bg-orange-400' },
-                { value: 5, label: 'Urgente', color: 'bg-red-500' },
-              ].map((level) => (
+            <div className="flex items-center gap-3" role="radiogroup" aria-label="Prioridade da investigação">
+              {priorityOptions.map((level, index) => (
                 <button
                   key={level.value}
                   type="button"
                   onClick={() => setValue('priority', level.value)}
+                  onKeyDown={(event) => handlePriorityKeyDown(event, index)}
+                  role="radio"
+                  aria-checked={watch('priority') === level.value}
                   className={`flex flex-col items-center gap-1 px-3 py-2 rounded-lg border-2 transition ${
                     watch('priority') === level.value
                       ? 'border-emerald-500 bg-emerald-50/50'
@@ -402,6 +466,7 @@ export default function NewInvestigationPage() {
           <button
             type="submit"
             disabled={mutation.isPending}
+            aria-disabled={mutation.isPending}
             className="inline-flex items-center gap-2 px-6 py-2.5 rounded-lg bg-emerald-600 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50 transition shadow-sm"
           >
             {mutation.isPending ? (

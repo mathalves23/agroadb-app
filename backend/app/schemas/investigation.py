@@ -89,6 +89,7 @@ class InvestigationResponse(BaseModel):
     risk_score_reviewer_name: Optional[str] = None
     can_acknowledge_risk_score_review: bool = False
 
+
 class InvestigationListResponse(BaseModel):
     """Schema for paginated investigation list"""
 

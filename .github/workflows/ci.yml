@@ -69,20 +69,9 @@ jobs:
           pip install "pip-audit>=2.7,<3"
           pip-audit -r backend/requirements.txt --desc on
 
-      - name: Flake8 (erros sintáticos e nomes indefinidos)
-        run: |
-          cd backend
-          flake8 app tests --count --select=E9,F63,F7,F82 --show-source --statistics
-
-      - name: Black + isort (formatação e ordem de imports)
-        run: |
-          cd backend
-          black --check app tests alembic
-          isort --check-only app tests alembic --profile black
-
       # Política: CI verde = barra mínima (subconjunto). Suíte completa: workflow noturno nightly-backend-full-suite.yml + pytest tests/ local.
       # Segredos opcionais (repo/fork sem secrets usa os defaults abaixo). Ver docs/dev/github-setup.md
-      - name: Pytest (subconjunto — smoke, segurança, auth, ML, contrato, integrações helpers, observabilidade)
+      - name: Backend check (Makefile alinhado ao ambiente local)
         env:
           _CI_DATABASE_URL: ${{ secrets.CI_DATABASE_URL }}
           _CI_REDIS_URL: ${{ secrets.CI_REDIS_URL }}
@@ -95,10 +84,7 @@ jobs:
           export REDIS_URL="${_CI_REDIS_URL:-redis://localhost:6379/0}"
           export SECRET_KEY="${_CI_SECRET_KEY:-ci-test-secret-key-at-least-32-chars-long}"
           export ENCRYPTION_KEY="${_CI_ENCRYPTION_KEY:-MDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDA=}"
-          cd backend
-          pytest tests/test_ci_smoke.py tests/test_observability.py tests/test_security.py tests/test_auth.py tests/test_ml.py \
-            tests/contract/test_public_api_contract.py tests/test_integrations_helpers.py tests/unit/test_legal_query_audit.py tests/services/test_investigation_access.py tests/services/test_datajud_proxy.py tests/services/test_investigation_enrich_demo.py -v \
-            --cov=app --cov-report=xml --cov-report=term-missing
+          make backend-check
 
       - name: Upload cobertura (opcional)
         uses: codecov/codecov-action@v4
@@ -144,6 +130,9 @@ jobs:
         working-directory: frontend
 
       - run: npm run test:ci
+        working-directory: frontend
+
+      - run: npm run coverage:critical
         working-directory: frontend
 
   e2e:

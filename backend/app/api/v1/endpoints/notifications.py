@@ -35,6 +35,7 @@ class NotificationResponse(BaseModel):
     read_at: Optional[datetime]
     created_at: datetime
 
+
 class NotificationStatsResponse(BaseModel):
     total: int
     unread: int

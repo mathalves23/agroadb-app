@@ -1,6 +1,4 @@
-"""
-FastAPI Application Entry Point
-"""
+"""FastAPI Application Entry Point."""
 
 import logging
 import traceback
@@ -18,7 +16,9 @@ from app.api.v1.router import api_router
 from app.bootstrap import shutdown_application, startup_application
 from app.core.config import settings
 from app.core.database import engine
+from app.core.prometheus_metrics import mount_prometheus_instrumentator
 from app.core.rate_limiting import RateLimitMiddleware
+from app.core.telemetry import instrument_fastapi
 
 logger = logging.getLogger(__name__)
 
@@ -36,59 +36,6 @@ async def lifespan(app: FastAPI) -> AsyncGenerator:
     logger.info("Aplicacao encerrada")
 
 
-# Create FastAPI application
-app = FastAPI(
-    title=settings.PROJECT_NAME,
-    description=settings.PROJECT_DESCRIPTION,
-    version=settings.VERSION,
-    docs_url="/api/docs",
-    redoc_url="/api/redoc",
-    openapi_url="/api/openapi.json",
-    lifespan=lifespan,
-    openapi_tags=[
-        {
-            "name": "Platform — B2B & compliance",
-            "description": "Proposta de valor, LGPD e exportações para RFPs e integradores.",
-        },
-        {"name": "Machine Learning", "description": "Risco, padrões, rede e exportação de grafos."},
-        {"name": "Investigations", "description": "Ciclo de vida das investigações patrimoniais."},
-        {
-            "name": "integrations",
-            "description": "Integrações externas (Conecta, tribunais, birôs, dados abertos).",
-        },
-        {
-            "name": "Legal Integration",
-            "description": "Consultas legais e proxies a tribunais/dados judiciais.",
-        },
-    ],
-)
-
-from app.core.prometheus_metrics import mount_prometheus_instrumentator
-from app.core.telemetry import instrument_fastapi
-
-mount_prometheus_instrumentator(app)
-instrument_fastapi(app)
-
-
-# ============================================================================
-# GLOBAL EXCEPTION HANDLER — garante que respostas de erro incluam CORS headers
-# ============================================================================
-@app.exception_handler(Exception)
-async def global_exception_handler(request: Request, exc: Exception) -> JSONResponse:
-    """Captura qualquer exceção não tratada e devolve JSON com status 500."""
-    logger.error(
-        "Unhandled exception on %s %s: %s", request.method, request.url.path, exc, exc_info=True
-    )
-    return JSONResponse(
-        status_code=500,
-        content={"detail": f"Erro interno: {str(exc)[:300]}"},
-    )
-
-
-# ============================================================================
-# MIDDLEWARE — ORDEM IMPORTA (últimos adicionados executam primeiro)
-# ============================================================================
-# 1) Security Headers (executa por último, após CORS já ter sido aplicado)
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):  # type: ignore[override]
         try:
@@ -119,70 +66,106 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         return response
 
 
-app.add_middleware(SecurityHeadersMiddleware)
-
-# 2) GZip
-app.add_middleware(GZipMiddleware, minimum_size=1000)
-
-# 3) Rate Limiting
-app.add_middleware(RateLimitMiddleware, redis_url=settings.REDIS_URL)
-
-# 4) CORS — DEVE SER O ÚLTIMO add_middleware para que seja o PRIMEIRO a processar
-# Em desenvolvimento: aceita localhost; em produção: usar CORS_ORIGINS do .env
-_cors_origins = (
-    settings.CORS_ORIGINS
-    if settings.ENVIRONMENT == "production"
-    else [
+def _build_cors_origins() -> list[str]:
+    if settings.ENVIRONMENT == "production":
+        return settings.CORS_ORIGINS
+    return [
         "http://localhost:5173",
         "http://localhost:3000",
         "http://127.0.0.1:5173",
         "http://127.0.0.1:3000",
     ]
-)
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=_cors_origins,
-    allow_credentials=settings.CORS_ALLOW_CREDENTIALS,
-    allow_methods=["*"],
-    allow_headers=["*"],
-    max_age=settings.CORS_MAX_AGE,
-)
-
-# 5) HTTPS Redirect (production only)
-if settings.FORCE_HTTPS:
-    from starlette.middleware.httpsredirect import HTTPSRedirectMiddleware
-
-    app.add_middleware(HTTPSRedirectMiddleware)
-    logger.info("🔒 HTTPS redirect habilitado")
-
-# Include API router
-app.include_router(api_router, prefix="/api/v1")
 
 
-@app.get("/health")
-async def health_check() -> dict:
-    """Health check endpoint"""
-    return {
-        "status": "healthy",
-        "version": settings.VERSION,
-        "environment": settings.ENVIRONMENT,
-    }
+def create_application() -> FastAPI:
+    app = FastAPI(
+        title=settings.PROJECT_NAME,
+        description=settings.PROJECT_DESCRIPTION,
+        version=settings.VERSION,
+        docs_url="/api/docs",
+        redoc_url="/api/redoc",
+        openapi_url="/api/openapi.json",
+        lifespan=lifespan,
+        openapi_tags=[
+            {
+                "name": "Platform — B2B & compliance",
+                "description": "Proposta de valor, LGPD e exportações para RFPs e integradores.",
+            },
+            {
+                "name": "Machine Learning",
+                "description": "Risco, padrões, rede e exportação de grafos.",
+            },
+            {
+                "name": "Investigations",
+                "description": "Ciclo de vida das investigações patrimoniais.",
+            },
+            {
+                "name": "integrations",
+                "description": "Integrações externas (Conecta, tribunais, birôs, dados abertos).",
+            },
+            {
+                "name": "Legal Integration",
+                "description": "Consultas legais e proxies a tribunais/dados judiciais.",
+            },
+        ],
+    )
+
+    @app.exception_handler(Exception)
+    async def global_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+        logger.error(
+            "Unhandled exception on %s %s: %s", request.method, request.url.path, exc, exc_info=True
+        )
+        return JSONResponse(
+            status_code=500,
+            content={"detail": f"Erro interno: {str(exc)[:300]}"},
+        )
+
+    app.add_middleware(SecurityHeadersMiddleware)
+    app.add_middleware(GZipMiddleware, minimum_size=1000)
+    app.add_middleware(RateLimitMiddleware, redis_url=settings.REDIS_URL)
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=_build_cors_origins(),
+        allow_credentials=settings.CORS_ALLOW_CREDENTIALS,
+        allow_methods=["*"],
+        allow_headers=["*"],
+        max_age=settings.CORS_MAX_AGE,
+    )
+
+    if settings.FORCE_HTTPS:
+        from starlette.middleware.httpsredirect import HTTPSRedirectMiddleware
+
+        app.add_middleware(HTTPSRedirectMiddleware)
+        logger.info("🔒 HTTPS redirect habilitado")
+
+    app.include_router(api_router, prefix="/api/v1")
+
+    @app.get("/health")
+    async def health_check() -> dict:
+        return {
+            "status": "healthy",
+            "version": settings.VERSION,
+            "environment": settings.ENVIRONMENT,
+        }
+
+    @app.get("/")
+    async def root() -> dict:
+        return {
+            "message": "AgroADB API",
+            "version": settings.VERSION,
+            "docs": "/api/docs",
+            "value_proposition": "/api/v1/platform/proposition",
+        }
+
+    @app.get("/api/v1/circuit-breakers")
+    async def get_circuit_breaker_status():
+        from app.bootstrap import get_circuit_breaker_status as _get_circuit_breaker_status
+
+        return await _get_circuit_breaker_status()
+
+    mount_prometheus_instrumentator(app)
+    instrument_fastapi(app)
+    return app
 
 
-@app.get("/")
-async def root() -> dict:
-    """Root endpoint"""
-    return {
-        "message": "AgroADB API",
-        "version": settings.VERSION,
-        "docs": "/api/docs",
-        "value_proposition": "/api/v1/platform/proposition",
-    }
-
-
-@app.get("/api/v1/circuit-breakers")
-async def get_circuit_breaker_status():
-    """Circuit breaker status for all registered services."""
-    from app.bootstrap import get_circuit_breaker_status as _get_circuit_breaker_status
-
-    return await _get_circuit_breaker_status()
+app = create_application()

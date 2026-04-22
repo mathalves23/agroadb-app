@@ -18,7 +18,7 @@ from datetime import datetime, timedelta
 from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 from sqlalchemy import and_, desc, func
 from sqlalchemy.orm import Session
 
@@ -145,11 +145,12 @@ class NPSResponse(BaseModel):
     feedback: Optional[str] = None
     created_at: datetime
 
-    @validator("score")
-    def validate_score(cls, v):
-        if not 0 <= v <= 10:
+    @field_validator("score")
+    @classmethod
+    def validate_score(cls, value: int) -> int:
+        if not 0 <= value <= 10:
             raise ValueError("Score deve estar entre 0 e 10")
-        return v
+        return value
 
 
 class NPSAnalysis(BaseModel):

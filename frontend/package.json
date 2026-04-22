@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "vite",
     "check-product-manual": "node scripts/check-product-manual.mjs",
+    "coverage:critical": "node scripts/check-critical-coverage.mjs",
     "build": "npm run check-product-manual && tsc && vite build",
     "preview": "vite preview",
     "test": "jest --coverage",

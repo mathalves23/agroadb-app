@@ -30,6 +30,7 @@ class OrganizationOut(BaseModel):
     risk_ai_human_review_required: bool = False
     risk_ai_governance_reference_url: Optional[str] = None
 
+
 class OrganizationAIGovernancePatch(BaseModel):
     """Política de governança do score de risco automatizado (RIPD / diligência)."""
 

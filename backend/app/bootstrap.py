@@ -25,6 +25,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class StartupState:
     workers_started: bool = False
+    queue_connected: bool = False
     prometheus_queue_task: asyncio.Task | None = None
 
 
@@ -49,28 +50,39 @@ async def maybe_start_workers() -> bool:
     return True
 
 
-async def maybe_start_prometheus_queue_refresh() -> asyncio.Task | None:
-    """Liga refresh de gauges de filas/circuit-breakers quando permitido."""
-    if not settings.PROMETHEUS_ENABLED or not settings.CONNECT_QUEUE_ON_STARTUP:
-        return None
+async def maybe_connect_queue() -> bool:
+    """Conecta Redis da fila apenas quando explicitamente permitido."""
+    if not settings.CONNECT_QUEUE_ON_STARTUP:
+        logger.info("Conexao com fila desabilitada no startup web (CONNECT_QUEUE_ON_STARTUP=false)")
+        return False
 
     try:
         await queue_manager.connect()
-        await refresh_queue_and_registry_gauges(queue_manager)
-        logger.info("Metricas Prometheus de filas/circuitos: refresh periodico ativo")
-        return asyncio.create_task(prometheus_gauge_refresh_loop(queue_manager))
+        return True
     except Exception as exc:  # pragma: no cover - defensivo para ambiente externo
-        logger.warning("Metricas de fila/circuito: Redis indisponivel (%s) - gauges omitidos", exc)
+        logger.warning("Fila Redis indisponivel no startup web (%s)", exc)
+        return False
+
+
+async def maybe_start_prometheus_queue_refresh(queue_connected: bool) -> asyncio.Task | None:
+    """Liga refresh de gauges de filas/circuit-breakers quando permitido."""
+    if not settings.PROMETHEUS_ENABLED or not queue_connected:
         return None
+
+    await refresh_queue_and_registry_gauges(queue_manager)
+    logger.info("Metricas Prometheus de filas/circuitos: refresh periodico ativo")
+    return asyncio.create_task(prometheus_gauge_refresh_loop(queue_manager))
 
 
 async def startup_application(engine: AsyncEngine) -> StartupState:
     """Executa startup minimizando acoplamento com o app HTTP."""
     await prepare_persistence(engine)
     workers_started = await maybe_start_workers()
-    prometheus_queue_task = await maybe_start_prometheus_queue_refresh()
+    queue_connected = await maybe_connect_queue()
+    prometheus_queue_task = await maybe_start_prometheus_queue_refresh(queue_connected)
     return StartupState(
         workers_started=workers_started,
+        queue_connected=queue_connected,
         prometheus_queue_task=prometheus_queue_task,
     )
 
@@ -90,6 +102,9 @@ async def shutdown_application(engine: AsyncEngine, state: StartupState) -> None
 
     if state.workers_started:
         await orchestrator.stop_all_workers()
+
+    if state.queue_connected:
+        await queue_manager.disconnect()
 
     await engine.dispose()
 

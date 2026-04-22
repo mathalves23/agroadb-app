@@ -85,6 +85,20 @@ Object.defineProperty(window, 'scrollTo', {
   value: jest.fn(),
 })
 
+Object.defineProperty(window.navigator, 'serviceWorker', {
+  writable: true,
+  value: {
+    ready: Promise.resolve({}),
+    addEventListener: jest.fn(),
+  },
+})
+
+global.fetch = jest.fn(async () => ({
+  ok: true,
+  status: 200,
+  json: async () => ({}),
+})) as jest.Mock
+
 // Mock IntersectionObserver
 global.IntersectionObserver = class MockIntersectionObserver implements IntersectionObserver {
   readonly root: Element | null = null

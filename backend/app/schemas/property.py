@@ -43,6 +43,7 @@ class PropertyResponse(PropertyBase):
     created_at: datetime
     updated_at: datetime
 
+
 class LeaseContractBase(BaseModel):
     """Base lease contract schema"""
 
@@ -72,6 +73,7 @@ class LeaseContractResponse(LeaseContractBase):
     data_source: str
     created_at: datetime
     updated_at: datetime
+
 
 class CompanyBase(BaseModel):
     """Base company schema"""

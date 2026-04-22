@@ -18,8 +18,8 @@ import { formatDistanceToNow } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { PanelListLoader } from '@/components/Loading'
 import { NoNotificationsEmpty } from '@/components/EmptyState'
-import logger from '@/lib/logger'
-import { notificationService, type NotificationItem } from '@/services/notificationService'
+import { useNotifications } from '@/hooks/useNotifications'
+import type { NotificationItem } from '@/services/notificationService'
 
 const iconMap: Record<string, LucideIcon> = {
   FileText: FileText,
@@ -45,27 +45,26 @@ const colorMap: Record<string, string> = {
 
 export default function NotificationDropdown() {
   const [isOpen, setIsOpen] = useState(false)
-  const [notifications, setNotifications] = useState<NotificationItem[]>([])
-  const [unreadCount, setUnreadCount] = useState(0)
-  const [loading, setLoading] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    void loadUnreadCount()
-
-    // Poll for new notifications every 30 seconds
-    const interval = window.setInterval(() => {
-      void loadUnreadCount()
-    }, 30000)
-
-    return () => window.clearInterval(interval)
-  }, [])
+  const {
+    notifications,
+    unreadCount,
+    isLoading,
+    refresh,
+    markAsRead,
+    markAllAsRead,
+    deleteNotification,
+  } = useNotifications({
+    limit: 10,
+    includeRead: true,
+    pollUnreadCount: true,
+  })
 
   useEffect(() => {
     if (isOpen) {
-      void loadNotifications()
+      refresh()
     }
-  }, [isOpen])
+  }, [isOpen, refresh])
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -77,59 +76,6 @@ export default function NotificationDropdown() {
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
-
-  const loadUnreadCount = async () => {
-    try {
-      const count = await notificationService.getUnreadCount()
-      setUnreadCount(count)
-    } catch (error) {
-      logger.warn('Falha ao carregar contador de notificacoes', error, 'NotificationDropdown')
-    }
-  }
-
-  const loadNotifications = async () => {
-    setLoading(true)
-    try {
-      const data = await notificationService.list({ limit: 10, includeRead: true })
-      setNotifications(data)
-    } catch (error) {
-      logger.warn('Falha ao carregar notificacoes', error, 'NotificationDropdown')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const markAsRead = async (notificationId: number) => {
-    try {
-      await notificationService.markAsRead(notificationId)
-      setNotifications((prev) =>
-        prev.map((n) => (n.id === notificationId ? { ...n, is_read: true } : n))
-      )
-      await loadUnreadCount()
-    } catch (error) {
-      logger.warn('Falha ao marcar notificacao como lida', error, 'NotificationDropdown')
-    }
-  }
-
-  const markAllAsRead = async () => {
-    try {
-      await notificationService.markAllAsRead()
-      setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })))
-      setUnreadCount(0)
-    } catch (error) {
-      logger.warn('Falha ao marcar todas notificacoes como lidas', error, 'NotificationDropdown')
-    }
-  }
-
-  const deleteNotification = async (notificationId: number) => {
-    try {
-      await notificationService.delete(notificationId)
-      setNotifications((prev) => prev.filter((n) => n.id !== notificationId))
-      await loadUnreadCount()
-    } catch (error) {
-      logger.warn('Falha ao deletar notificacao', error, 'NotificationDropdown')
-    }
-  }
 
   const getIcon = (notification: NotificationItem) => {
     const IconComponent = iconMap[notification.icon || 'Bell']
@@ -188,7 +134,7 @@ export default function NotificationDropdown() {
 
           {/* Notifications List */}
           <div className="overflow-y-auto flex-1">
-            {loading ? (
+            {isLoading ? (
               <div className="p-6">
                 <PanelListLoader message="Carregando..." />
               </div>

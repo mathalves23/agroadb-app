@@ -1,7 +1,17 @@
-import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios'
+import axios, {
+  type AxiosError,
+  type AxiosResponse,
+  type InternalAxiosRequestConfig,
+} from 'axios'
 import { useAuthStore } from '@/stores/authStore'
 import type { TokenResponse } from '@/types/api'
 import { dispatchApiRetryClear, dispatchApiRetryWait } from '@/lib/integrationRetryEvents'
+import {
+  buildSnapshotKey,
+  canPersistOfflineSnapshot,
+  readOfflineSnapshot,
+  saveOfflineSnapshot,
+} from '@/lib/offlineSnapshot'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 const API_BASE = `${API_URL}/api/v1`
@@ -95,6 +105,17 @@ function displayUrl(config: RetryableConfig): string {
   return raw.replace(/^https?:\/\/[^/]+/i, '') || raw
 }
 
+function offlineSnapshotKey(config: RetryableConfig) {
+  return buildSnapshotKey(config.url || '', config.params)
+}
+
+function shouldUseOfflineSnapshot(error: AxiosError, config: RetryableConfig) {
+  if (config.method?.toUpperCase() !== 'GET') return false
+  if (!config.url || !config.url.startsWith('/')) return false
+  if (!error.response) return true
+  return [408, 429, 500, 502, 503, 504].includes(error.response.status)
+}
+
 api.interceptors.request.use(
   (config) => {
     const token = useAuthStore.getState().accessToken
@@ -107,7 +128,13 @@ api.interceptors.request.use(
 )
 
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    const config = response.config as RetryableConfig
+    if (canPersistOfflineSnapshot(config.url, config.method, response.data)) {
+      saveOfflineSnapshot(offlineSnapshotKey(config), response.data)
+    }
+    return response
+  },
   async (error: AxiosError) => {
     const status = error.response?.status
     const originalRequest = error.config as RetryableConfig | undefined
@@ -177,6 +204,21 @@ api.interceptors.response.use(
         return Promise.reject(error)
       } finally {
         isRefreshing = false
+      }
+    }
+
+    if (shouldUseOfflineSnapshot(error, originalRequest)) {
+      const snapshot = readOfflineSnapshot<unknown>(offlineSnapshotKey(originalRequest))
+      if (snapshot) {
+        const fallbackResponse: AxiosResponse = {
+          data: snapshot.data,
+          status: 200,
+          statusText: 'OK',
+          headers: { 'x-agroadb-offline-snapshot': String(snapshot.cachedAt) },
+          config: originalRequest,
+          request: undefined,
+        }
+        return fallbackResponse
       }
     }
 

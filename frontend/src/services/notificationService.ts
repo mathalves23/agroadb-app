@@ -1,4 +1,5 @@
 import { api } from '@/lib/axios'
+import { runOfflineCapableMutation } from '@/lib/offlineQueue'
 
 export interface NotificationItem {
   id: number
@@ -40,14 +41,20 @@ export const notificationService = {
   },
 
   async markAsRead(notificationId: number): Promise<void> {
-    await api.patch(`/notifications/${notificationId}/read`)
+    await runOfflineCapableMutation('notification.mark-read', { notificationId }, async () => {
+      await api.patch(`/notifications/${notificationId}/read`)
+    })
   },
 
   async markAllAsRead(): Promise<void> {
-    await api.post('/notifications/read-all')
+    await runOfflineCapableMutation('notification.mark-all-read', {}, async () => {
+      await api.post('/notifications/read-all')
+    })
   },
 
   async delete(notificationId: number): Promise<void> {
-    await api.delete(`/notifications/${notificationId}`)
+    await runOfflineCapableMutation('notification.delete', { notificationId }, async () => {
+      await api.delete(`/notifications/${notificationId}`)
+    })
   },
 }

@@ -1,32 +1,84 @@
-"""
-Security utilities for authentication and authorization
-"""
+"""Security utilities for authentication and authorization."""
 
+from __future__ import annotations
+
+import base64
+import hashlib
+import hmac
+import secrets
 import uuid
+import warnings
 from datetime import datetime, timedelta
 from typing import Optional
 
+import bcrypt
 from jose import JWTError, jwt
-from passlib.context import CryptContext
 
 from app.core.config import settings
 
-# Password hashing context
-# Para desenvolvimento local, usamos sha256 que é mais simples e não tem limitações
-pwd_context = CryptContext(schemes=["sha256_crypt", "bcrypt"], deprecated="auto")
+PBKDF2_PREFIX = "$agroadb$pbkdf2-sha256$"
+PBKDF2_ROUNDS = 390000
+PBKDF2_SALT_BYTES = 16
+BCRYPT_PREFIXES = ("$2a$", "$2b$", "$2y$")
+SHA256_CRYPT_PREFIX = "$5$"
+
+
+def _truncate_bcrypt_input(password: str) -> bytes:
+    raw = password.encode("utf-8")
+    if len(raw) > 72:
+        raw = raw[:72]
+    return raw
+
+
+def _hash_with_pbkdf2(password: str) -> str:
+    salt = secrets.token_bytes(PBKDF2_SALT_BYTES)
+    digest = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt, PBKDF2_ROUNDS)
+    salt_b64 = base64.urlsafe_b64encode(salt).decode("ascii").rstrip("=")
+    digest_b64 = base64.urlsafe_b64encode(digest).decode("ascii").rstrip("=")
+    return f"{PBKDF2_PREFIX}{PBKDF2_ROUNDS}${salt_b64}${digest_b64}"
+
+
+def _verify_pbkdf2(password: str, hashed_password: str) -> bool:
+    try:
+        payload = hashed_password.removeprefix(PBKDF2_PREFIX)
+        rounds_raw, salt_b64, digest_b64 = payload.split("$", 2)
+        rounds = int(rounds_raw)
+        salt = base64.urlsafe_b64decode(salt_b64 + "=" * (-len(salt_b64) % 4))
+        expected = base64.urlsafe_b64decode(digest_b64 + "=" * (-len(digest_b64) % 4))
+    except (TypeError, ValueError):
+        return False
+
+    actual = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt, rounds)
+    return hmac.compare_digest(actual, expected)
+
+
+def _verify_legacy_sha256_crypt(password: str, hashed_password: str) -> bool:
+    try:
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=DeprecationWarning)
+            import crypt
+    except ImportError:
+        return False
+
+    return hmac.compare_digest(crypt.crypt(password, hashed_password), hashed_password)
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """Verify a password against a hash"""
-    return pwd_context.verify(plain_password, hashed_password)
+    """Verify a password against current or legacy hash formats."""
+    if hashed_password.startswith(PBKDF2_PREFIX):
+        return _verify_pbkdf2(plain_password, hashed_password)
+    if hashed_password.startswith(BCRYPT_PREFIXES):
+        return bcrypt.checkpw(
+            _truncate_bcrypt_input(plain_password), hashed_password.encode("utf-8")
+        )
+    if hashed_password.startswith(SHA256_CRYPT_PREFIX):
+        return _verify_legacy_sha256_crypt(plain_password, hashed_password)
+    return False
 
 
 def get_password_hash(password: str) -> str:
-    """Hash a password"""
-    # Bcrypt tem limite de 72 bytes
-    if len(password.encode("utf-8")) > 72:
-        password = password[:72]
-    return pwd_context.hash(password)
+    """Hash a password using the default application format."""
+    return _hash_with_pbkdf2(password)
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:

@@ -47,6 +47,7 @@ describe('LoginPage Component', () => {
     expect(screen.getByLabelText(/usuário ou email/i)).toBeInTheDocument()
     expect(screen.getByLabelText(/^senha$/i)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /entrar/i })).toBeInTheDocument()
+    expect(screen.getByLabelText(/usuário ou email/i)).toHaveFocus()
   })
 
   it('should have link to register page', () => {
@@ -146,5 +147,29 @@ describe('LoginPage Component', () => {
     
     // Wait a bit to ensure no validation errors appear
     await new Promise(resolve => setTimeout(resolve, 100))
+  })
+
+  it('should expose login errors through an alert region', async () => {
+    const user = userEvent.setup()
+
+    render(
+      <BrowserRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
+        <LoginPage />
+      </BrowserRouter>
+    )
+
+    const usernameInput = screen.getByLabelText(/usuário ou email/i)
+    await user.type(usernameInput, 'testuser')
+
+    const passwordInput = screen.getByLabelText(/^senha$/i)
+    await user.type(passwordInput, '1234567')
+
+    await user.click(screen.getByRole('button', { name: /entrar/i }))
+
+    await waitFor(() => {
+      expect(screen.getByText(/senha deve ter no mínimo 8 caracteres/i)).toBeInTheDocument()
+    })
+
+    expect(screen.getByLabelText(/^senha$/i)).toHaveFocus()
   })
 })

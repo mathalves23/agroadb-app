@@ -4,10 +4,9 @@ Excel Export Service for Investigations
 
 import csv
 from datetime import datetime
-from io import BytesIO
+from io import BytesIO, TextIOWrapper
 from typing import Any, Dict, List, Optional
 
-import pandas as pd
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
@@ -313,44 +312,38 @@ class ExcelExportService:
         """
         output = BytesIO()
 
-        # Prepare data for pandas DataFrame
-        data = {
-            "ID Investigação": [investigation.id],
-            "Nome do Alvo": [investigation.target_name],
-            "CPF/CNPJ": [investigation.target_cpf_cnpj or "N/A"],
-            "Status": [
-                (
-                    investigation.status.value
-                    if hasattr(investigation.status, "value")
-                    else str(investigation.status)
-                )
-            ],
-            "Prioridade": [investigation.priority],
-            "Propriedades Encontradas": [len(properties)],
-            "Empresas Encontradas": [len(companies)],
-            "Consultas Legais": [len(legal_queries)],
-            "Total de Resultados": [sum(q.result_count or 0 for q in legal_queries)],
-            "Data de Criação": [
-                (
-                    investigation.created_at.strftime("%d/%m/%Y %H:%M")
-                    if investigation.created_at
-                    else "N/A"
-                )
-            ],
-            "Última Atualização": [
-                (
-                    investigation.updated_at.strftime("%d/%m/%Y %H:%M")
-                    if investigation.updated_at
-                    else "N/A"
-                )
-            ],
+        row = {
+            "ID Investigação": investigation.id,
+            "Nome do Alvo": investigation.target_name,
+            "CPF/CNPJ": investigation.target_cpf_cnpj or "N/A",
+            "Status": (
+                investigation.status.value
+                if hasattr(investigation.status, "value")
+                else str(investigation.status)
+            ),
+            "Prioridade": investigation.priority,
+            "Propriedades Encontradas": len(properties),
+            "Empresas Encontradas": len(companies),
+            "Consultas Legais": len(legal_queries),
+            "Total de Resultados": sum(q.result_count or 0 for q in legal_queries),
+            "Data de Criação": (
+                investigation.created_at.strftime("%d/%m/%Y %H:%M")
+                if investigation.created_at
+                else "N/A"
+            ),
+            "Última Atualização": (
+                investigation.updated_at.strftime("%d/%m/%Y %H:%M")
+                if investigation.updated_at
+                else "N/A"
+            ),
         }
 
-        # Create DataFrame
-        df = pd.DataFrame(data)
-
-        # Write to CSV
-        df.to_csv(output, index=False, encoding="utf-8-sig")
+        text_output = TextIOWrapper(output, encoding="utf-8-sig", newline="")
+        writer = csv.DictWriter(text_output, fieldnames=list(row.keys()))
+        writer.writeheader()
+        writer.writerow(row)
+        text_output.flush()
+        text_output.detach()
         output.seek(0)
 
         return output

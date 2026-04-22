@@ -1,16 +1,7 @@
-import { useEffect, useMemo, useState, useRef, useCallback } from 'react'
+import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import {
-  ArrowLeft,
-  Search,
-  Scale,
-  Database,
-  XCircle,
-  MessageSquare,
-  History as HistoryIcon,
-  Share2,
-} from 'lucide-react'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { ArrowLeft, XCircle } from 'lucide-react'
 import { investigationService } from '@/services/investigationService'
 import { useAuthStore } from '@/stores/authStore'
 import { legalService } from '@/services/legalService'
@@ -18,32 +9,22 @@ import { LegalQueriesTab } from '@/components/legal/LegalQueriesTab'
 import {
   InvestigationHeader,
   EnrichedDataCard,
-  QuickScanPanel,
-  KpiCards,
-  DossierSummary,
-  QueryCharts,
-  PropertiesList,
-  CompaniesList,
-  NetworkGraph,
-  RiskScoreCard,
-  PatternDetectionCard,
-  type RiskGovernanceInfo,
 } from '@/components/investigation'
 import ShareModal from '@/components/ShareModal'
-import CommentThread from '@/components/CommentThread'
-import ChangeLog from '@/components/ChangeLog'
-import { formatDate, formatDateTime, formatCPFCNPJ } from '@/lib/utils'
 import { PanelListLoader } from '@/components/Loading'
 import { EmptyState } from '@/components/EmptyState'
-import {
-  buildLegalCharts,
-  buildSummaryFields,
-  createSummarySources,
-} from '@/pages/investigationDetail/summary'
 import {
   InvestigationTabs,
   type InvestigationDetailTab,
 } from '@/pages/investigationDetail/InvestigationTabs'
+import { InvestigationSummaryTab } from '@/pages/investigationDetail/InvestigationSummaryTab'
+import { InvestigationMlTab } from '@/pages/investigationDetail/InvestigationMlTab'
+import { InvestigationNetworkTab } from '@/pages/investigationDetail/InvestigationNetworkTab'
+import { InvestigationCollaborationTab } from '@/pages/investigationDetail/InvestigationCollaborationTab'
+import { LegalConfigWarning } from '@/pages/investigationDetail/LegalConfigWarning'
+import { LegalSummaryOverview } from '@/pages/investigationDetail/LegalSummaryOverview'
+import { LegalHistoryPanel } from '@/pages/investigationDetail/LegalHistoryPanel'
+import { useInvestigationDetailData } from '@/pages/investigationDetail/useInvestigationDetailData'
 
 interface AxiosLikeError {
   response?: { data?: { detail?: string } }
@@ -55,135 +36,119 @@ export default function InvestigationDetailPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [activeTab, setActiveTab] = useState<InvestigationDetailTab>('summary')
-  const [dataJudResult, setDataJudResult] = useState<Record<string, unknown> | null>(null)
-  const [sigefResult, setSigefResult] = useState<Record<string, unknown> | null>(null)
-  const [sncrResult, setSncrResult] = useState<Record<string, unknown> | null>(null)
-  const [sncrCcirStatus, setSncrCcirStatus] = useState<string | null>(null)
-  const [sncciResult, setSncciResult] = useState<Record<string, unknown> | null>(null)
-  const [sncciBoletoStatus, setSncciBoletoStatus] = useState<string | null>(null)
-  const [sigefGeoResult, setSigefGeoResult] = useState<Record<string, unknown> | null>(null)
-  const [sicarResult, setSicarResult] = useState<Record<string, unknown> | null>(null)
-  const [cnpjResult, setCnpjResult] = useState<Record<string, unknown> | null>(null)
-  const [cndResult, setCndResult] = useState<Record<string, unknown> | null>(null)
-  const [cadinResult, setCadinResult] = useState<Record<string, unknown> | null>(null)
-  const [portalServicosResult, setPortalServicosResult] = useState<Record<string, unknown> | null>(null)
-  const [servicosEstaduaisResult, setServicosEstaduaisResult] = useState<Record<string, unknown> | null>(null)
-  const [errorMessage, setErrorMessage] = useState<string | null>(null)
-  const [sncrCodigo, setSncrCodigo] = useState('')
-  const [sncrCpfCnpj, setSncrCpfCnpj] = useState('')
-  const [sncciCodigoCredito, setSncciCodigoCredito] = useState('')
-  const [sncciCodBeneficiario, setSncciCodBeneficiario] = useState('')
-  const [sncciCodPlanoParcela, setSncciCodPlanoParcela] = useState('')
-  const [sicarCpfCnpj, setSicarCpfCnpj] = useState('')
-  const [sigefGeoFilters, setSigefGeoFilters] = useState(
-    JSON.stringify(
-      {
-        parcelaCodigo: "",
-        codigoImovel: "",
-        detentorCpf: "",
-        detentorCnpj: "",
-        titularCpf: "",
-        titularCnpj: "",
-        municipio: "",
-        uf: "",
-        page: 0,
-        size: 20,
-      },
-      null,
-      2
-    )
-  )
-  const [cnpjValue, setCnpjValue] = useState('')
-  const [cnpjCpfUsuario, setCnpjCpfUsuario] = useState('')
-  const [cndTipoContribuinte, setCndTipoContribuinte] = useState('1')
-  const [cndContribuinteConsulta, setCndContribuinteConsulta] = useState('')
-  const [cndCodigoIdentificacao, setCndCodigoIdentificacao] = useState('')
-  const [cndGerarPdf, setCndGerarPdf] = useState(false)
-  const [cndChave, setCndChave] = useState('')
-  const [cadinCpf, setCadinCpf] = useState('')
-  const [cadinCnpj, setCadinCnpj] = useState('')
-  const [portalServicosOrgao, setPortalServicosOrgao] = useState('')
-  const [portalServicosId, setPortalServicosId] = useState('')
-  const [portalServicosToken, setPortalServicosToken] = useState('')
-  const [servicosEstaduaisEmail, setServicosEstaduaisEmail] = useState('')
-  const [servicosEstaduaisSenha, setServicosEstaduaisSenha] = useState('')
-  const [servicosEstaduaisAuth, setServicosEstaduaisAuth] = useState('')
-  const [servicosEstaduaisId, setServicosEstaduaisId] = useState('')
-  const [servicosEstaduaisPayload, setServicosEstaduaisPayload] = useState(
-    JSON.stringify(
-      {
-        uf: "SP",
-        idCategoria: "1",
-        nomeServico: "",
-        siglaServico: "",
-        descricaoServico: "",
-        statusServico: "P",
-        tagsServico: "",
-        nomesPopulares: "",
-        solicitanteServico: "",
-        url: "",
-        linkServicoDigital: "",
-        cidade: "",
-        contato: "",
-        idServicoOrigem: "",
-      },
-      null,
-      2
-    )
-  )
-
-  // Collaboration states
-  const [shareModalOpen, setShareModalOpen] = useState(false);
-  const user = useAuthStore((s) => s.user);
-  const currentUserId = user?.id ?? null;
+  const [shareModalOpen, setShareModalOpen] = useState(false)
+  const user = useAuthStore((s) => s.user)
+  const currentUserId = user?.id ?? null
   const isDevMode = process.env.NODE_ENV !== 'production'
-
-  const { data: investigation, isLoading } = useQuery({
-    queryKey: ['investigation', id],
-    queryFn: () => investigationService.get(Number(id)),
-  })
-
-  const { data: properties } = useQuery({
-    queryKey: ['investigation-properties', id],
-    queryFn: () => investigationService.getProperties(Number(id)),
-    enabled: !!investigation && activeTab === 'summary',
-  })
-
-  const { data: companies } = useQuery({
-    queryKey: ['investigation-companies', id],
-    queryFn: () => investigationService.getCompanies(Number(id)),
-    enabled: !!investigation && activeTab === 'summary',
-  })
-
-  const { data: legalQueries } = useQuery({
-    queryKey: ['legal-queries', id],
-    queryFn: () => legalService.listLegalQueries(Number(id)),
-    enabled: !!id,
-  })
-
-  const { data: integrationStatus } = useQuery({
-    queryKey: ['integration-status'],
-    queryFn: () => legalService.getIntegrationStatus(),
-  })
-
-  // ML & Network Analysis
-  const { data: riskScore, isLoading: isLoadingRisk } = useQuery({
-    queryKey: ['risk-score', id],
-    queryFn: () => investigationService.getRiskScore(Number(id)),
-    enabled: !!id && activeTab === 'ml',
-  })
-
-  const { data: patterns, isLoading: isLoadingPatterns } = useQuery({
-    queryKey: ['patterns', id],
-    queryFn: () => investigationService.getPatterns(Number(id)),
-    enabled: !!id && activeTab === 'ml',
-  })
-
-  const { data: networkAnalysis, isLoading: isLoadingNetwork } = useQuery({
-    queryKey: ['network-analysis', id],
-    queryFn: () => investigationService.getNetworkAnalysis(Number(id)),
-    enabled: !!id && activeTab === 'network',
-  })
+  const {
+    applyCpfCnpjToForms,
+    cadinCnpj,
+    cadinCpf,
+    cadinResult,
+    chartByDate,
+    chartByProvider,
+    cndChave,
+    cndCodigoIdentificacao,
+    cndContribuinteConsulta,
+    cndGerarPdf,
+    cndResult,
+    cndTipoContribuinte,
+    cnpjCpfUsuario,
+    cnpjResult,
+    cnpjValue,
+    companies,
+    defaultCpfCnpj,
+    errorMessage,
+    exportLoading,
+    exportPDF,
+    exportTrustBundle,
+    handleExportCSV,
+    handleExportExcel,
+    integrationStatus,
+    investigation,
+    isLoading,
+    isLoadingNetwork,
+    isLoadingPatterns,
+    isLoadingRisk,
+    latestQuery,
+    legalQueries,
+    networkAnalysis,
+    patterns,
+    pieData,
+    portalServicosId,
+    portalServicosOrgao,
+    portalServicosResult,
+    portalServicosToken,
+    properties,
+    quickScanLog,
+    quickScanProgress,
+    quickScanRunning,
+    quickScanTotal,
+    riskScore,
+    runQuickScan,
+    sicarCpfCnpj,
+    sicarResult,
+    servicosEstaduaisAuth,
+    servicosEstaduaisEmail,
+    servicosEstaduaisId,
+    servicosEstaduaisPayload,
+    servicosEstaduaisResult,
+    servicosEstaduaisSenha,
+    setCadinCnpj,
+    setCadinCpf,
+    setCadinResult,
+    setCndChave,
+    setCndCodigoIdentificacao,
+    setCndContribuinteConsulta,
+    setCndGerarPdf,
+    setCndResult,
+    setCndTipoContribuinte,
+    setCnpjCpfUsuario,
+    setCnpjResult,
+    setCnpjValue,
+    setDataJudResult,
+    setErrorMessage,
+    setPortalServicosId,
+    setPortalServicosOrgao,
+    setPortalServicosResult,
+    setPortalServicosToken,
+    setSicarCpfCnpj,
+    setSicarResult,
+    setServicosEstaduaisAuth,
+    setServicosEstaduaisEmail,
+    setServicosEstaduaisId,
+    setServicosEstaduaisPayload,
+    setServicosEstaduaisResult,
+    setServicosEstaduaisSenha,
+    setSigefGeoFilters,
+    setSigefGeoResult,
+    setSigefResult,
+    setSncciBoletoStatus,
+    setSncciCodBeneficiario,
+    setSncciCodPlanoParcela,
+    setSncciCodigoCredito,
+    setSncciResult,
+    setSncrCcirStatus,
+    setSncrCodigo,
+    setSncrCpfCnpj,
+    setSncrResult,
+    sigefGeoFilters,
+    sigefGeoResult,
+    sncciBoletoStatus,
+    sncciCodBeneficiario,
+    sncciCodPlanoParcela,
+    sncciCodigoCredito,
+    sncciResult,
+    sncrCcirStatus,
+    sncrCodigo,
+    sncrCpfCnpj,
+    sncrResult,
+    summaryCpfCnpj,
+    summarySources,
+    summarySourcesWithData,
+    totalQueries,
+    totalResults,
+  } = useInvestigationDetailData(id, activeTab)
 
   const riskReviewMutation = useMutation({
     mutationFn: () => investigationService.acknowledgeRiskScoreReview(Number(id)),
@@ -203,443 +168,18 @@ export default function InvestigationDetailPage() {
   const cadinConfigured = integrationStatus?.conecta?.cadin ?? true
   const portalServicosConfigured = integrationStatus?.portal_servicos?.configured ?? true
   const servicosEstaduaisConfigured = integrationStatus?.servicos_estaduais?.configured ?? true
-
-  const defaultCpfCnpj = useMemo(() => investigation?.target_cpf_cnpj || '', [investigation])
-
-  // Auto-enrich: se a investigação tem CPF/CNPJ mas nome auto-gerado e sem descrição enriquecida
-  const [autoEnrichDone, setAutoEnrichDone] = useState(false)
-  useEffect(() => {
-    if (
-      investigation?.id &&
-      investigation?.target_cpf_cnpj &&
-      !autoEnrichDone &&
-      !investigation?.target_description?.includes('Receita Federal')
-    ) {
-      const name = investigation.target_name || ''
-      const isAutoName = name.startsWith('Investigação ') || !name.trim()
-      if (isAutoName) {
-        setAutoEnrichDone(true)
-        investigationService.enrich(investigation.id).then(() => {
-          queryClient.invalidateQueries({ queryKey: ['investigation', String(investigation.id)] })
-        }).catch(() => {})
-      }
-    }
-  }, [investigation?.id, investigation?.target_cpf_cnpj, investigation?.target_name, investigation?.target_description, autoEnrichDone, queryClient])
-
-  useEffect(() => {
-    if (!defaultCpfCnpj) return
-    setSncrCpfCnpj((v) => v || defaultCpfCnpj)
-    setSicarCpfCnpj((v) => v || defaultCpfCnpj)
-    setCnpjValue((v) => v || defaultCpfCnpj)
-    setCndContribuinteConsulta((v) => v || defaultCpfCnpj)
-    setCadinCpf((v) => v || defaultCpfCnpj)
-  }, [defaultCpfCnpj])
-
-  const summaryCpfCnpj = useMemo(() => {
-    const raw =
-      sicarCpfCnpj ||
-      sncrCpfCnpj ||
-      cadinCpf ||
-      cadinCnpj ||
-      cnpjValue ||
-      cndContribuinteConsulta ||
-      defaultCpfCnpj
-    return raw ? formatCPFCNPJ(raw) : ''
-  }, [
-    sicarCpfCnpj,
-    sncrCpfCnpj,
-    cadinCpf,
-    cadinCnpj,
-    cnpjValue,
-    cndContribuinteConsulta,
-    defaultCpfCnpj,
-  ])
-
-  const summarySources = useMemo(
-    () =>
-      createSummarySources({
-        dataJudResult,
-        cnpjResult,
-        cadinResult,
-        sncrResult,
-        sigefResult,
-        sigefGeoResult,
-        sicarResult,
-        cndResult,
-      }),
-    [
-      dataJudResult,
-      cnpjResult,
-      cadinResult,
-      sncrResult,
-      sigefResult,
-      sigefGeoResult,
-      sicarResult,
-      cndResult,
-    ]
-  )
-
-  const summarySourcesWithData = useMemo(
-    () => summarySources.filter((source) => source.result),
-    [summarySources]
-  )
-
-  const totalQueries = legalQueries?.length ?? 0
-  const totalResults = useMemo(
-    () => (legalQueries ?? []).reduce((acc, item) => acc + (item.result_count || 0), 0),
-    [legalQueries]
-  )
-  const latestQuery = useMemo(() => {
-    if (!legalQueries || legalQueries.length === 0) {
-      return null
-    }
-    return legalQueries.reduce((latest, current) => {
-      if (!latest) {
-        return current
-      }
-      return new Date(current.created_at) > new Date(latest.created_at) ? current : latest
-    }, legalQueries[0])
-  }, [legalQueries])
-
-  const applyCpfCnpjToForms = () => {
-    if (!defaultCpfCnpj) {
-      return
-    }
-    setSncrCpfCnpj(defaultCpfCnpj)
-    setSicarCpfCnpj(defaultCpfCnpj)
-    setCadinCpf(defaultCpfCnpj)
-    setCadinCnpj(defaultCpfCnpj)
-    setCnpjValue(defaultCpfCnpj)
-    setCndContribuinteConsulta(defaultCpfCnpj)
-  }
-
-  // ─── Quick Scan ───
-  const [quickScanRunning, setQuickScanRunning] = useState(false)
-  const [quickScanProgress, setQuickScanProgress] = useState(0)
-  const [quickScanTotal, setQuickScanTotal] = useState(0)
-  const [quickScanLog, setQuickScanLog] = useState<string[]>([])
-
-  const runQuickScan = useCallback(async () => {
-    if (!defaultCpfCnpj || quickScanRunning) return
-    setQuickScanRunning(true)
-    setQuickScanLog([])
-    setErrorMessage(null)
-    const doc = defaultCpfCnpj.replace(/\D/g, '')
-    const isCpf = doc.length <= 11
-
-    type ScanTask = { label: string; fn: () => Promise<unknown>; setter: (d: Record<string, unknown>) => void }
-    const tasks: ScanTask[] = [
-      {
-        label: 'SNCR (CPF/CNPJ)',
-        fn: () => legalService.conectaSncrCpfCnpj({ cpf_cnpj: doc, investigation_id: Number(id) }),
-        setter: (d) => setSncrResult(d),
-      },
-      {
-        label: 'SICAR (CPF/CNPJ)',
-        fn: () => legalService.conectaSicarCpfCnpj({ cpf_cnpj: doc, investigation_id: Number(id) }),
-        setter: (d) => setSicarResult(d),
-      },
-      {
-        label: isCpf ? 'CADIN (CPF)' : 'CADIN (CNPJ)',
-        fn: () =>
-          isCpf
-            ? legalService.conectaCadinInfoCpf({ cpf: doc, investigation_id: Number(id) })
-            : legalService.conectaCadinInfoCnpj({ cnpj: doc, investigation_id: Number(id) }),
-        setter: (d) => setCadinResult(d),
-      },
-      {
-        label: 'CND (Certidão)',
-        fn: () =>
-          legalService.conectaCndCertidao({
-            tipoContribuinte: isCpf ? 1 : 2,
-            contribuinteConsulta: doc,
-            codigoIdentificacao: '',
-            investigation_id: Number(id),
-          }),
-        setter: (d) => setCndResult(d),
-      },
-    ]
-    if (!isCpf) {
-      tasks.push({
-        label: 'CNPJ (Receita)',
-        fn: () => legalService.conectaCnpjBasica({ cnpj: doc, cpf_usuario: '', investigation_id: Number(id) }),
-        setter: (d) => setCnpjResult(d),
-      })
-      tasks.push({
-        label: 'CNPJ (BrasilAPI)',
-        fn: () => legalService.brasilApiCnpj({ cnpj: doc, investigation_id: Number(id) }),
-        setter: () => {},
-      })
-      tasks.push({
-        label: 'CNPJ (ReceitaWS)',
-        fn: () => legalService.redesimCnpj({ cnpj: doc, investigation_id: Number(id) }),
-        setter: () => {},
-      })
-      tasks.push({
-        label: 'CVM (Fundos)',
-        fn: () => legalService.cvmFundos({ cnpj: doc, investigation_id: Number(id) }),
-        setter: () => {},
-      })
-      tasks.push({
-        label: 'CVM (FII)',
-        fn: () => legalService.cvmFii({ cnpj: doc, investigation_id: Number(id) }),
-        setter: () => {},
-      })
-      tasks.push({
-        label: 'Caixa FGTS (CRF)',
-        fn: () => legalService.caixaFgtsConsultar({ cnpj: doc, investigation_id: Number(id) }),
-        setter: () => {},
-      })
-    }
-
-    // BNMP — Mandados de Prisão (CNJ)
-    if (doc && doc.replace(/\D/g, '').length === 11) {
-      tasks.push({
-        label: 'BNMP/CNJ (Mandados)',
-        fn: () => legalService.bnmpConsultar({ cpf: doc, investigation_id: Number(id) }),
-        setter: () => {},
-      })
-    } else if (investigation?.target_name) {
-      tasks.push({
-        label: 'BNMP/CNJ (Mandados)',
-        fn: () => legalService.bnmpConsultar({ nome: investigation.target_name, investigation_id: Number(id) }),
-        setter: () => {},
-      })
-    }
-
-    // SEEU — Execução Penal (CNJ)
-    if (doc && doc.replace(/\D/g, '').length === 11) {
-      tasks.push({
-        label: 'SEEU/CNJ (Execução Penal)',
-        fn: () => legalService.seeuConsultar({ cpf: doc, investigation_id: Number(id) }),
-        setter: () => {},
-      })
-    } else if (doc && doc.replace(/\D/g, '').length === 14) {
-      tasks.push({
-        label: 'SEEU/CNJ (Execução Penal)',
-        fn: () => legalService.seeuConsultar({ cnpj: doc, investigation_id: Number(id) }),
-        setter: () => {},
-      })
-    } else if (investigation?.target_name) {
-      tasks.push({
-        label: 'SEEU/CNJ (Execução Penal)',
-        fn: () => legalService.seeuConsultar({ nome_parte: investigation.target_name, investigation_id: Number(id) }),
-        setter: () => {},
-      })
-    }
-
-    // SIGEF Público — Parcelas INCRA (consulta direta, até 5 páginas)
-    if (doc && doc.replace(/\D/g, '').length === 11) {
-      tasks.push({
-        label: 'SIGEF Público (Parcelas)',
-        fn: () => legalService.sigefPublicoParcelas({ cpf: doc, paginas: 5, investigation_id: Number(id) }),
-        setter: () => {},
-      })
-    } else if (doc && doc.replace(/\D/g, '').length === 14) {
-      tasks.push({
-        label: 'SIGEF Público (Parcelas)',
-        fn: () => legalService.sigefPublicoParcelas({ cnpj: doc, paginas: 5, investigation_id: Number(id) }),
-        setter: () => {},
-      })
-    }
-
-    // Receita Federal — Situação Cadastral CPF
-    if (doc && doc.replace(/\D/g, '').length === 11) {
-      tasks.push({
-        label: 'Receita Federal (CPF)',
-        fn: () => legalService.receitaCpfConsultar({ cpf: doc, investigation_id: Number(id) }),
-        setter: () => {},
-      })
-    }
-
-    // Receita Federal — Dados Cadastrais CNPJ
-    if (doc && doc.replace(/\D/g, '').length === 14) {
-      tasks.push({
-        label: 'Receita Federal (CNPJ)',
-        fn: () => legalService.receitaCnpjConsultar({ cnpj: doc, investigation_id: Number(id) }),
-        setter: () => {},
-      })
-    }
-
-    // APIs gratuitas para CPF e CNPJ
-    tasks.push({
-      label: 'Transparência (Sanções)',
-      fn: () => legalService.transparenciaSancoes({ cpf_cnpj: doc, investigation_id: Number(id) }),
-      setter: () => {},
-    })
-    tasks.push({
-      label: 'Transparência (Contratos)',
-      fn: () => legalService.transparenciaContratos({ cpf_cnpj: doc, investigation_id: Number(id) }),
-      setter: () => {},
-    })
-    tasks.push({
-      label: 'Transparência (Servidores)',
-      fn: () => legalService.transparenciaServidores({ cpf_cnpj: doc, investigation_id: Number(id) }),
-      setter: () => {},
-    })
-    tasks.push({
-      label: 'Transparência (Benefícios)',
-      fn: () => legalService.transparenciaBeneficios({ cpf_cnpj: doc, investigation_id: Number(id) }),
-      setter: () => {},
-    })
-    tasks.push({
-      label: 'TSE (Candidatos)',
-      fn: () => legalService.tseBuscar({ query: investigation?.target_name || doc, investigation_id: Number(id) }),
-      setter: () => {},
-    })
-    tasks.push({
-      label: isCpf ? 'TJMG (CPF)' : 'TJMG (CNPJ)',
-      fn: () =>
-        legalService.tjmgProcessos({
-          ...(isCpf ? { cpf: doc } : { cnpj: doc }),
-          investigation_id: Number(id),
-        }),
-      setter: () => {},
-    })
-
-    setQuickScanTotal(tasks.length)
-    setQuickScanProgress(0)
-
-    for (let i = 0; i < tasks.length; i++) {
-      const task = tasks[i]
-      setQuickScanLog((prev) => [...prev, `Consultando ${task.label}...`])
-      try {
-        const result = await task.fn()
-        task.setter(result as Record<string, unknown>)
-        setQuickScanLog((prev) => [...prev, `✓ ${task.label} — dados recebidos`])
-      } catch (err: unknown) {
-        const axiosErr = err as AxiosLikeError
-        const rawDetail = axiosErr?.response?.data?.detail
-        let msg: string
-        if (rawDetail && typeof rawDetail === 'object') {
-          msg = (rawDetail as Record<string, unknown>).detail as string
-            || (rawDetail as Record<string, unknown>).message as string
-            || JSON.stringify(rawDetail)
-        } else if (typeof rawDetail === 'string') {
-          msg = rawDetail
-        } else {
-          msg = axiosErr?.message || 'Erro desconhecido'
-        }
-        // Simplify credential-missing messages
-        if (msg.includes('credentials_missing') || msg.includes('Credenciais')) {
-          const credMatch = msg.match(/"detail"\s*:\s*"([^"]+)"/)
-          msg = credMatch ? credMatch[1] : 'Credenciais não configuradas'
-        }
-        setQuickScanLog((prev) => [...prev, `✗ ${task.label} — ${msg}`])
-      }
-      setQuickScanProgress(i + 1)
-    }
-
-    queryClient.invalidateQueries({ queryKey: ['legal-queries', id] })
-
-    // Enriquecer investigação com dados cadastrais (nome, nascimento, situação)
-    setQuickScanLog((prev) => [...prev, 'Enriquecendo investigação com dados cadastrais...'])
-    try {
-      await investigationService.enrich(Number(id))
-      queryClient.invalidateQueries({ queryKey: ['investigation', id] })
-      setQuickScanLog((prev) => [...prev, '✓ Dados cadastrais importados para a investigação'])
-    } catch {
-      setQuickScanLog((prev) => [...prev, '⚠ Enriquecimento parcial — alguns dados não disponíveis'])
-    }
-
-    setQuickScanRunning(false)
-  }, [defaultCpfCnpj, quickScanRunning, id, queryClient, investigation])
-
-  // ─── Chart Data ───
-  const { chartByProvider, chartByDate, pieData } = useMemo(
-    () => buildLegalCharts(legalQueries),
-    [legalQueries]
-  )
-
-  // ─── PDF Export ───
-  const summaryRef = useRef<HTMLDivElement>(null)
-
-  const exportPDF = useCallback(async () => {
-    if (!id) return
-    setExportLoading(true)
-    try {
-      const blob = await investigationService.exportPDF(Number(id))
-      const url = window.URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      link.href = url
-      link.download = `relatorio_${investigation?.target_name?.replace(/\s/g, '_') || id}_${new Date().toISOString().slice(0, 10)}.pdf`
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-      window.URL.revokeObjectURL(url)
-    } catch (err) {
-      const axiosErr = err as AxiosLikeError
-      setErrorMessage(axiosErr?.response?.data?.detail || 'Erro ao exportar PDF')
-    } finally {
-      setExportLoading(false)
-    }
-  }, [id, investigation])
-
-  // ─── Excel/CSV Export ───
-  const [exportLoading, setExportLoading] = useState(false)
-
-  const handleExportExcel = useCallback(async () => {
-    if (!id) return
-    setExportLoading(true)
-    try {
-      const blob = await investigationService.exportExcel(Number(id))
-      const url = window.URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      link.href = url
-      link.download = `investigacao_${investigation?.target_name?.replace(/\s/g, '_') || id}_${new Date().toISOString().slice(0, 10)}.xlsx`
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-      window.URL.revokeObjectURL(url)
-    } catch (err) {
-      const axiosErr = err as AxiosLikeError
-      setErrorMessage(axiosErr?.response?.data?.detail || 'Erro ao exportar para Excel')
-    } finally {
-      setExportLoading(false)
-    }
-  }, [id, investigation])
-
-  const handleExportCSV = useCallback(async () => {
-    if (!id) return
-    setExportLoading(true)
-    try {
-      const blob = await investigationService.exportCSV(Number(id))
-      const url = window.URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      link.href = url
-      link.download = `investigacao_${investigation?.target_name?.replace(/\s/g, '_') || id}_${new Date().toISOString().slice(0, 10)}.csv`
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-      window.URL.revokeObjectURL(url)
-    } catch (err) {
-      const axiosErr = err as AxiosLikeError
-      setErrorMessage(axiosErr?.response?.data?.detail || 'Erro ao exportar para CSV')
-    } finally {
-      setExportLoading(false)
-    }
-  }, [id, investigation])
-
-  const exportTrustBundle = useCallback(async () => {
-    if (!id) return
-    setExportLoading(true)
-    try {
-      const blob = await investigationService.exportTrustBundle(Number(id))
-      const url = window.URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      link.href = url
-      link.download = `agroadb_evidencia_inv_${id}_${(investigation?.target_name || 'investigacao').replace(/\s/g, '_').slice(0, 60)}_${new Date().toISOString().slice(0, 10)}.zip`
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-      window.URL.revokeObjectURL(url)
-    } catch (err) {
-      const axiosErr = err as AxiosLikeError
-      setErrorMessage(axiosErr?.response?.data?.detail || 'Erro ao gerar pacote de evidência')
-    } finally {
-      setExportLoading(false)
-    }
-  }, [id, investigation])
+  const legalWarnings = [
+    !dataJudConfigured && 'DataJud',
+    !sigefConfigured && 'SIGEF Parcelas',
+    !sncrConfigured && 'SNCR',
+    !sncciConfigured && 'SNCCI',
+    !sigefGeoConfigured && 'SIGEF GEO',
+    !cnpjConfigured && 'CNPJ',
+    !cndConfigured && 'CND',
+    !cadinConfigured && 'CADIN',
+    !portalServicosConfigured && 'Portal Serviços',
+    !servicosEstaduaisConfigured && 'Serv. Estaduais',
+  ].filter(Boolean) as string[]
 
   const sncrSituacaoMutation = useMutation({
     mutationFn: (codigo: string) => legalService.conectaSncrSituacao(codigo, Number(id)),
@@ -1033,154 +573,40 @@ export default function InvestigationDetailPage() {
       <InvestigationTabs activeTab={activeTab} onChange={setActiveTab} />
 
       {activeTab === 'summary' && (
-        <div className="space-y-6" ref={summaryRef}>
-          <QuickScanPanel
-            running={quickScanRunning}
-            progress={quickScanProgress}
-            total={quickScanTotal}
-            log={quickScanLog}
-            disabled={!defaultCpfCnpj}
-            onRunScan={runQuickScan}
-            onExportPDF={exportPDF}
-            onExportExcel={handleExportExcel}
-            onExportCSV={handleExportCSV}
-            onExportTrustBundle={exportTrustBundle}
-            exportLoading={exportLoading}
-          />
-          <p className="text-xs text-gray-500 max-w-3xl leading-relaxed">
-            A consulta rápida e o passo de dados cadastrais usam integrações e fontes públicas. Em ambiente de
-            produção não são criados registos fictícios de propriedades ou empresas após o enriquecimento.
-            {isDevMode && (
-              <span className="block mt-1 text-gray-400">
-                Modo desenvolvimento: para permitir dados de demonstração (etiqueta MOCK_DEMO) no servidor,
-                defina <code className="text-[11px] bg-gray-100 px-1 rounded">ENABLE_INVESTIGATION_ENRICH_DEMO_SEED=true</code> no{' '}
-                <code className="text-[11px] bg-gray-100 px-1 rounded">.env</code> do backend (nunca em produção).
-              </span>
-            )}
-          </p>
-
-          <KpiCards
-            propertiesFound={investigation.properties_found}
-            leaseContractsFound={investigation.lease_contracts_found}
-            companiesFound={investigation.companies_found}
-            totalQueries={totalQueries}
-            sourcesWithDataCount={summarySourcesWithData.length}
-            totalResults={totalResults}
-          />
-
-          <DossierSummary
-            summaryCpfCnpj={summaryCpfCnpj}
-            defaultCpfCnpj={defaultCpfCnpj}
-            targetName={investigation.target_name}
-            summarySources={summarySources}
-            latestQuery={latestQuery}
-            onApplyCpfCnpj={applyCpfCnpjToForms}
-            buildSummaryFields={buildSummaryFields}
-          />
-
-          {legalQueries && legalQueries.length > 0 && (
-            <QueryCharts
-              chartByProvider={chartByProvider}
-              pieData={pieData}
-              chartByDate={chartByDate}
-            />
-          )}
-
-          {properties && properties.length > 0 && (
-            <PropertiesList properties={properties} />
-          )}
-
-          {companies && companies.length > 0 && (
-            <CompaniesList companies={companies} />
-          )}
-
-          {/* Consultas Legais registradas (histórico) */}
-          {legalQueries && legalQueries.length > 0 && (
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100">
-              <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-3">
-                <div className="bg-indigo-500 rounded-lg p-2">
-                  <Scale className="h-4 w-4 text-white" />
-                </div>
-                <div>
-                  <h2 className="text-base font-semibold text-gray-900">Histórico de Consultas</h2>
-                  <p className="text-xs text-gray-500">{legalQueries.length} consulta{legalQueries.length === 1 ? '' : 's'} realizada{legalQueries.length === 1 ? '' : 's'}</p>
-                </div>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-gray-100">
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Provedor</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tipo</th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Resultados</th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Data</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-50">
-                    {legalQueries.slice(0, 20).map((query) => (
-                      <tr key={query.id} className="hover:bg-gray-50/50 transition">
-                        <td className="px-6 py-3">
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-indigo-50 text-indigo-700">
-                            {query.provider}
-                          </span>
-                        </td>
-                        <td className="px-6 py-3 text-xs text-gray-700">{query.query_type}</td>
-                        <td className="px-6 py-3 text-xs text-right font-medium text-gray-900">{query.result_count}</td>
-                        <td className="px-6 py-3 text-xs text-right text-gray-500">{formatDateTime(query.created_at)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
-          {/* Estado vazio */}
-          {(!properties || properties.length === 0) && (!companies || companies.length === 0) && (!legalQueries || legalQueries.length === 0) && summarySourcesWithData.length === 0 && (
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center">
-              <Search className="mx-auto h-12 w-12 text-gray-300" />
-              <h3 className="mt-4 text-base font-medium text-gray-900">Nenhum dado encontrado ainda</h3>
-              <p className="mt-2 text-sm text-gray-500">
-                Acesse a aba <button onClick={() => setActiveTab('legal')} className="text-indigo-600 font-medium hover:underline">Consultas Legais</button> para pesquisar nas bases governamentais.
-              </p>
-            </div>
-          )}
-        </div>
+        <InvestigationSummaryTab
+          chartByDate={chartByDate}
+          chartByProvider={chartByProvider}
+          companies={companies}
+          defaultCpfCnpj={defaultCpfCnpj}
+          exportLoading={exportLoading}
+          handleExportCSV={handleExportCSV}
+          handleExportExcel={handleExportExcel}
+          isDevMode={isDevMode}
+          investigation={investigation}
+          latestQuery={latestQuery}
+          legalQueries={legalQueries}
+          onApplyCpfCnpj={applyCpfCnpjToForms}
+          onExportPDF={exportPDF}
+          onExportTrustBundle={exportTrustBundle}
+          onOpenLegalTab={() => setActiveTab('legal')}
+          onRunQuickScan={runQuickScan}
+          pieData={pieData}
+          properties={properties}
+          quickScanLog={quickScanLog}
+          quickScanProgress={quickScanProgress}
+          quickScanRunning={quickScanRunning}
+          quickScanTotal={quickScanTotal}
+          summaryCpfCnpj={summaryCpfCnpj}
+          summarySources={summarySources}
+          summarySourcesWithDataCount={summarySourcesWithData.length}
+          totalQueries={totalQueries}
+          totalResults={totalResults}
+        />
       )}
 
       {activeTab === 'legal' && (
         <div className="space-y-6">
-          {/* Config warnings — compact */}
-          {(() => {
-            const warnings: string[] = []
-            if (!dataJudConfigured) warnings.push('DataJud')
-            if (!sigefConfigured) warnings.push('SIGEF Parcelas')
-            if (!sncrConfigured) warnings.push('SNCR')
-            if (!sncciConfigured) warnings.push('SNCCI')
-            if (!sigefGeoConfigured) warnings.push('SIGEF GEO')
-            if (!cnpjConfigured) warnings.push('CNPJ')
-            if (!cndConfigured) warnings.push('CND')
-            if (!cadinConfigured) warnings.push('CADIN')
-            if (!portalServicosConfigured) warnings.push('Portal Serviços')
-            if (!servicosEstaduaisConfigured) warnings.push('Serv. Estaduais')
-            if (warnings.length === 0) return null
-            return (
-              <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3">
-                <div className="bg-amber-100 rounded-lg p-1.5 shrink-0 mt-0.5">
-                  <Database className="h-4 w-4 text-amber-600" />
-                </div>
-                <div>
-                  <p className="text-xs font-semibold text-amber-800">Bases sem credencial configurada</p>
-                  <div className="mt-1.5 flex flex-wrap gap-1.5">
-                    {warnings.map((w) => (
-                      <span key={w} className="px-2 py-0.5 rounded-md bg-amber-100 text-[10px] font-medium text-amber-700">{w}</span>
-                    ))}
-                  </div>
-                  <p className="mt-1.5 text-[10px] text-amber-600">Configure as API keys no arquivo .env do backend para habilitar essas bases.</p>
-                </div>
-              </div>
-            )
-          })()}
+          <LegalConfigWarning warnings={legalWarnings} />
           {errorMessage && (
             <div className="flex items-center gap-2.5 bg-red-50 border border-red-200 rounded-xl p-3">
               <XCircle className="h-4 w-4 text-red-500 shrink-0" />
@@ -1188,115 +614,16 @@ export default function InvestigationDetailPage() {
               <button onClick={() => setErrorMessage(null)} className="ml-auto text-red-400 hover:text-red-600 text-xs font-medium">Fechar</button>
             </div>
           )}
-
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-              <div>
-                <h2 className="text-lg font-medium text-gray-900">Resumo do CPF/CNPJ</h2>
-                <p className="text-sm text-gray-500">
-                  Consolidação das bases consultadas para o documento pesquisado.
-                </p>
-              </div>
-              <div className="text-sm text-gray-700 flex flex-col gap-2 items-start md:items-end">
-                <div>
-                  <span className="text-gray-500">Documento:</span>
-                  <span className="ml-2 font-medium">{summaryCpfCnpj || 'Não informado'}</span>
-                </div>
-                <button
-                  onClick={applyCpfCnpjToForms}
-                  disabled={!defaultCpfCnpj}
-                  className={`px-3 py-1 rounded-md text-xs ${
-                    defaultCpfCnpj
-                      ? 'bg-emerald-600 text-white hover:bg-emerald-700'
-                      : 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                  }`}
-                >
-                  Usar CPF/CNPJ da investigação
-                </button>
-              </div>
-            </div>
-            <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-4">
-              <div className="bg-gray-50 rounded-lg p-4">
-                <p className="text-xs text-gray-500">Consultas registradas</p>
-                <p className="text-2xl font-semibold text-gray-900">{totalQueries}</p>
-              </div>
-              <div className="bg-gray-50 rounded-lg p-4">
-                <p className="text-xs text-gray-500">Bases com dados</p>
-                <p className="text-2xl font-semibold text-gray-900">{summarySourcesWithData.length}</p>
-              </div>
-              <div className="bg-gray-50 rounded-lg p-4">
-                <p className="text-xs text-gray-500">Resultados totais</p>
-                <p className="text-2xl font-semibold text-gray-900">{totalResults}</p>
-              </div>
-              <div className="bg-gray-50 rounded-lg p-4">
-                <p className="text-xs text-gray-500">Última consulta</p>
-                <p className="text-sm font-medium text-gray-900">
-                  {latestQuery ? formatDate(latestQuery.created_at) : '—'}
-                </p>
-                {latestQuery && (
-                  <p className="text-xs text-gray-500">
-                    {latestQuery.provider} • {latestQuery.query_type}
-                  </p>
-                )}
-              </div>
-            </div>
-            <div className="mt-4 flex flex-wrap gap-2">
-              {summarySources.map((source) => (
-                <span
-                  key={source.label}
-                  className={`px-3 py-1 rounded-full text-xs ${
-                    source.result ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-500'
-                  }`}
-                >
-                  {source.label}
-                </span>
-              ))}
-            </div>
-            <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {summarySources.map((source) => {
-                const fields = buildSummaryFields(source.result, source.fields)
-                return (
-                  <div key={source.label} className="border border-gray-200 rounded-lg p-4 hover:shadow-sm transition">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-sm font-semibold text-gray-900">{source.label}</h3>
-                      <span
-                        className={`text-xs px-2 py-1 rounded-full ${
-                          source.result ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
-                        }`}
-                      >
-                        {source.result ? 'Com dados' : 'Sem dados'}
-                      </span>
-                    </div>
-                    {source.result ? (
-                      fields.length ? (
-                        <div className="mt-3 space-y-2">
-                          {fields.map((field) => (
-                            <div key={`${source.label}-${field.label}`} className="text-xs text-gray-700">
-                              <span className="text-gray-500">{field.label}:</span>
-                              <span className="ml-2 font-medium text-gray-900">{field.value}</span>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="mt-3 text-xs text-gray-500">
-                          Dados retornados. Veja o JSON completo abaixo.
-                        </div>
-                      )
-                    ) : (
-                      <div className="mt-3 text-xs text-gray-500">
-                        Nenhum retorno registrado para esta base.
-                      </div>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
-            {summarySourcesWithData.length > 0 && (
-              <div className="mt-4 text-xs text-gray-500">
-                Bases com retorno: {summarySourcesWithData.map((source) => source.label).join(', ')}
-              </div>
-            )}
-          </div>
+          <LegalSummaryOverview
+            defaultCpfCnpj={defaultCpfCnpj}
+            latestQuery={latestQuery}
+            onApplyCpfCnpj={applyCpfCnpjToForms}
+            summaryCpfCnpj={summaryCpfCnpj}
+            summarySources={summarySources}
+            summarySourcesWithDataCount={summarySourcesWithData.length}
+            totalQueries={totalQueries}
+            totalResults={totalResults}
+          />
 
           <LegalQueriesTab
             investigationId={id}
@@ -2169,245 +1496,36 @@ export default function InvestigationDetailPage() {
             </div>
           </div>
 
-          <div className="bg-white shadow rounded-lg">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h2 className="text-lg font-medium text-gray-900">Histórico de Consultas</h2>
-            </div>
-            <div className="divide-y divide-gray-200">
-              {legalQueries && legalQueries.length > 0 ? (
-                legalQueries.map((query) => (
-                  <div key={query.id} className="px-6 py-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">
-                          {query.provider} • {query.query_type}
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          {new Date(query.created_at).toLocaleString('pt-BR')}
-                        </p>
-                      </div>
-                      <span className="text-sm text-gray-600">
-                        {query.result_count} resultados
-                      </span>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="px-6 py-4 text-sm text-gray-500">
-                  Nenhuma consulta registrada para esta investigação.
-                </div>
-              )}
-            </div>
-          </div>
+          <LegalHistoryPanel legalQueries={legalQueries} />
         </div>
       )}
 
       {activeTab === 'ml' && investigation && (
-        <div className="space-y-6">
-          {isLoadingRisk || isLoadingPatterns ? (
-            <div className="rounded-xl border border-gray-100 bg-white p-12 text-center text-gray-500">
-              A carregar análise ML…
-            </div>
-          ) : (
-            <>
-              {riskScore && typeof riskScore === 'object' && (
-                <RiskScoreCard
-                  totalScore={Number((riskScore as Record<string, unknown>).total_score ?? 0)}
-                  riskLevel={
-                    ((riskScore as Record<string, unknown>).risk_level as
-                      | 'very_low'
-                      | 'low'
-                      | 'medium'
-                      | 'high'
-                      | 'critical') ?? 'low'
-                  }
-                  confidence={Number((riskScore as Record<string, unknown>).confidence ?? 0)}
-                  indicators={
-                    (Array.isArray((riskScore as Record<string, unknown>).indicators)
-                      ? (riskScore as Record<string, unknown>).indicators
-                      : []) as {
-                      name: string
-                      value: number
-                      weight: number
-                      description: string
-                      severity: 'low' | 'medium' | 'high' | 'critical'
-                    }[]
-                  }
-                  patternsDetected={
-                    (Array.isArray((riskScore as Record<string, unknown>).patterns_detected)
-                      ? (riskScore as Record<string, unknown>).patterns_detected
-                      : []) as string[]
-                  }
-                  recommendations={
-                    (Array.isArray((riskScore as Record<string, unknown>).recommendations)
-                      ? (riskScore as Record<string, unknown>).recommendations
-                      : []) as string[]
-                  }
-                  timestamp={(riskScore as Record<string, unknown>).timestamp as string | undefined}
-                  governance={
-                    (riskScore as Record<string, unknown>).governance as RiskGovernanceInfo | undefined
-                  }
-                  riskReviewRecordedAt={investigation.risk_score_reviewed_at ?? null}
-                  riskReviewerName={investigation.risk_score_reviewer_name ?? null}
-                  canAcknowledgeRiskReview={investigation.can_acknowledge_risk_score_review === true}
-                  riskReviewSubmitting={riskReviewMutation.isPending}
-                  onAcknowledgeRiskReview={() => riskReviewMutation.mutate()}
-                />
-              )}
-              {(() => {
-                const raw = patterns as Record<string, unknown> | undefined
-                const list = Array.isArray(raw)
-                  ? (raw as unknown[])
-                  : Array.isArray(raw?.patterns)
-                    ? (raw.patterns as unknown[])
-                    : []
-                const normalized = list.map((p) => {
-                  const x = p as Record<string, unknown>
-                  return {
-                    type: String(x.type ?? ''),
-                    confidence: Number(x.confidence ?? 0),
-                    description: String(x.description ?? ''),
-                    severity: (x.severity as 'low' | 'medium' | 'high' | 'critical') ?? 'low',
-                    entities: Array.isArray(x.entities) ? (x.entities as number[]) : [],
-                    evidence: (x.evidence as Record<string, unknown>) ?? {},
-                  }
-                })
-                return (
-                  <PatternDetectionCard
-                    patterns={normalized}
-                    totalPatterns={normalized.length}
-                    criticalPatterns={normalized.filter((p) => p.severity === 'critical').length}
-                  />
-                )
-              })()}
-              {!riskScore && (!patterns || (Array.isArray(patterns) && patterns.length === 0)) && (
-                <div className="rounded-xl border border-gray-100 bg-white p-12 text-center text-gray-500">
-                  Sem dados de ML para esta investigação. Execute análises no backend ou tente mais tarde.
-                </div>
-              )}
-            </>
-          )}
-        </div>
+        <InvestigationMlTab
+          investigation={investigation}
+          isLoadingPatterns={isLoadingPatterns}
+          isLoadingRisk={isLoadingRisk}
+          onAcknowledgeRiskReview={() => riskReviewMutation.mutate()}
+          patterns={patterns}
+          riskReviewSubmitting={riskReviewMutation.isPending}
+          riskScore={riskScore}
+        />
       )}
 
       {activeTab === 'network' && investigation && (
-        <div className="space-y-6">
-          {isLoadingNetwork ? (
-            <div className="rounded-xl border border-gray-100 bg-white p-12 text-center text-gray-500">
-              A carregar grafo de rede…
-            </div>
-          ) : (
-            <NetworkGraph
-              nodes={
-                (() => {
-                  const n = networkAnalysis as Record<string, unknown> | undefined
-                  const gd = n?.graph_data as Record<string, unknown> | undefined
-                  const raw = (Array.isArray(gd?.nodes) ? gd.nodes : n?.nodes) as unknown[] | undefined
-                  return Array.isArray(raw)
-                    ? (raw as { id: string; label: string; type: 'company' | 'property' | 'person'; attributes: Record<string, unknown> }[])
-                    : []
-                })()
-              }
-              edges={
-                (() => {
-                  const n = networkAnalysis as Record<string, unknown> | undefined
-                  const gd = n?.graph_data as Record<string, unknown> | undefined
-                  const raw = (Array.isArray(gd?.edges) ? gd.edges : n?.edges) as unknown[] | undefined
-                  return Array.isArray(raw)
-                    ? (raw as {
-                        source: string
-                        target: string
-                        type: string
-                        weight: number
-                        attributes: Record<string, unknown>
-                      }[])
-                    : []
-                })()
-              }
-              metadata={
-                networkAnalysis && typeof networkAnalysis === 'object'
-                  ? {
-                      num_nodes: Number((networkAnalysis as Record<string, unknown>).num_nodes ?? 0),
-                      num_edges: Number((networkAnalysis as Record<string, unknown>).num_edges ?? 0),
-                      density: Number((networkAnalysis as Record<string, unknown>).density ?? 0),
-                      is_connected: Boolean((networkAnalysis as Record<string, unknown>).is_connected ?? false),
-                    }
-                  : undefined
-              }
-            />
-          )}
-        </div>
+        <InvestigationNetworkTab
+          isLoadingNetwork={isLoadingNetwork}
+          networkAnalysis={networkAnalysis}
+        />
       )}
 
       {activeTab === 'collaboration' && investigation && (
-        <div className="space-y-6">
-          {/* Header com botão de compartilhar */}
-          <div className="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl shadow-lg p-6 text-white">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-2xl font-bold mb-2">Colaboração e Histórico</h2>
-                <p className="text-indigo-100">
-                  Compartilhe a investigação, adicione comentários e acompanhe todas as alterações
-                </p>
-              </div>
-              <button
-                onClick={() => setShareModalOpen(true)}
-                className="flex items-center gap-2 px-5 py-3 bg-white text-indigo-600 rounded-lg font-semibold hover:bg-indigo-50 transition shadow-lg"
-              >
-                <Share2 className="h-5 w-5" />
-                Compartilhar
-              </button>
-            </div>
-          </div>
-
-          {/* Stats de Colaboração */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-              <div className="flex items-center gap-3">
-                <div className="bg-purple-100 rounded-lg p-3">
-                  <Share2 className="h-6 w-6 text-purple-600" />
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">Compartilhamentos</p>
-                  <p className="text-2xl font-bold text-gray-900">-</p>
-                </div>
-              </div>
-            </div>
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-              <div className="flex items-center gap-3">
-                <div className="bg-cyan-100 rounded-lg p-3">
-                  <MessageSquare className="h-6 w-6 text-cyan-600" />
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">Comentários</p>
-                  <p className="text-2xl font-bold text-gray-900">-</p>
-                </div>
-              </div>
-            </div>
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-              <div className="flex items-center gap-3">
-                <div className="bg-indigo-100 rounded-lg p-3">
-                  <HistoryIcon className="h-6 w-6 text-indigo-600" />
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">Alterações</p>
-                  <p className="text-2xl font-bold text-gray-900">-</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Comments Section */}
-          {currentUserId && (
-            <CommentThread
-              investigationId={Number(id)}
-              currentUserId={currentUserId}
-            />
-          )}
-
-          {/* Change Log Section */}
-          <ChangeLog investigationId={Number(id)} />
-        </div>
+        <InvestigationCollaborationTab
+          currentUserId={currentUserId}
+          currentUserName={user?.full_name || user?.username || 'Você'}
+          investigationId={Number(id)}
+          onShare={() => setShareModalOpen(true)}
+        />
       )}
 
       {/* Share Modal */}

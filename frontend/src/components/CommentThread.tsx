@@ -1,140 +1,139 @@
-import { useState, useEffect, useCallback } from 'react';
-import { MessageSquare, Send, Edit3, Trash2, Lock, CheckCheck } from 'lucide-react';
-import ReactMarkdown from 'react-markdown';
-import { formatDistanceToNow } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
-import { isSafeHttpUrl } from '@/lib/safeUrl';
+import { useCallback, useEffect, useState } from 'react'
+import { formatDistanceToNow } from 'date-fns'
+import { ptBR } from 'date-fns/locale'
+import { CheckCheck, CloudOff, Edit3, Lock, MessageSquare, Send, Trash2 } from 'lucide-react'
+import ReactMarkdown from 'react-markdown'
+import { isSafeHttpUrl } from '@/lib/safeUrl'
+import {
+  collaborationService,
+  type InvestigationComment,
+} from '@/services/collaborationService'
 
-interface Comment {
-  id: number;
-  user_id: number;
-  user_name: string;
-  content: string;
-  is_internal: boolean;
-  is_edited: boolean;
-  parent_id?: number;
-  created_at: string;
-  updated_at: string;
+type LocalComment = InvestigationComment & {
+  pendingSync?: boolean
 }
 
 interface CommentThreadProps {
-  investigationId: number;
-  currentUserId: number;
+  investigationId: number
+  currentUserId: number
+  currentUserName?: string
 }
 
-export default function CommentThread({ investigationId, currentUserId }: CommentThreadProps) {
-  const [comments, setComments] = useState<Comment[]>([]);
-  const [newComment, setNewComment] = useState('');
-  const [isInternal, setIsInternal] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [editingId, setEditingId] = useState<number | null>(null);
-  const [editContent, setEditContent] = useState('');
+export default function CommentThread({
+  investigationId,
+  currentUserId,
+  currentUserName = 'Você',
+}: CommentThreadProps) {
+  const [comments, setComments] = useState<LocalComment[]>([])
+  const [newComment, setNewComment] = useState('')
+  const [isInternal, setIsInternal] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [editingId, setEditingId] = useState<number | null>(null)
+  const [editContent, setEditContent] = useState('')
 
   const loadComments = useCallback(async () => {
     try {
-      const response = await fetch(
-        `/api/v1/collaboration/investigations/${investigationId}/comments`,
-        {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          }
-        }
-      );
-      if (response.ok) {
-        const data = await response.json();
-        setComments(data.comments);
-      }
-    } catch (error) {
+      const data = await collaborationService.listComments(investigationId)
+      setComments(data)
+    } catch {
       // silenced for production
     }
-  }, [investigationId]);
+  }, [investigationId])
 
   useEffect(() => {
-    void loadComments();
-  }, [loadComments]);
+    void loadComments()
+  }, [loadComments])
 
   const handleAddComment = async () => {
-    if (!newComment.trim()) return;
+    if (!newComment.trim()) return
 
-    setLoading(true);
+    setLoading(true)
     try {
-      const response = await fetch(
-        `/api/v1/collaboration/investigations/${investigationId}/comments`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          },
-          body: JSON.stringify({
-            content: newComment,
-            is_internal: isInternal
-          })
-        }
-      );
+      const content = newComment
+      const result = await collaborationService.addComment(investigationId, {
+        content,
+        is_internal: isInternal,
+      })
 
-      if (response.ok) {
-        setNewComment('');
-        setIsInternal(false);
-        loadComments();
+      if (result.queued) {
+        setComments((prev) => [
+          {
+            id: -Date.now(),
+            user_id: currentUserId,
+            user_name: currentUserName,
+            content,
+            is_internal: isInternal,
+            is_edited: false,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            pendingSync: true,
+          },
+          ...prev,
+        ])
+      } else {
+        await loadComments()
       }
-    } catch (error) {
+    } catch {
       // silenced for production
     } finally {
-      setLoading(false);
+      setNewComment('')
+      setIsInternal(false)
+      setLoading(false)
     }
-  };
+  }
 
   const handleUpdateComment = async (commentId: number) => {
     try {
-      const response = await fetch(
-        `/api/v1/collaboration/comments/${commentId}`,
-        {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          },
-          body: JSON.stringify({ content: editContent })
-        }
-      );
-
-      if (response.ok) {
-        setEditingId(null);
-        setEditContent('');
-        loadComments();
+      const result = await collaborationService.updateComment(commentId, editContent)
+      if (result.queued) {
+        setComments((prev) =>
+          prev.map((comment) =>
+            comment.id === commentId
+              ? {
+                  ...comment,
+                  content: editContent,
+                  is_edited: true,
+                  updated_at: new Date().toISOString(),
+                  pendingSync: true,
+                }
+              : comment
+          )
+        )
+      } else {
+        await loadComments()
       }
-    } catch (error) {
+
+      setEditingId(null)
+      setEditContent('')
+    } catch {
       // silenced for production
     }
-  };
+  }
 
   const handleDeleteComment = async (commentId: number) => {
-    if (!confirm('Tem certeza que deseja deletar este comentário?')) return;
+    if (!confirm('Tem certeza que deseja deletar este comentário?')) return
 
     try {
-      const response = await fetch(
-        `/api/v1/collaboration/comments/${commentId}`,
-        {
-          method: 'DELETE',
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          }
-        }
-      );
-
-      if (response.ok) {
-        loadComments();
+      const result = await collaborationService.deleteComment(commentId)
+      if (result.queued) {
+        setComments((prev) => prev.filter((comment) => comment.id !== commentId))
+      } else {
+        await loadComments()
       }
-    } catch (error) {
+    } catch {
       // silenced for production
     }
-  };
+  }
 
   const getInitials = (name: string) => {
-    if (!name) return '?';
-    return name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase();
-  };
+    if (!name) return '?'
+    return name
+      .split(' ')
+      .map((segment) => segment[0])
+      .slice(0, 2)
+      .join('')
+      .toUpperCase()
+  }
 
   const getAvatarColor = (userId: number) => {
     const colors = [
@@ -144,36 +143,35 @@ export default function CommentThread({ investigationId, currentUserId }: Commen
       'from-blue-500 to-blue-700',
       'from-cyan-500 to-cyan-700',
       'from-teal-500 to-teal-700',
-    ];
-    return colors[userId % colors.length];
-  };
+    ]
+    return colors[Math.abs(userId) % colors.length]
+  }
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-      <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2 mb-6">
+    <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+      <h3 className="mb-6 flex items-center gap-2 text-lg font-semibold text-gray-900">
         <MessageSquare className="h-5 w-5 text-indigo-600" />
         Comentários e Anotações
         <span className="text-sm font-normal text-gray-500">({comments.length})</span>
       </h3>
 
-      {/* New Comment Form */}
-      <div className="mb-6 bg-gray-50 rounded-lg p-4">
+      <div className="mb-6 rounded-lg bg-gray-50 p-4">
         <textarea
           value={newComment}
-          onChange={(e) => setNewComment(e.target.value)}
+          onChange={(event) => setNewComment(event.target.value)}
           placeholder="Adicione um comentário ou anotação... (suporta Markdown)"
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none bg-white"
+          className="w-full resize-none rounded-lg border border-gray-300 bg-white px-4 py-3 focus:border-transparent focus:ring-2 focus:ring-indigo-500"
           rows={4}
         />
-        
-        <div className="flex items-center justify-between mt-3">
+
+        <div className="mt-3 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+            <label className="flex cursor-pointer items-center gap-2 text-sm text-gray-700">
               <input
                 type="checkbox"
                 checked={isInternal}
-                onChange={(e) => setIsInternal(e.target.checked)}
-                className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                onChange={(event) => setIsInternal(event.target.checked)}
+                className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
               />
               <Lock className="h-4 w-4 text-gray-400" />
               <span>Anotação privada</span>
@@ -186,7 +184,7 @@ export default function CommentThread({ investigationId, currentUserId }: Commen
           <button
             onClick={handleAddComment}
             disabled={loading || !newComment.trim()}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+            className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Send className="h-4 w-4" />
             {loading ? 'Enviando...' : 'Enviar'}
@@ -194,99 +192,121 @@ export default function CommentThread({ investigationId, currentUserId }: Commen
         </div>
       </div>
 
-      {/* Comments List */}
       <div className="space-y-4">
         {comments.length === 0 ? (
-          <div className="text-center py-12 text-gray-500">
-            <MessageSquare className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+          <div className="py-12 text-center text-gray-500">
+            <MessageSquare className="mx-auto mb-3 h-12 w-12 text-gray-300" />
             <p className="text-sm font-medium">Nenhum comentário ainda</p>
-            <p className="text-xs text-gray-400 mt-1">
+            <p className="mt-1 text-xs text-gray-400">
               Seja o primeiro a adicionar um comentário ou anotação
             </p>
           </div>
         ) : (
           comments.map((comment) => {
-            const isOwn = comment.user_id === currentUserId;
-            const avatarColor = getAvatarColor(comment.user_id);
-            
+            const isOwn = comment.user_id === currentUserId
+            const avatarColor = getAvatarColor(comment.user_id)
+
             return (
               <div
                 key={comment.id}
                 className={`flex gap-3 ${isOwn ? 'flex-row-reverse' : 'flex-row'}`}
               >
-                {/* Avatar */}
                 <div className="shrink-0">
-                  <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${avatarColor} flex items-center justify-center shadow-sm`}>
+                  <div
+                    className={`flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br ${avatarColor} shadow-sm`}
+                  >
                     <span className="text-sm font-bold text-white">
                       {getInitials(comment.user_name)}
                     </span>
                   </div>
                 </div>
 
-                {/* Content */}
-                <div className={`flex-1 min-w-0 max-w-[80%] ${isOwn ? 'items-end' : 'items-start'}`}>
+                <div
+                  className={`min-w-0 max-w-[80%] flex-1 ${isOwn ? 'items-end' : 'items-start'}`}
+                >
                   <div
-                    className={`p-4 rounded-2xl ${
+                    className={`rounded-2xl p-4 ${
                       comment.is_internal
-                        ? 'bg-amber-50 border border-amber-200'
+                        ? 'border border-amber-200 bg-amber-50'
                         : isOwn
                         ? 'bg-indigo-600 text-white'
-                        : 'bg-gray-100 border border-gray-200'
+                        : 'border border-gray-200 bg-gray-100'
                     }`}
                   >
-                    <div className="flex items-start justify-between gap-2 mb-2">
+                    <div className="mb-2 flex items-start justify-between gap-2">
                       <div className={`flex-1 ${isOwn ? 'text-right' : 'text-left'}`}>
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className={`text-sm font-semibold ${isOwn && !comment.is_internal ? 'text-white' : 'text-gray-900'}`}>
+                        <div className="mb-1 flex items-center gap-2">
+                          <span
+                            className={`text-sm font-semibold ${
+                              isOwn && !comment.is_internal ? 'text-white' : 'text-gray-900'
+                            }`}
+                          >
                             {isOwn ? 'Você' : comment.user_name}
                           </span>
                           {comment.is_internal && (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-100 text-amber-700 text-xs font-medium rounded-full">
+                            <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">
                               <Lock className="h-3 w-3" />
                               Privado
                             </span>
                           )}
+                          {comment.pendingSync && (
+                            <span
+                              className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${
+                                isOwn && !comment.is_internal
+                                  ? 'bg-white/15 text-white'
+                                  : 'bg-slate-100 text-slate-600'
+                              }`}
+                            >
+                              <CloudOff className="h-3 w-3" />
+                              A sincronizar
+                            </span>
+                          )}
                           {comment.is_edited && (
-                            <span className={`text-xs ${isOwn && !comment.is_internal ? 'text-indigo-200' : 'text-gray-500'}`}>
+                            <span
+                              className={`text-xs ${
+                                isOwn && !comment.is_internal ? 'text-indigo-200' : 'text-gray-500'
+                              }`}
+                            >
                               (editado)
                             </span>
                           )}
                         </div>
-                        <span className={`text-xs ${isOwn && !comment.is_internal ? 'text-indigo-200' : 'text-gray-500'}`}>
+                        <span
+                          className={`text-xs ${
+                            isOwn && !comment.is_internal ? 'text-indigo-200' : 'text-gray-500'
+                          }`}
+                        >
                           {formatDistanceToNow(new Date(comment.created_at), {
                             addSuffix: true,
-                            locale: ptBR
+                            locale: ptBR,
                           })}
                         </span>
                       </div>
 
-                      {/* Actions (owner only) */}
                       {isOwn && editingId !== comment.id && (
                         <div className="flex items-center gap-1">
                           <button
+                            type="button"
                             onClick={() => {
-                              setEditingId(comment.id);
-                              setEditContent(comment.content);
+                              setEditingId(comment.id)
+                              setEditContent(comment.content)
                             }}
-                            className={`p-1 rounded transition ${
+                            className={`rounded-lg p-1.5 transition ${
                               comment.is_internal
-                                ? 'text-amber-600 hover:bg-amber-100'
-                                : isOwn
-                                ? 'text-indigo-200 hover:bg-indigo-500'
-                                : 'text-gray-400 hover:bg-gray-200'
+                                ? 'text-amber-700 hover:bg-amber-100'
+                                : 'text-white/70 hover:bg-white/10 hover:text-white'
                             }`}
                             title="Editar"
                           >
                             <Edit3 className="h-3.5 w-3.5" />
                           </button>
                           <button
+                            type="button"
                             onClick={() => handleDeleteComment(comment.id)}
-                            className={`p-1 rounded transition ${
+                            className={`rounded-lg p-1.5 transition ${
                               comment.is_internal
-                                ? 'text-amber-600 hover:bg-amber-100'
-                                : isOwn
-                                ? 'text-indigo-200 hover:bg-indigo-500'
-                                : 'text-gray-400 hover:bg-gray-200'
+                                ? 'text-amber-700 hover:bg-amber-100'
+                                : 'text-white/70 hover:bg-white/10 hover:text-white'
                             }`}
                             title="Deletar"
                           >
@@ -296,61 +316,61 @@ export default function CommentThread({ investigationId, currentUserId }: Commen
                       )}
                     </div>
 
-                    {/* Comment Text or Edit Form */}
                     {editingId === comment.id ? (
-                      <div>
+                      <div className="space-y-3">
                         <textarea
                           value={editContent}
-                          onChange={(e) => setEditContent(e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
+                          onChange={(event) => setEditContent(event.target.value)}
+                          className="w-full resize-none rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-transparent focus:ring-2 focus:ring-indigo-500"
                           rows={3}
                         />
-                        <div className="flex gap-2 mt-2">
+                        <div className="flex items-center justify-end gap-2">
                           <button
-                            onClick={() => handleUpdateComment(comment.id)}
-                            className="px-3 py-1.5 bg-indigo-600 text-white text-xs font-medium rounded hover:bg-indigo-700 flex items-center gap-1"
-                          >
-                            <CheckCheck className="h-3 w-3" />
-                            Salvar
-                          </button>
-                          <button
+                            type="button"
                             onClick={() => {
-                              setEditingId(null);
-                              setEditContent('');
+                              setEditingId(null)
+                              setEditContent('')
                             }}
-                            className="px-3 py-1.5 bg-gray-200 text-gray-700 text-xs font-medium rounded hover:bg-gray-300"
+                            className="rounded-lg px-3 py-1.5 text-sm font-medium text-gray-600 transition hover:bg-gray-100"
                           >
                             Cancelar
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleUpdateComment(comment.id)}
+                            className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-indigo-700"
+                          >
+                            <CheckCheck className="h-3.5 w-3.5" />
+                            Guardar
                           </button>
                         </div>
                       </div>
                     ) : (
-                      <div className={`text-sm prose prose-sm max-w-none ${isOwn && !comment.is_internal ? 'prose-invert' : ''}`}>
+                      <div
+                        className={`prose prose-sm max-w-none text-sm ${
+                          isOwn && !comment.is_internal ? 'prose-invert' : ''
+                        }`}
+                      >
                         <ReactMarkdown
                           components={{
-                            p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
-                            a: ({ href, children }) => {
-                              const safe = isSafeHttpUrl(href)
-                              const cls =
-                                isOwn && !comment.is_internal
-                                  ? 'text-indigo-200 hover:text-white underline'
-                                  : 'text-indigo-600 hover:text-indigo-800 underline'
-                              if (!safe) {
-                                return <span className={cls}>{children}</span>
-                              }
+                            a: ({ href, children, ...props }) => {
+                              const safeHref = href && isSafeHttpUrl(href) ? href : undefined
                               return (
                                 <a
-                                  href={href}
+                                  {...props}
+                                  href={safeHref}
                                   target="_blank"
-                                  rel="noopener noreferrer"
-                                  className={cls}
+                                  rel="noreferrer noopener"
+                                  className={
+                                    isOwn && !comment.is_internal
+                                      ? 'text-white underline'
+                                      : 'text-indigo-600 underline'
+                                  }
                                 >
                                   {children}
                                 </a>
                               )
                             },
-                            strong: ({ children }) => <strong className="font-bold">{children}</strong>,
-                            em: ({ children }) => <em className="italic">{children}</em>,
                           }}
                         >
                           {comment.content}
@@ -360,10 +380,10 @@ export default function CommentThread({ investigationId, currentUserId }: Commen
                   </div>
                 </div>
               </div>
-            );
+            )
           })
         )}
       </div>
     </div>
-  );
+  )
 }

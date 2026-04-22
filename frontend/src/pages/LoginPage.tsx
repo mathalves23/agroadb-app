@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -21,14 +21,32 @@ export default function LoginPage() {
   const [error, setError] = useState<string>('')
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
+  const errorRef = useRef<HTMLDivElement>(null)
 
   const {
     register,
     handleSubmit,
+    setFocus,
     formState: { errors },
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
   })
+
+  useEffect(() => {
+    if (errors.username) {
+      setFocus('username')
+      return
+    }
+    if (errors.password) {
+      setFocus('password')
+    }
+  }, [errors.password, errors.username, setFocus])
+
+  useEffect(() => {
+    if (error) {
+      errorRef.current?.focus()
+    }
+  }, [error])
 
   const onSubmit = async (data: LoginFormData) => {
     try {
@@ -96,9 +114,21 @@ export default function LoginPage() {
           <h1 className="text-2xl font-bold text-gray-900">Entrar</h1>
           <p className="mt-1 text-sm text-gray-500">Acesse sua conta para continuar</p>
 
-          <form className="mt-8 space-y-5" onSubmit={handleSubmit(onSubmit)} role="form" aria-label="Formulário de login">
+          <form
+            className="mt-8 space-y-5"
+            onSubmit={handleSubmit(onSubmit)}
+            role="form"
+            aria-label="Formulário de login"
+            aria-busy={isLoading}
+          >
             {error && (
-              <div className="flex items-center gap-2.5 bg-red-50 border border-red-200 rounded-xl p-3" aria-live="polite">
+              <div
+                ref={errorRef}
+                className="flex items-center gap-2.5 bg-red-50 border border-red-200 rounded-xl p-3"
+                role="alert"
+                aria-live="assertive"
+                tabIndex={-1}
+              >
                 <AlertTriangle className="h-4 w-4 text-red-500 shrink-0" />
                 <p className="text-xs text-red-700">{error}</p>
               </div>
@@ -112,6 +142,7 @@ export default function LoginPage() {
                 {...register('username')}
                 id="username"
                 type="text"
+                autoFocus
                 autoComplete="username"
                 placeholder="admin"
                 aria-invalid={errors.username ? true : undefined}
@@ -155,6 +186,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={isLoading}
+              aria-disabled={isLoading}
               className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-emerald-600 text-white text-sm font-medium rounded-xl hover:bg-emerald-700 disabled:opacity-50 transition shadow-sm"
             >
               {isLoading ? (

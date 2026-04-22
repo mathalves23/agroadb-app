@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { LogOut, User, Shield, Settings, ChevronDown, HelpCircle, Menu, X, BookOpen } from 'lucide-react'
+import { LogOut, User, Shield, Settings, ChevronDown, HelpCircle, Menu, X, BookOpen, Search } from 'lucide-react'
 import { useAuthStore } from '@/stores/authStore'
 import { useState, useRef, useEffect } from 'react'
 import NotificationDropdown from './NotificationDropdown'
@@ -82,6 +82,26 @@ export default function Navbar({ onToggleMobileSidebar, mobileSidebarOpen }: Nav
           </div>
 
           <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => {
+                document.dispatchEvent(
+                  new KeyboardEvent('keydown', {
+                    key: 'k',
+                    ctrlKey: true,
+                  })
+                )
+              }}
+              className="hidden items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-500 transition hover:border-emerald-200 hover:text-gray-700 md:inline-flex"
+              aria-label="Abrir palette de comandos"
+            >
+              <Search className="h-3.5 w-3.5" />
+              Buscar
+              <span className="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-semibold text-gray-400">
+                Ctrl K
+              </span>
+            </button>
+
             <div data-tour="notifications">
               <NotificationDropdown />
             </div>

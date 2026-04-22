@@ -1,58 +1,19 @@
-import { useState, useEffect, useCallback, type ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import { History, FileText, Share2, Edit3, Plus, Trash2, MessageSquare, UserPlus, UserMinus, Eye, AlertTriangle, CheckCircle, XCircle, Activity } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { PanelListLoader } from '@/components/Loading'
 import { EmptyState } from '@/components/EmptyState'
-
-interface ChangeLogEntry {
-  id: number;
-  user_id: number;
-  user_name: string;
-  user_email?: string;
-  action: string;
-  field_changed?: string;
-  old_value?: unknown;
-  new_value?: unknown;
-  description?: string;
-  timestamp: string;
-}
+import { useChangeLog } from '@/hooks/useChangeLog'
 
 interface ChangeLogProps {
   investigationId: number;
 }
 
 export default function ChangeLog({ investigationId }: ChangeLogProps) {
-  const [entries, setEntries] = useState<ChangeLogEntry[]>([]);
-  const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<string>('all');
-
-  const loadChangeLog = useCallback(async () => {
-    setLoading(true)
-    try {
-      const response = await fetch(
-        `/api/v1/collaboration/investigations/${investigationId}/changelog`,
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`,
-          },
-        }
-      )
-      if (response.ok) {
-        const data = await response.json()
-        setEntries(data.changelog)
-      }
-    } catch {
-      // silenciado
-    } finally {
-      setLoading(false)
-    }
-  }, [investigationId])
-
-  useEffect(() => {
-    void loadChangeLog()
-  }, [loadChangeLog])
+  const { data: entries = [], isLoading } = useChangeLog(investigationId)
 
   const getActionIcon = (action: string) => {
     const actionLower = action.toLowerCase();
@@ -204,7 +165,7 @@ export default function ChangeLog({ investigationId }: ChangeLogProps) {
         </select>
       </div>
 
-      {loading ? (
+      {isLoading ? (
         <PanelListLoader message="Carregando..." subMessage="A carregar o histórico de colaboração desta investigação." />
       ) : filteredEntries.length === 0 ? (
         <EmptyState
