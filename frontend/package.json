@@ -21,7 +21,7 @@
     "@hookform/resolvers": "^5.2.2",
     "axios": "^1.15.0",
     "clsx": "^2.0.0",
-    "date-fns": "^2.30.0",
+    "date-fns": "^4.1.0",
     "driver.js": "^1.4.0",
     "file-saver": "^2.0.5",
     "framer-motion": "^10.16.0",
